@@ -15,7 +15,6 @@
 5. **Issue Agent 写 issue**
    使用长 prompt：[prompts/issue_agent.md](prompts/issue_agent.md)
    目标：把 `FSD`、`Repo Impact Forecast` 和 `Target State Bridge` 固化成开发契约。
-
 6. **Coding Agent 按 issue 开发**
    短 prompt：
 
@@ -23,7 +22,7 @@
    按照 issue 完成本次编程开发。
    ```
 
-   备注：这里不再重复注入 `FSD`、`Repo Impact Forecast`、`Target State Bridge`，因为它们已经被 issue 吸收。
+   备注：我在这里没有提FSD/Repo Impact Forecast/Target State Bridge，宪法文件已经转为issue。而且也没有提供编程开发的具体模板，因为我相信llm擅长做这个，issue也能做好制约。
 
 7. **GPT 5.4 Pro 负责代码审核**
    预审核短 prompt：
