@@ -3,8 +3,6 @@
 ## 主流程
 
 1. **确定需求**
-   输入：需求、`AGENTS.md`、其他仓库权威文档。
-   输出：足够明确的需求边界，供后续制定 FSD。
 
 2. **网页端 Pro 模型制定 `FSD Core Contract`**
    使用长 prompt：[prompts/fsd_core_contract.md](prompts/fsd_core_contract.md)
