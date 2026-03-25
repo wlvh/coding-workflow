@@ -1,21 +1,5 @@
 # 编程工作流
 
-这个仓库只保留一个主文档：
-
-1. 主流程全部写在 `README.md`。
-2. 只有超过 200 字的长 prompt 才单独存放在 `prompts/`。
-3. 合并前治理自动化单独存放在 `.github/workflows/`。
-
-## 当前文件结构
-
-- `README.md`：主流程、短 prompt、执行约定。
-- `prompts/fsd_core_contract.md`：FSD Core Contract 长 prompt。
-- `prompts/target_state_bridge.md`：Target State Bridge 长 prompt。
-- `prompts/issue_agent.md`：Issue Agent 长 prompt。
-- `prompts/pr_review_system.md`：PR Review System 长 prompt。
-- `prompts/issue_closure_fsd_acceptance.md`：Issue 关闭前的 FSD 完备性验收长 prompt。
-- `.github/workflows/claude-merge-readiness.yml`：`/claude-merge-check` 自动化。
-
 ## 主流程
 
 1. **确定需求**
@@ -129,8 +113,4 @@
 - `Merge Readiness Report`：判断当前 PR 是否具备合并条件。
 - `FSD 完备性验收报告`：Issue 关闭前的最后一道契约核查。
 
-## 简化原则
 
-- 不再维护 `docs/stages/`。
-- 不再为短 prompt 单独建文件。
-- 只有长 prompt 保留为独立 Markdown，避免 README 被超长系统 prompt 淹没。
