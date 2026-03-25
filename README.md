@@ -9,12 +9,8 @@
    备注：当前默认前提是 GPT 5.4 Pro 不能自由探索本地代码和 GitHub，所以 FSD 先做黑盒契约。
 
 3. **Target State Bridge Agent 根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`**
-  * （如果GPT 5.4 Pro模型可以在不接触本地代码和GitHub的情况下产出也能由它代为产出）
+  * 如果GPT 5.4 Pro模型可以在不接触本地代码和GitHub的情况下产出也能由它代为产出
   * 使用长 prompt：[prompts/target_state_bridge.md](prompts/target_state_bridge.md)
-  * 强制要求：`Repo Impact Forecast` 必须区分 `Must / Likely / Maybe`，绝不把预测写成承诺。
-  * 强制要求：`Target State Bridge` 必须输出 `interact.md Delta`，如果不是 `No change`，必须给出 draft 文案。
-  * 强制要求：必须输出 `Verification Matrix`，格式为 `TS / AC -> 测试目录 -> Stage`。
-  * 拆分规则：如果预估修改量超过 3000 行，拆成主 issue 和 sub issue。sub issue 必须独立验收、独立回滚、独立 code review。
 
 5. **Issue Agent 写 issue**
    使用长 prompt：[prompts/issue_agent.md](prompts/issue_agent.md)
