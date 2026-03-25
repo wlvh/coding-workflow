@@ -28,7 +28,7 @@
    预审核短 prompt：
 
    ```text
-   你即将进行代码审核。从 FSD / PR_Body 的内容和 AGENTS.md 中的项目文件简介分析如果还需要哪些文件（开发完成后的版本）才能完成代码审核，现在告诉我，最多十个文件。
+   你即将进行基于PR Patch的代码审核。从 FSD / PR_Body 的内容和 AGENTS.md 中的项目文件简介分析如果还需要哪些文件（开发完成后的版本）才能完成代码审核，现在告诉我，最多十个文件。这次开发完全新增的文件不得提出要求，因为会随PR patch一起提供。
    ```
 
    正式审核系统 prompt：[prompts/pr_review_system.md](prompts/pr_review_system.md)
