@@ -1,0 +1,400 @@
+name: claude-merge-readiness
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: claude-merge-readiness-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-merge-readiness:
+    if: >-
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/claude-merge-check') &&
+      github.event.sender.type != 'Bot' &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+
+    env:
+      PR_NUMBER: ${{ github.event.issue.number }}
+      BASE_REPO: ${{ github.repository }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      COMMENT_BODY: ${{ github.event.comment.body }}
+      COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+      COMMENT_ASSOCIATION: ${{ github.event.comment.author_association }}
+
+    outputs:
+      pr_url: ${{ steps.build_context.outputs.pr_url }}
+      pr_title: ${{ steps.build_context.outputs.pr_title }}
+      base_ref: ${{ steps.build_context.outputs.base_ref }}
+      default_branch: ${{ steps.build_context.outputs.default_branch }}
+
+    steps:
+      - name: Install jq if needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
+
+      - name: Build seed context
+        id: build_context
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_PAGER: cat
+          NO_COLOR: "1"
+          GH_FORCE_TTY: "0"
+        run: |
+          set -euo pipefail
+
+          PR="${PR_NUMBER}"
+          REPO="${BASE_REPO}"
+          OWNER="${REPO%%/*}"
+          REPO_NAME="${REPO##*/}"
+          OUT=".merge_guard"
+
+          mkdir -p "${OUT}/diffs" "${OUT}/ssot" "${OUT}/online"
+
+          printf '%s\n' "${COMMENT_BODY}" > "${OUT}/trigger_comment.md"
+          focus="${COMMENT_BODY#/claude-merge-check}"
+          printf '%s\n' "${focus}" | sed 's/^ *//' > "${OUT}/requested_focus.txt"
+
+          gh pr view "${PR}" --repo "${REPO}" \
+            --json title,body,author,url,baseRefName,headRefName,additions,deletions,changedFiles,commits,isDraft \
+            > "${OUT}/pr.json"
+
+          jq -r '.title // ""' "${OUT}/pr.json" > "${OUT}/pr_title.txt"
+          jq -r '.body // ""' "${OUT}/pr.json" > "${OUT}/pr_body.md"
+          jq -r '.url // ""' "${OUT}/pr.json" > "${OUT}/pr_url.txt"
+          jq -r '.baseRefName // ""' "${OUT}/pr.json" > "${OUT}/base_ref.txt"
+          jq -r '.headRefName // ""' "${OUT}/pr.json" > "${OUT}/head_ref.txt"
+          printf '%s\n' "${DEFAULT_BRANCH}" > "${OUT}/default_branch.txt"
+
+          BASE_REF="$(cat "${OUT}/base_ref.txt")"
+
+          gh api --paginate "repos/${OWNER}/${REPO_NAME}/pulls/${PR}/files" \
+            | jq -s 'add' > "${OUT}/files.json"
+
+          jq -r '.[] | [.filename, (.additions|tostring), (.deletions|tostring), (.status // "")] | @tsv' "${OUT}/files.json" \
+            | sort > "${OUT}/files.tsv"
+
+          gh pr diff "${PR}" --repo "${REPO}" > "${OUT}/diff_full.patch"
+
+          { grep -n '^diff --git a/' "${OUT}/diff_full.patch" || true; } \
+            | sed -E 's/^([0-9]+):diff --git a\/(.*) b\/.*/\1\t\2/' \
+            > "${OUT}/diff_index.tsv"
+
+          awk -v outdir="${OUT}/diffs" '
+            BEGIN { out="" }
+            /^diff --git a\//{
+              file=$3; sub(/^a\//,"",file)
+              safe=file; gsub(/\//,"__",safe)
+              out=outdir "/" safe ".patch"
+            }
+            { if (out != "") print > out }
+          ' "${OUT}/diff_full.patch"
+
+          awk -v outdir="${OUT}/diffs" '
+            { file=$2; safe=$2; gsub(/\//,"__",safe); print file "\t" outdir "/" safe ".patch" }
+          ' "${OUT}/diff_index.tsv" | sort > "${OUT}/diff_splits.tsv"
+
+          fetch_doc() {
+            local doc="$1"
+            local target="${OUT}/ssot/${doc}"
+            local tmp_json="${OUT}/ssot/_$(basename "$doc").json"
+            local tmp_err="${OUT}/ssot/_$(basename "$doc").err"
+            local encoding=""
+
+            if gh api "repos/${OWNER}/${REPO_NAME}/contents/${doc}?ref=${BASE_REF}" > "${tmp_json}" 2>"${tmp_err}"; then
+              encoding="$(jq -r '.encoding // empty' "${tmp_json}")"
+              if [ "${encoding}" != "base64" ]; then
+                echo "Unexpected contents encoding for ${doc}: ${encoding:-<empty>}" >&2
+                exit 1
+              fi
+              jq -er '.content // empty' "${tmp_json}" | tr -d '\n' | base64 --decode > "${target}"
+              printf '%s\t%s\n' "$doc" "fetched-from-base-ref:${BASE_REF}" >> "${OUT}/ssot_manifest.tsv"
+            elif grep -Eq 'HTTP 404|status code 404|Not Found' "${tmp_err}"; then
+              printf '%s\t%s\n' "$doc" "missing-in-base-ref:${BASE_REF}" >> "${OUT}/ssot_manifest.tsv"
+            else
+              echo "Failed to fetch ${doc} from ${BASE_REF}" >&2
+              cat "${tmp_err}" >&2
+              exit 1
+            fi
+
+            rm -f "${tmp_json}" "${tmp_err}" || true
+          }
+
+          : > "${OUT}/ssot_manifest.tsv"
+          for doc in AGENTS.md TESTING.md PR_Checklist.md SOP.md interact.md README.md; do
+            fetch_doc "$doc"
+          done
+
+          cat > "${OUT}/context.md" <<EOF
+          # Merge Readiness Context Index
+
+          Repo: ${REPO}
+          PR: #${PR}
+          GeneratedAtUTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+          ## Trigger
+          - Command: /claude-merge-check
+          - Raw comment: ${OUT}/trigger_comment.md
+          - Requested focus: ${OUT}/requested_focus.txt
+          - Comment author: ${COMMENT_AUTHOR}
+          - Comment association: ${COMMENT_ASSOCIATION}
+
+          ## Security mode
+          - No actions/checkout is used
+          - No PR head repository or PR head SHA is checked out
+          - This analysis job has a read-only GitHub token
+          - Claude may do online GitHub reads when needed
+          - Claude must not post the PR comment in this job
+          - A separate job will post the final PR comment
+
+          ## Seed artifacts
+          - PR meta JSON: ${OUT}/pr.json
+          - PR body: ${OUT}/pr_body.md
+          - PR URL: ${OUT}/pr_url.txt
+          - Base ref: ${OUT}/base_ref.txt
+          - Head ref name: ${OUT}/head_ref.txt
+          - Default branch: ${OUT}/default_branch.txt
+          - Changed files JSON: ${OUT}/files.json
+          - Changed files TSV: ${OUT}/files.tsv
+          - Full diff patch: ${OUT}/diff_full.patch
+          - Diff index: ${OUT}/diff_index.tsv
+          - Per-file patches mapping: ${OUT}/diff_splits.tsv
+          - Per-file patches dir: ${OUT}/diffs/
+          - Base-ref SSOT docs: ${OUT}/ssot/
+          - SSOT manifest: ${OUT}/ssot_manifest.tsv
+          - Scratch space for online evidence: ${OUT}/online/
+
+          ## Hard prohibitions
+          - Do not checkout PR head
+          - Do not git clone or fetch repository working trees
+          - Do not run build/test/install/package manager commands from repository code
+          - Do not post the PR comment in this job; only write ${OUT}/report.md
+
+          ## Recommended reading strategy
+          1) Read ${OUT}/context.md first.
+          2) Then read ${OUT}/requested_focus.txt.
+          3) Start with local seed artifacts before doing online GitHub reads.
+          4) For large diffs, prefer ${OUT}/diffs/<file>.patch.
+          5) For any online file content you cite, materialize it under ${OUT}/online/ and use line numbers.
+          EOF
+
+          {
+            echo "pr_url=$(cat "${OUT}/pr_url.txt")"
+            echo "pr_title<<EOF"
+            cat "${OUT}/pr_title.txt"
+            echo "EOF"
+            echo "base_ref=${BASE_REF}"
+            echo "default_branch=${DEFAULT_BRANCH}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run Claude merge-readiness analysis
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_PAGER: cat
+          NO_COLOR: "1"
+          GH_FORCE_TTY: "0"
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          claude_args: |
+            --model claude-opus-4-6
+            --max-turns 60
+            --append-system-prompt "你不是代码审查员。你是 PR 的交付治理/合并就绪度审查员（merge-readiness reviewer）。你的职责不是评价实现优劣、重构、性能、架构或测试代码风格，而是检查这次 PR 是否已经被足够清晰、可验证、可操作地交付出来。所有结论都必须给出可核验的证据（文件+行号或命令输出）。优先使用本地上下文；只有在判断 SSOT 或 merge readiness 确实需要时，才进行在线 GitHub 只读查询。用中文输出。"
+            --allowedTools "Read,Write,Glob,Grep,Bash(gh api:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search prs:*),Bash(gh search issues:*),Bash(gh repo view:*),Bash(cat:*),Bash(grep:*),Bash(find:*),Bash(wc:*),Bash(head:*),Bash(tail:*),Bash(sed:*),Bash(awk:*),Bash(cut:*),Bash(sort:*),Bash(uniq:*),Bash(tr:*),Bash(ls:*),Bash(stat:*),Bash(nl:*),Bash(jq:*),Bash(base64:*),Bash(mkdir:*)"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: #${{ github.event.issue.number }}
+            PR URL: ${{ steps.build_context.outputs.pr_url }}
+            PR TITLE: ${{ steps.build_context.outputs.pr_title }}
+            BASE REF: ${{ steps.build_context.outputs.base_ref }}
+            DEFAULT BRANCH: ${{ steps.build_context.outputs.default_branch }}
+
+            你的任务：对这个 PR 做“交付治理 / merge-readiness”检查。
+
+            这不是代码审查。不要重复已有 code review workflow 的工作。
+            不要评价代码风格、架构优劣、抽象层次、性能或重构机会。
+            只有在这些问题直接导致“当前 PR 不适合合并”时，才可以把它们作为背景提及，但不要展开实现建议。
+
+            你可以使用两类证据：
+            1) 本地 seed context：`.merge_guard/` 下已经生成的文件。
+            2) 在线 GitHub 只读查询：当你需要确认 base/default branch 上未改动的 SSOT 文件、相关 issue/PR/commit/branch、或其他仓库内容时，可以自己调用 gh CLI 去查。
+
+            但必须遵守这些边界：
+            - 绝对不要 checkout PR head。
+            - 不要 git clone、不要 git fetch 工作树、不要运行仓库代码。
+            - 不要执行 build/test/install/package manager 命令。
+            - 在线读取优先使用 gh CLI 和 GitHub API；不要去做与当前判断无关的泛滥探索。
+            - 你当前 job 的 token 是只读；不要尝试写回 GitHub。
+            - 你的唯一输出是把最终报告写入 `.merge_guard/report.md`。
+            - 不要自己发表评论；后续 job 会发布它。
+
+            读取策略：
+            - 先读 `.merge_guard/context.md`。
+            - 再看 `.merge_guard/requested_focus.txt`；如果里面非空，把它当作本次人工指定的优先检查点。
+            - 再读 `.merge_guard/pr_body.md`、`.merge_guard/files.tsv`、`.merge_guard/diff_splits.tsv`。
+            - 大 diff 优先读 `.merge_guard/diffs/<file>.patch`。
+            - 只有在本地上下文不足时，才做在线 GitHub 查询。
+            - 如果你读取了在线文件内容并要把它作为证据引用，先把内容保存到 `.merge_guard/online/<safe_name>`，然后用 `nl -ba` 给出行号。
+
+            在线 GitHub 查询允许的典型场景：
+            - 读取 base/default branch 上不在本次 PR 里的脚本或配置，以判断谁才是 SSOT。
+            - 查看相关 issue/PR/commit/branch，确认当前 PR 的说法是否与历史约定一致。
+            - 查看 base/default branch 上 README / interact / SOP / schema / registry / router / config / contract 文件。
+
+            你必须检查这 5 个维度：
+            1) PR Narrative
+               - PR 是否说清 Why / What / Scope / Risk / User-visible change / 非目标边界。
+               - 如果 PR 说明不足以让 reviewer 快速理解改动范围，给 WARN 或 BLOCKER。
+
+            2) Testing Evidence
+               - 对照 `.merge_guard/ssot/TESTING.md`（若存在）判断本 PR 应提供哪些 stage 的验证证据。
+               - 核对 PR body 是否真的给出了命令、范围、结果摘要、限制或未执行原因。
+               - 这里检查的是“测试证据链是否充分”，不是测试代码实现质量。
+
+            3) Documentation Closure
+               - 对照 AGENTS / README / interact / SOP / PR_Checklist / TESTING，以及你在线确认到的其他 SSOT 文件，判断是否存在文档漂移。
+               - 如果文档未更新，也要判断 PR 是否明确解释了“为什么无需更新”。
+               - 不要因为惯性而要求所有文档都更新；只在确实受影响时提出。
+
+            4) Operability
+               - interact / SOP / README / PR_Checklist 是否对下一位开发者或使用者足够可执行。
+               - 检查前置条件、步骤、命令、路径、输入输出、失败分支或限制说明是否清楚。
+               - 这里检查的是“文档和流程能不能被照着走通”，不是代码能不能运行。
+
+            5) Merge Readiness
+               - 结合以上四项，判断当前 PR 是 PASS / WARN / BLOCKER。
+               - 默认要谨慎；只要存在明显证据缺口、叙事缺口或流程缺口，就不要轻易 PASS。
+
+            输出要求：
+            - 只报最重要的 1~5 个问题，按价值排序。
+            - 每个结论必须给出证据：本地文件路径 + 行号，或你保存下来的在线文件路径 + 行号，或明确的 gh 命令输出摘要。
+            - 如果最终给 PASS，也必须明确写出你审过哪些维度、为什么能 PASS。
+            - 不要写空泛表扬，不要写代码优化建议，不要重复 code review 结论。
+
+            报告格式必须是：
+            ## Merge Readiness Review
+
+            ### Verdict
+            PASS / WARN / BLOCKER
+
+            ### 1. PR Narrative
+            PASS/WARN/BLOCKER + 证据
+
+            ### 2. Testing Evidence
+            PASS/WARN/BLOCKER + 证据
+
+            ### 3. Documentation Closure
+            PASS/WARN/BLOCKER + 证据
+
+            ### 4. Operability
+            PASS/WARN/BLOCKER + 证据
+
+            ### 5. Top Merge Risks / Gaps
+            只列最重要的 1~5 条
+
+            ### 6. Evidence Index
+            列出你实际读取过的本地文件、在线保存文件，以及关键 gh 查询
+
+            最后动作：
+            - 只把完整报告写入 `.merge_guard/report.md`。
+            - 覆盖写入，不要追加。
+
+      - name: Validate generated report
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .merge_guard/report.md
+          required_sections=(
+            '^## Merge Readiness Review$'
+            '^### Verdict$'
+            '^### 1\. PR Narrative$'
+            '^### 2\. Testing Evidence$'
+            '^### 3\. Documentation Closure$'
+            '^### 4\. Operability$'
+            '^### 5\. Top Merge Risks / Gaps$'
+            '^### 6\. Evidence Index$'
+          )
+
+          for pattern in "${required_sections[@]}"; do
+            grep -qE "${pattern}" .merge_guard/report.md
+          done
+
+          verdict="$(awk '/^### Verdict$/{getline; while ($0 == "") { getline }; print; exit}' .merge_guard/report.md)"
+          normalized_verdict="$(printf '%s' "${verdict}" | sed -E 's/^[[:space:]*_`]+//; s/[[:space:]*_`]+$//')"
+          case "${normalized_verdict}" in
+            PASS|WARN|BLOCKER) ;;
+            *)
+              echo "Invalid verdict line: ${verdict}" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Upload debug artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-merge-readiness-debug
+          path: .merge_guard
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 1
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-merge-readiness-report
+          path: .merge_guard/report.md
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  post-pr-comment:
+    needs: analyze-merge-readiness
+    if: ${{ needs.analyze-merge-readiness.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: write
+      issues: write
+
+    env:
+      PR_NUMBER: ${{ github.event.issue.number }}
+      BASE_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Download report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: claude-merge-readiness-report
+          path: .merge_guard
+
+      - name: Post PR comment
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_PAGER: cat
+          NO_COLOR: "1"
+          GH_FORCE_TTY: "0"
+        run: |
+          set -euo pipefail
+          test -s .merge_guard/report.md
+          gh pr comment "${PR_NUMBER}" --repo "${BASE_REPO}" --body-file .merge_guard/report.md
