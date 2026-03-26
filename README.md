@@ -107,4 +107,5 @@
 - `Merge Readiness Report`：判断当前 PR 是否具备合并条件。
 - `FSD 完备性验收报告`：Issue 关闭前的最后一道契约核查。
 
-
+## 代码项目核心文档
+AGENTS.md/SOP.md/interact.md/PR_Checklist.md/TESTING.md/PR_BODY.mc是每一个代码项目的核心文档，这里只写出每个文档的核心原则，agent需要根据每个代码项目的具体情况填充细节。
