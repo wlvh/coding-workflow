@@ -39,7 +39,10 @@
    * 是否满足 FSD Core Contract
    * 是否达到 Target State Bridge
    * 是否遵守 TESTING.md / AGENTS.md / PR_Checklist.md
+   对应issue：《》
    ```
+   审核完成的后的追问：按照PR审核指南详细介绍你的发现，以及可能的解决方案框架。
+   
 
    既有 PR 提交短 prompt：
 
@@ -53,7 +56,7 @@
    遵守 PR_Checklist.md 进行 PR 提交，PR_BODY.md 需要覆盖本地全部修改内容。备注：PR_BODY.md 也是重要的代码审核材料之一。
    ```
 
-8. **如果 review 有问题，先验证问题是否真实存在，再决定是否修**
+9. **如果 review 有问题，先验证问题是否真实存在，再决定是否修**
    给 Codex GPT 5.4 thinking 和 Opus 的短 prompt：
 
    ```text
@@ -65,12 +68,12 @@
    修复后：继续复用“既有 PR 提交短 prompt”覆盖 PR_BODY 并保持 commit 为 1 个。
    备注：同一个 PR 的 patch 不需要每次重新完整粘贴给 GPT，可以在原对话里覆盖最新 patch，避免上下文过时。
 
-9. **如果 review 没有问题，在 PR 评论区输入 `/claude-merge-check`**
+10. **如果 review 没有问题，在 PR 评论区输入 `/claude-merge-check`**
    自动化文件：[.github/workflows/claude-merge-readiness.yml](.github/workflows/claude-merge-readiness.yml)
    作用：做 merge-readiness 检查，而不是重复做 code review。
    通过规则：无问题则在 PR 评论区输入 `/claude-merge-check`，通过后再合入主干。
 
-10. **PR 合并后，用网页端 GPT 的 apps 功能做 tech lead 总结**
+11. **PR 合并后，用网页端 GPT 的 apps 功能做 tech lead 总结**
    总结短 prompt：
 
    ```text
