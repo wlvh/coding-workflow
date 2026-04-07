@@ -66,7 +66,7 @@
 
    执行顺序：先让 Codex 和 Opus 分别判断，再把 Opus 的意见发给 Codex 要求出综合分析版本。
    处理分歧：如果双方分歧仍然很大，再把 GPT 5.4 对 Opus 的反驳发给 Opus，让 Opus 重新分析后按自己的方案执行。
-   修复后：继续复用“既有 PR 提交短 prompt”覆盖 PR_BODY 并保持 commit 为 1 个。
+   修复后：继续复用“既有 PR 提交短 prompt”。
    备注：同一个 PR 的 patch 不需要每次重新完整粘贴给 GPT，可以在原对话里覆盖最新 patch，避免上下文过时。
 
 10. **如果 review 没有问题，在 PR 评论区输入 `/claude-merge-check`**
