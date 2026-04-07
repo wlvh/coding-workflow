@@ -69,7 +69,7 @@
    修复后：继续复用“既有 PR 提交短 prompt”。
    备注：同一个 PR 的 patch 不需要每次重新完整粘贴给 GPT，可以在原对话里覆盖最新 patch，避免上下文过时。
 
-10. **如果 review 没有问题，在 PR 评论区输入 `/claude-merge-check`**
+10. **如果 review 没有问题（定义为没有P0/P1级别发现），在 PR 评论区输入 `/claude-merge-check`**
    自动化文件：[.github/workflows/claude-merge-readiness.yml](.github/workflows/claude-merge-readiness.yml)
    作用：做 merge-readiness 检查，而不是重复做 code review。
    通过规则：无问题则在 PR 评论区输入 `/claude-merge-check`，通过后再合入主干。
