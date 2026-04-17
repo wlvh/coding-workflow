@@ -35,10 +35,7 @@
    正式审核任务短 prompt：
 
    ```text
-   对 XX 项目的 PR XX（最新head XX）进行严格详细全面的代码审查。PR_BODY.md 是你重要的参考材料。并额外检查：
-   * 是否满足 FSD Core Contract
-   * 是否达到 Target State Bridge
-   * 是否遵守 TESTING.md / AGENTS.md / PR_Checklist.md / SOP.md / interact.md
+   对 XX 项目的 PR XX（最新head XX）进行严格详细全面的代码审查。PR_BODY.md 是你重要的参考材料。重要问题需要实际运行代码来验证你的猜想，没有调查就没有发言权。并额外检查是否遵守 TESTING.md / AGENTS.md / PR_Checklist.md / SOP.md / interact.md。
    对应issue：《》
    PR审核指南：《》
    ```
@@ -61,7 +58,7 @@
    给 Codex GPT 5.4 thinking 和 Opus 的短 prompt：
 
    ```text
-   先不动代码，先检查实习生给出的问题是否存在，如存在请列出证据并分析是否值得增加复杂度来修复。然后遵守AGENTS.md列出的准则给出你的方案。实习生的发现：《》
+   先不动代码，先检查实习生给出的问题是否存在，如存在请列出证据并分析是否值得增加复杂度来修复。重要问题需要实际运行代码来验证你的猜想，没有调查就没有发言权。然后遵守AGENTS.md列出的准则给出你的方案。实习生的发现：《》
    ```
 
    执行顺序：先让 Codex 和 Opus 分别判断，再把 Opus 的意见发给 Codex 要求出综合分析版本。
