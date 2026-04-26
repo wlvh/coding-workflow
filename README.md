@@ -8,14 +8,15 @@
    使用长 prompt：[prompts/fsd_core_contract.md](prompts/fsd_core_contract.md)
    备注：当前默认前提是 GPT 5.4 Pro 不能自由探索本地代码和 GitHub，所以 FSD 先做黑盒契约。
 
-3. **Target State Bridge Agent 根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`**
+3. **Target State Bridge Agent（codex） 根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`**
   * 如果GPT 5.4 Pro模型可以在不接触本地代码和GitHub的情况下产出也能由它代为产出
   * 使用长 prompt：[prompts/target_state_bridge.md](prompts/target_state_bridge.md)
 
-5. **Issue Agent 写 issue**
+5. **Issue Agent （codex）写 issue**
    使用长 prompt：[prompts/issue_agent.md](prompts/issue_agent.md)
    目标：把 `FSD`、`Repo Impact Forecast` 和 `Target State Bridge` 固化成开发契约。
-6. **Coding Agent 按 issue 开发**
+   完成后让codex和claude code互相讨论到达成合意。
+7. **Coding Agent（codex） 按 issue 开发**
    短 prompt：
 
    ```text
@@ -24,12 +25,8 @@
 
    备注：我在这里没有提FSD/Repo Impact Forecast/Target State Bridge，宪法文件已经转为issue。而且也没有提供编程开发的具体模板，因为我相信llm擅长做这个，issue也能做好制约。
 
-7. **GPT 5.4 Pro 负责代码审核**
+8. ** codex 负责代码审核**
    预审核短 prompt：
-
-   ```text
-   你即将进行基于PR Patch的代码审核。从 FSD / PR_Body 的内容和 AGENTS.md 中的项目文件简介分析如果还需要哪些文件（开发完成后的版本）才能完成代码审核，现在告诉我，最多十个文件。这次开发完全新增的文件不得提出要求，因为会随PR patch一起提供。
-   ```
 
    正式审核系统 prompt：[prompts/pr_review_system.md](prompts/pr_review_system.md)
    正式审核任务短 prompt：
@@ -55,7 +52,7 @@
    ```
 
 9. **如果 review 有问题，先验证问题是否真实存在，再决定是否修**
-   给 Codex GPT 5.4 thinking 和 Opus 的短 prompt：
+   给 Codex 和 claude code 的短 prompt：
 
    ```text
    先不动代码，先检查实习生给出的问题是否存在，如存在请列出证据并分析是否值得增加复杂度来修复。重要问题需要实际运行代码来验证你的猜想，没有调查就没有发言权。然后遵守AGENTS.md列出的准则给出你的方案。实习生的发现：《》
@@ -124,7 +121,7 @@ E. 输出风格约束
     ```
 
     下一步：把这份用户视角验收建议交给 Codex，必要时结合 Playwright 等交互工具，真的走一遍验收。
-    备注：这一步有可能直接产生新的开发计划。
+    备注：这一步经常有可能直接产生新的开发计划。
 
 ## 核心产物
 
