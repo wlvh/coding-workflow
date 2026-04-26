@@ -112,6 +112,7 @@ E. 输出风格约束
    这个PR合并入主干后用户有什么可感知的变化吗，用户如何利用这次PR的开发成果，以AGENTS.md为首的文档提供了很好的指引吗？AGENTS.md 及其内联的文档有没有需要更新的地方？综合评估当前代码分支这个 PR 以什么方式完成了什么任务，给这个项目带来了什么改变和影响，下一步的未来展望是什么？
    ```
    存档在PR评论区 
+   
 11. **Issue 关闭前，再从主干代码检查 FSD 是否真正开发完成**
     使用长 prompt：[prompts/issue_closure_fsd_acceptance.md](prompts/issue_closure_fsd_acceptance.md)
     目的：从主干代码倒查 issue 中的每个 `Spec Unit` 是否已实现，并强制输出 `Updates to FSD`（如有偏差）。
@@ -122,7 +123,9 @@ E. 输出风格约束
     ```text
     如何以用户的角度来验收这次的 PR？
     ```
-    存档在PR评论区  
+    
+    存档在PR评论区
+    
     下一步：把这份用户视角验收建议交给 Codex，必要时结合 Playwright 等交互工具，真的走一遍验收。
     备注：这一步经常有可能直接产生新的开发计划。
 
