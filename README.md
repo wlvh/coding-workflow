@@ -66,7 +66,7 @@
    修复后：继续复用“既有 PR 提交短 prompt”。
    备注：同一个 PR 的 patch 不需要每次重新完整粘贴给 GPT，可以在原对话里覆盖最新 patch，避免上下文过时。
 
-10. **如果 review 没有问题（定义为没有P0/P1级别发现），在 PR 评论区输入 `/claude-merge-check`**
+10. **如果 review 没有问题（定义为没有P0/P1级别发现），在 PR 评论区输入 `/claude-merge-check`**（这个环节暂时放弃，反复的PR审查已经足够）
    自动化文件：[.github/workflows/claude-merge-readiness.yml](.github/workflows/claude-merge-readiness.yml)
    作用：做 merge-readiness 检查，而不是重复做 code review。
    通过规则：无问题则在 PR 评论区输入 `/claude-merge-check`，通过后再合入主干。
@@ -113,11 +113,12 @@ E. 输出风格约束
    ```
    存档在PR评论区 
    
-11. **Issue 关闭前，再从主干代码检查 FSD 是否真正开发完成**
+11. **Issue 关闭前，再从主干代码检查 FSD 是否真正开发完成**（这个环节暂时放弃，因为通过率100%，而且 12.如何以用户的角度来验收这次的 PR能发现更精准的问题）
     使用长 prompt：[prompts/issue_closure_fsd_acceptance.md](prompts/issue_closure_fsd_acceptance.md)
     目的：从主干代码倒查 issue 中的每个 `Spec Unit` 是否已实现，并强制输出 `Updates to FSD`（如有偏差）。
 
-12. **再问 GPT 5.4 thinking：如何从用户视角验收这次 PR**
+12. **再问 GPT 网页版：如何从用户视角验收这次 PR**
+    验收计划需要GPT网页版和claude code达成合意。
     短 prompt：
 
     ```text
