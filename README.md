@@ -20,7 +20,10 @@
    短 prompt：
 
    ```text
-   按照 issue 完成本次编程开发。
+   按照当前 issue 完成本次开发。
+   1. 读取 AGENTS.md / SOP.md / TESTING.md / PR_Checklist.md / interact.md。
+   2. 从 issue 中提取 Spec Unit，生成 SU -> 代码改动 -> 测试 -> 文档 的 todo list。
+   3. 提交前更新 PR_BODY.md，必须覆盖：改动范围、测试证据、文档同步、已知限制、与 FSD/issue 的偏差。
    ```
 
    备注：我在这里没有提FSD/Repo Impact Forecast/Target State Bridge，宪法文件已经转为issue。而且也没有提供编程开发的具体模板，因为我相信llm擅长做这个，issue也能做好制约。
