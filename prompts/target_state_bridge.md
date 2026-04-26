@@ -7,7 +7,7 @@
 ## Prompt
 
 ```text
-仓库权威文档：AGENTS.md/SOP.md/PR_Checklist.md/interact.md/TESTING.md。
+仓库权威文档：AGENTS.md / architecture.md / SOP.md / PR_Checklist.md / interact.md / TESTING.md / README.md。
 我敲定了一份 FSD（功能规范说明书），因为 FSD 是在没有实际接触代码的情况下完成的。所以你需要基于《FSD + 当前仓库代码 + 仓库权威文档》来完成 FSD 和实际代码之间 Target State Bridge 的分析。
 
 ## A. Repo Impact Forecast

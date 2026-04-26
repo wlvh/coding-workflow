@@ -9,6 +9,10 @@
 * artifacts文件夹目录是一次性产出物，批准豁免不加入文件简介。
 
 ## 架构说明
+架构权威文档见 `architecture.md`。
+
+AGENTS.md 只维护 agent 工作入口、文件简介和代码规范，不重复架构内容。
+当本次变更影响模块边界、运行时调用链、数据流、状态模型、错误模型、外部依赖或扩展点时，必须同步更新 `architecture.md`；如无需更新，必须在 PR body 中说明原因。
 
 ## 业务知识
 
@@ -22,8 +26,18 @@
 当你需要执行以下标准流程时，请阅读并遵循 `SOP.md`;当SOP新增/修改后，也要回补此清单（只需要列出名字）：
 
 ## 交互流程
-任何用户可见的行为变化，必须先阅读 interact.md，然后决定是否需要更新 interact.md。
+*   capability_contract.json
+  = 能力边界真相源
+  = 回答：系统能不能做？
 
+*   interact.md
+  = 用户可观察行为与验收不变量真相源
+  = 回答：系统做的时候应该如何表现？
+  = 任何用户可见的行为变化，必须先阅读 interact.md，然后决定是否需要更新 interact.md。
+
+*   docs/business_user_guide.md
+  = 面向业务新人的教学派生文档，不得独立声明新能力
+  = 回答：第一次使用的人应该怎么问、怎么看结果、什么时候找人？
 
 ## 代码规范
 1. What I cannot create, I do not understand.

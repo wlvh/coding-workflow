@@ -23,7 +23,9 @@
    按照当前 issue 完成本次开发。
    1. 读取 AGENTS.md / SOP.md / TESTING.md / PR_Checklist.md / interact.md。
    2. 从 issue 中提取 Spec Unit，生成 SU -> 代码改动 -> 测试 -> 文档 的 todo list。
-   3. 提交前更新 PR_BODY.md，必须覆盖：改动范围、测试证据、文档同步、已知限制、与 FSD/issue 的偏差。
+   3. 提交前根据 `.github/pull_request_template.md` 生成并更新本地临时文件 `PR_BODY.md`。
+PR_BODY.md 必须覆盖：背景与目标、实现方案、变更范围、文档影响、用户与架构影响、Review / 修复记录、已知限制与回滚。
+测试策略与测试证据记录方式以 `TESTING.md` 为准。
    ```
 
    备注：我在这里没有提FSD/Repo Impact Forecast/Target State Bridge，宪法文件已经转为issue。而且也没有提供编程开发的具体模板，因为我相信llm擅长做这个，issue也能做好制约。
@@ -45,13 +47,36 @@
    既有 PR 提交短 prompt：
 
    ```text
-   重新以PR审核的态度审核你的新增代码，如有问题立刻修复。然后在既有分支的既有 PR 上提交本地全部代码，记得保持 PR 的 commits 为 1 个，PR_BODY.md 需要覆盖已有 PR 和本地全部修改内容。备注：PR_BODY.md 也是重要的代码审核材料之一。PR审核指南：《》
+   重新以 PR 审核的态度审核你的新增代码，如有问题先验证是否真实存在，再决定是否修复。
+
+   然后在既有分支的既有 PR 上提交本地全部代码，要求：
+   1. 遵守 PR_Checklist.md。
+   2. PR 对外保持 1 个 commit。
+   3. 每轮 review / 修复都必须更新 PR_BODY.md 的“Review / 修复记录”。
+   4. PR_BODY.md 必须根据 `.github/pull_request_template.md` 填写，并覆盖已有 PR 和本地全部修改内容。
+   5. 测试策略与测试证据记录方式以 TESTING.md 为准。
+
+   备注：
+   - PR_BODY.md 是本地临时产物，不提交仓库。
+   - PR_BODY.md 是重要的代码审核材料之一。
+   - PR 审核指南：《》
    ```
 
    新 PR 提交短 prompt：
 
    ```text
-   重新以PR审核的态度审核你的新增代码，如有问题立刻修复。然后遵守 PR_Checklist.md 进行 PR 提交，PR_BODY.md 需要覆盖本地全部修改内容。备注：PR_BODY.md 也是重要的代码审核材料之一。PR审核指南：《》
+   重新以 PR 审核的态度审核你的新增代码，如有问题先验证是否真实存在，再决定是否修复。
+
+   然后遵守 PR_Checklist.md 创建 PR，要求：
+   1. 根据 `.github/pull_request_template.md` 生成并填写本地临时文件 PR_BODY.md。
+   2. PR 对外保持 1 个 commit。
+   3. PR_BODY.md 必须覆盖本地全部修改内容。
+   4. 测试策略与测试证据记录方式以 TESTING.md 为准。
+
+   备注：
+   - PR_BODY.md 是本地临时产物，不提交仓库。
+   - PR_BODY.md 是重要的代码审核材料之一。
+   - PR 审核指南：《》
    ```
 
 9. **如果 review 有问题，先验证问题是否真实存在，再决定是否修**
@@ -113,16 +138,23 @@ E. 输出风格约束
    ```
    存档在PR评论区 
    
-11. **Issue 关闭前，再从主干代码检查 FSD 是否真正开发完成**（这个环节暂时放弃，因为通过率100%，而且 12.如何以用户的角度来验收这次的 PR能发现更精准的问题）
+12. **Issue 关闭前，再从主干代码检查 FSD 是否真正开发完成**（这个环节暂时放弃，因为通过率100%，而且 12.如何以用户的角度来验收这次的 PR能发现更精准的问题）
     使用长 prompt：[prompts/issue_closure_fsd_acceptance.md](prompts/issue_closure_fsd_acceptance.md)
     目的：从主干代码倒查 issue 中的每个 `Spec Unit` 是否已实现，并强制输出 `Updates to FSD`（如有偏差）。
 
-12. **再问 GPT 网页版：如何从用户视角验收这次 PR**
+13. **再问 GPT 网页版：如何从用户视角验收这次 PR**
     验收计划需要GPT网页版和claude code达成合意。
     短 prompt：
 
     ```text
-    如何以用户的角度来验收这次的 PR？
+   如何以用户的角度来验收这次的 PR？
+
+   验收必须分两层：
+   1. UX 层：用户为了……进入……执行……看到……（按 interact.md 的剧本格式写）
+   2. 契约层：对照 issue 中的 Acceptance Checklist 逐条核查，每一条 SU/AC 给出
+      "实现位置 + 实际行为 + FSD 期望 + 是否一致"四列。
+      如果发现任何不一致（即使工程上合理），明确标注"需要 Updates to FSD"
+      并附偏差说明。
     ```
     
     存档在PR评论区
@@ -141,4 +173,10 @@ E. 输出风格约束
 - `FSD 完备性验收报告`：Issue 关闭前的最后一道契约核查。
 
 ## 代码项目核心文档
-AGENTS.md/SOP.md/interact.md/PR_Checklist.md/TESTING.md/PR_BODY.mc是每一个代码项目的核心文档，这里只写出每个文档的核心原则，agent需要根据每个代码项目的具体情况填充细节。
+- `AGENTS.md`：agent 工作入口、文件简介、代码规范与流程导航。
+- `architecture.md`：项目架构、模块边界、数据流、架构不变量与扩展点。
+- `SOP.md`：标准流程骨架，只做入口，不重复规范。
+- `interact.md`：用户可见行为与验收断言。
+- `PR_Checklist.md`：PR 提交、commit / push、PR body 使用规则的唯一权威。
+- `TESTING.md`：测试策略、测试分层、测试证据记录方式的唯一权威。
+- `.github/pull_request_template.md`：PR body 的长期模板。

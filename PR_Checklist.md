@@ -14,6 +14,8 @@
 3. 修复代码、测试、文档后，使用 `git commit --amend` 合入当前 commit。
 4. 推送重写后的 PR 分支时，必须使用 `git push --force-with-lease`，禁止裸 `git push --force`。
 5. PR_body模板参照.github/pull_request_template.md
+6. `.github/pull_request_template.md` 是长期模板文件，不直接作为 PR body 提交。
+7. `PR_BODY.md` 是本地临时产物，用于承载当前 PR 的实际内容，不提交到仓库。
 
 ## PR提交检查清单
 注意：你必须一一完成check清单（等价于todo list）并最终提交pr，任何偷懒和跳过都会让用户暴跳如雷。
@@ -25,7 +27,7 @@
   - 实现方案（How）：核心思路、关键设计决策、有无其他候选方案。
   - 变更范围（What）：主要修改了哪些模块/文件（可按目录分组列出）；文件清单必须来自 `git diff --name-only <base>...HEAD` 的实际输出，禁止写未出现在当前 patch 中的文件。
 - [ ] 确认当前分支不是主干，并调用 git diff 工具仔细分析本地修改，确认无遗漏
-- [ ] 已用 `git diff --name-only <base>...HEAD` 反向核对 `PR_BODY.md` 的“变更范围/测试文件”清单：diff 中有但 PR_BODY 未列的已补齐，PR_BODY 中列了但 diff 中不存在的已删除
+- [ ] 已用 `git diff --name-only <base>...HEAD` 反向核对 `PR_BODY.md` 的“变更范围”：diff 中有但 PR_BODY 未列的已补齐，PR_BODY 中列了但 diff 中不存在的已删除。
 - [ ] 测试策略以 `TESTING.md` 为唯一权威：已按 `TESTING.md` 判断本 PR 是否需要新增/修改测试、需要运行哪些测试、以及测试证据如何记录。
 - [ ] 如果本 PR 新增/修改测试文件，已按 `TESTING.md` 更新测试文件简介或相关测试说明。
 - [ ] 当有文件新增和修改后，确认对应的文档已更新。例如新增了测试文件，就需要更新在`TESTING.md`，有代码脚本的功能被修改，更新在`AGENTS.md`的## 文件简介。
