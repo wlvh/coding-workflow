@@ -1,18 +1,22 @@
 ## 文件简介
 ### 核心配置
+- `AGENTS.md`：agent 工作入口、文件简介、代码规范与用户视角文档关系。
+- `capability_contract.json`：跨项目能力边界、职责边界与 agent 行为承诺的样本注册表。
+- `.github/pull_request_template.md`：PR body 长期模板，生成本地临时 `PR_BODY.md` 时使用。
+
 ### 核心模块
+
 ### 业务逻辑 
-### 工具脚本
+- `README.md`：编程工作流总入口、核心产物和核心文档索引。
+- `PR_Checklist.md`：PR 提交、commit / push、PR body 使用规则。
+
 ### 备注
 * 一旦文件有了修改或新增，需要对照文件简介相应部分进行修改。测试文件不在要求内，因为会有TESTING.md专门管理。
 * 统一编码与查看约定：仓库所有文件均为 UTF-8 编码。使用命令行或脚本查看/编辑时必须显式指定 UTF-8（例如 PowerShell `Get-Content -Encoding UTF8 <file>`，Python `open(..., encoding="utf-8")`）。
 * artifacts文件夹目录是一次性产出物，批准豁免不加入文件简介。
 
 ## 架构说明
-架构权威文档见 `architecture.md`。
-
-AGENTS.md 只维护 agent 工作入口、文件简介和代码规范，不重复架构内容。
-当本次变更影响模块边界、运行时调用链、数据流、状态模型、错误模型、外部依赖或扩展点时，必须同步更新 `architecture.md`；如无需更新，必须在 PR body 中说明原因。
+架构权威文档见 `architecture.md`。当本次变更影响模块边界、运行时调用链、数据流、状态模型、错误模型、外部依赖或扩展点时，必须同步更新 `architecture.md`；如无需更新，必须在 PR body 中说明原因。
 
 ## 业务知识
 
@@ -25,19 +29,27 @@ AGENTS.md 只维护 agent 工作入口、文件简介和代码规范，不重复
 ## SOP
 当你需要执行以下标准流程时，请阅读并遵循 `SOP.md`;当SOP新增/修改后，也要回补此清单（只需要列出名字）：
 
-## 交互流程
-*   capability_contract.json
-  = 能力边界真相源
-  = 回答：系统能不能做？
+## 用户视角文档关系
+本项目区分三类用户视角真相：
 
-*   interact.md
-  = 用户可观察行为与验收不变量真相源
-  = 回答：系统做的时候应该如何表现？
-  = 任何用户可见的行为变化，必须先阅读 interact.md，然后决定是否需要更新 interact.md。
+1. `capability_contract.json`
+   - 能力边界的机器可读真相源。
+   - 回答“系统能做什么 / 不能做什么 / 必须追问什么 / 必须拒绝什么”。
 
-*   docs/business_user_guide.md
-  = 面向业务新人的教学派生文档，不得独立声明新能力
-  = 回答：第一次使用的人应该怎么问、怎么看结果、什么时候找人？
+2. `interact.md`
+   - 用户可观察行为与验收不变量的真相源。
+   - 回答“系统做的时候必须如何表现，什么算验收通过”。
+
+3. `docs/business_user_guide.md`
+   - 面向第一次接触项目的业务人员的派生教学文档。
+   - 回答“业务人员可以问什么、怎么问、结果怎么看、什么时候该找人”。
+   - 它不独立声明新能力，只能用业务语言解释 `capability_contract.json` 和 `interact.md` 已声明的能力与行为。
+
+更新规则：
+- 如果本次变更改变能力边界，必须先更新或确认 `capability_contract.json`，再检查 `interact.md` 和 `docs/business_user_guide.md`。
+- 如果本次变更改变用户可观察行为，必须先更新或确认 `interact.md`，再检查 `docs/business_user_guide.md`。
+- 如果本次变更改变业务人员能问什么、怎么问、结果怎么看、什么时候该找人，必须检查 `docs/business_user_guide.md`。
+- `docs/business_user_guide.md` 中任何“能做 / 不能做 / 必须追问 / 必须拒绝”的声明，都必须能在 `capability_contract.json`、`interact.md` 或对应测试中找到锚点。
 
 ## 代码规范
 1. What I cannot create, I do not understand.

@@ -1,0 +1,124 @@
+{
+  "schema_version": "0.1.0",
+  "status": "sample",
+  "purpose": "Cross-project sample registry for stable capability, boundary, responsibility, behavior, and document anchors.",
+  "rules": [
+    "Markdown documents reference stable anchor_id values only.",
+    "Markdown documents must not reference JSON paths, array indexes, or schema-specific internal paths.",
+    "Deprecated anchors should stay registered and must not be reused for a different meaning.",
+    "Untested contracts use test_anchor: null with untested_reason or pending_since instead of scattered TODO markers."
+  ],
+  "contracts": {
+    "capabilities": [
+      {
+        "anchor_id": "CAPABILITY.sample_supported_question",
+        "type": "capability",
+        "status": "experimental",
+        "statement": "Sample capability placeholder for a project-supported business question type.",
+        "audience": [
+          "business_user",
+          "agent",
+          "reviewer"
+        ],
+        "test_anchor": null,
+        "test_status": "not_automated",
+        "untested_reason": "Sample entry only; replace with a project-specific contract and test anchor.",
+        "pending_since": "2026-04-26",
+        "since": "2026-04-26"
+      }
+    ],
+    "capability_boundaries": [
+      {
+        "anchor_id": "BOUNDARY.sample_multi_object_comparison_not_supported",
+        "type": "capability_boundary",
+        "status": "experimental",
+        "statement": "Sample boundary placeholder for a currently unsupported capability that may be added later.",
+        "audience": [
+          "business_user",
+          "agent",
+          "reviewer"
+        ],
+        "test_anchor": null,
+        "test_status": "not_automated",
+        "untested_reason": "Sample entry only; replace with a project-specific boundary and test anchor.",
+        "pending_since": "2026-04-26",
+        "since": "2026-04-26"
+      }
+    ],
+    "responsibility_boundaries": [
+      {
+        "anchor_id": "RESPONSIBILITY.sample_no_final_business_decision",
+        "type": "responsibility_boundary",
+        "status": "experimental",
+        "statement": "Sample responsibility boundary placeholder for decisions the system should not make on behalf of humans.",
+        "audience": [
+          "business_user",
+          "agent",
+          "reviewer"
+        ],
+        "test_anchor": null,
+        "test_status": "not_automated",
+        "untested_reason": "Sample entry only; replace with a project-specific responsibility boundary and test anchor.",
+        "pending_since": "2026-04-26",
+        "since": "2026-04-26"
+      }
+    ],
+    "agent_behaviors": [
+      {
+        "anchor_id": "BEHAVIOR.sample_requires_context_before_answer",
+        "type": "agent_behavior",
+        "status": "experimental",
+        "statement": "Sample behavior placeholder requiring the agent to ask for missing critical context instead of guessing.",
+        "audience": [
+          "business_user",
+          "agent",
+          "developer",
+          "reviewer"
+        ],
+        "test_anchor": null,
+        "test_status": "not_automated",
+        "untested_reason": "Sample entry only; replace with a project-specific behavior contract and test anchor.",
+        "pending_since": "2026-04-26",
+        "since": "2026-04-26"
+      }
+    ],
+    "documents": [
+      {
+        "anchor_id": "DOC.business_user_guide",
+        "type": "document",
+        "status": "experimental",
+        "statement": "docs/business_user_guide.md is a teaching document derived from capability_contract.json and interact.md.",
+        "audience": [
+          "business_user",
+          "agent",
+          "reviewer"
+        ],
+        "document_path": "docs/business_user_guide.md",
+        "language": "zh-CN",
+        "test_anchor": null,
+        "test_status": "not_automated",
+        "untested_reason": "Alignment principles are documented in TESTING.md; project-specific tests are added by each target project.",
+        "pending_since": "2026-04-26",
+        "since": "2026-04-26"
+      },
+      {
+        "anchor_id": "DOC.interact",
+        "type": "document",
+        "status": "active",
+        "statement": "interact.md is the source of truth for user-visible behavior and acceptance invariants.",
+        "audience": [
+          "business_user",
+          "agent",
+          "reviewer"
+        ],
+        "document_path": "interact.md",
+        "language": "zh-CN",
+        "test_anchor": null,
+        "test_status": "not_automated",
+        "untested_reason": "Alignment principles are documented in TESTING.md; project-specific tests are added by each target project.",
+        "pending_since": "2026-04-26",
+        "since": "2026-04-26"
+      }
+    ]
+  }
+}

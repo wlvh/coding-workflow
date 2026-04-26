@@ -12,6 +12,96 @@
 - **可读性与诊断性 (Readability & Diagnosability)**：断言失败时应提供清晰的错误信息（例如 `assert actual == expected, f"Expected {expected} but got {actual}"`），让开发者无需 Debug 就能明白哪里出了问题。
 - **及时更新**：当测试文件新增或者更改功能时，及时更新本文档。
 
+## capability contract alignment 测试原则
+
+当项目引入 `capability_contract.json`、`interact.md`、`docs/business_user_guide.md` 等用户能力文档时，应提供一个轻量的 contract alignment 测试，例如 `tests/.../test_capability_contract_alignment.py`。
+
+该测试的目的不是验证具体业务逻辑，而是验证“机器可读能力契约”和“用户可读文档声明”之间没有明显漂移。
+
+### anchor_id 提取原则
+
+alignment 测试提取 `capability_contract.json` 中的 `anchor_id` 时，应优先采用递归全树扫描，而不是按固定 JSON path 提取。
+
+原因：
+- `capability_contract.json` 的 schema 可能演化；
+- 未来可能新增能力桶，例如 `failure_modes`、`escalation_paths`；
+- 文档锚点引用的是稳定 `anchor_id`，不应依赖当前 JSON 层级结构。
+
+测试原则：
+- 递归遍历 JSON 中所有对象；
+- 只要对象包含 `anchor_id` 字段，就纳入 anchor 集合；
+- 不把具体能力名、类型桶路径或数组下标硬编码进测试。
+
+### Markdown anchor 引用语法
+
+所有用户可读文档引用 `capability_contract.json` 中的 `anchor_id` 时，必须使用统一格式：
+
+```text
+<!-- capability-anchor: <ANCHOR_ID> -->
+```
+
+规则：
+- 只允许这一种格式。
+- 不允许 `<!-- anchor: ... -->`、`<!-- ref: ... -->`、`<!-- contract: ... -->` 等变体。
+- `<ANCHOR_ID>` 必须是 `capability_contract.json` 中存在的稳定 `anchor_id`。
+- 不允许引用 JSON path、数组下标或 schema 内部路径。
+- alignment 测试只识别这一种格式。
+
+### 测试应覆盖的原则
+
+1. `anchor_id` 唯一性
+   - `capability_contract.json` 中所有可被文档引用的对象，只要包含 `anchor_id` 字段，就必须拥有唯一、稳定的 `anchor_id`。
+   - 不允许重复 `anchor_id`。
+   - 不允许文档引用不存在的 `anchor_id`。
+
+2. `anchor_id` 提取方式
+   - 测试应优先递归扫描整个 `capability_contract.json`，收集所有对象中的 `anchor_id`。
+   - 不应把能力类型桶、JSON path、数组下标或当前 schema 层级硬编码进测试。
+   - schema 演化时，测试应尽量无需修改。
+
+3. Markdown 锚点语法
+   - 所有文档中引用 contract anchor 时，必须使用统一格式：
+
+     ```text
+     <!-- capability-anchor: <ANCHOR_ID> -->
+     ```
+
+   - alignment 测试只识别这一种格式。
+   - 不允许其他变体。
+   - 不允许引用 JSON path、数组下标或 schema 内部路径。
+
+4. 文档锚点不应出现裸 TODO
+   - Markdown 中不应出现 `capability-anchor: TODO` 或 `test-anchor: TODO`。
+   - 暂时不可测的契约应集中登记在 `capability_contract.json`，使用 `test_anchor: null` 并写明 `untested_reason` 或 `pending_since`。
+
+5. agent 行为承诺登记
+   - 凡是文档中声明“必须追问 / 必须拒绝 / 不得猜测 / 必须降级 / 必须解释”的行为，应在 `capability_contract.json` 中有对应 `anchor_id`。
+   - 如果有自动化测试，应登记测试锚点。
+   - 如果暂时没有自动化测试，应显式说明不可测原因，而不是散落 TODO。
+
+6. 不要求所有 contract 条目都出现在 business guide
+   - `docs/business_user_guide.md` 是教学派生文档，只覆盖最常见路径。
+   - alignment 测试不应盲目要求 `capability_contract.json` 中每个能力都出现在 business guide。
+   - 只有被标记为必须文档化、用户可见、或指南必提的条目，才要求在指定文档中出现。
+
+7. 不测试教学文案风格
+   - alignment 测试不判断业务指南写得是否好看。
+   - 它只检查能力声明、行为承诺和锚点是否一致。
+   - 普通“好问法 / 坏问法 / 使用建议”不应被过度机器化。
+
+8. 不依赖外部服务
+   - alignment 测试应只读取本地文件。
+   - 不应调用真实 API、数据库、BI 服务或 LLM。
+   - 它应该稳定、快速、可在普通回归阶段运行。
+
+### 测试失败与警告原则
+
+- 文档引用了不存在的 `anchor_id`：应失败。
+- contract 中出现重复 `anchor_id`：应失败。
+- Markdown 中出现裸 TODO 锚点：应失败或至少高优先级警告。
+- 行为承诺缺少测试锚点但已登记不可测原因：可警告，不必默认失败。
+- contract 中存在未被 business guide 引用的能力：默认不失败，除非该条目标记为必须进入业务指南。
+
 ## 测试分层与命名约定
 
 本仓库中的测试分为两层：
@@ -28,7 +118,7 @@
    - 目标：验证对外暴露的 API 契约、完整业务场景和带外部依赖（Power BI / Azure OpenAI）的实测行为。
    - 目录约定：
    - 特点：
-   - 
+
 ## 何时新增或修改测试
 
 当对代码进行修改时，请按以下规则决定如何操作测试：
@@ -61,4 +151,3 @@
      - 若涉及多个模块编排，或只有串起来才会暴露错误，则补到 `tests/scenario/`。
 
 ### Case 1
-

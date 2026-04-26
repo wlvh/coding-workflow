@@ -41,6 +41,14 @@ git diff --name-only <base>...HEAD
 <!--
 只写受影响的文档。
 如果没有文档需要更新，写：无。
+
+如果本 PR 改变能力边界，请检查 capability_contract.json / interact.md / docs/business_user_guide.md。
+
+如果本 PR 改变用户可观察行为，请检查 interact.md，并判断 docs/business_user_guide.md 是否需要同步。
+
+如果本 PR 改变业务人员能问什么、怎么问、结果怎么看、什么时候该找人，请检查 docs/business_user_guide.md。
+
+如果新增“能做 / 不能做 / 必须追问 / 必须拒绝”的声明，请确认它有 capability_contract.json anchor_id 或对应测试锚点。
 -->
 
 受影响文档：

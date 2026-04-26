@@ -13,13 +13,28 @@
 2. 每轮 review / 修复后，必须先更新 PR body 的“Review / 修复记录”。
 3. 修复代码、测试、文档后，使用 `git commit --amend` 合入当前 commit。
 4. 推送重写后的 PR 分支时，必须使用 `git push --force-with-lease`，禁止裸 `git push --force`。
-5. PR_body模板参照.github/pull_request_template.md
+5. PR body 模板参照 `.github/pull_request_template.md`。
 6. `.github/pull_request_template.md` 是长期模板文件，不直接作为 PR body 提交。
-7. `PR_BODY.md` 是本地临时产物，用于承载当前 PR 的实际内容，不提交到仓库。
+7. `PR_BODY.md` 是本地临时 PR body 草稿，由 `.github/pull_request_template.md` 生成，不提交仓库，是 review 的重要输入材料，不是核心长期文档。
+
+## 能力契约与用户文档同步
+
+- [ ] 如果本 PR 修改了 `capability_contract.json`，必须检查 `interact.md` 和 `docs/business_user_guide.md` 中相关能力声明是否需要同步更新；如无需更新，必须在 PR body 的“文档影响”中说明原因。
+- [ ] 如果本 PR 修改了 `interact.md` 或 `docs/business_user_guide.md` 中关于“能做 / 不能做 / 必须追问 / 必须拒绝”的能力或行为声明，必须确认这些声明能在 `capability_contract.json`、`interact.md` 或对应测试中找到锚点；找不到时，必须补充锚点或说明为什么暂时只能人工维护。
+- [ ] 如果本 PR 新增 agent 行为承诺，例如“必须追问”“必须拒绝”“不得猜测”“必须降级”，必须在 `capability_contract.json` 中登记稳定 `anchor_id`，并在 `TESTING.md` 允许的范围内提供对应测试或写明暂时不可测原因。
+- [ ] 如果本 PR 改变业务人员能问什么、怎么问、结果怎么看、什么时候该找人，必须检查 `docs/business_user_guide.md`；如无需更新，必须在 PR body 的“文档影响”中说明原因。
 
 ## PR提交检查清单
 注意：你必须一一完成check清单（等价于todo list）并最终提交pr，任何偷懒和跳过都会让用户暴跳如雷。
-使用 gh pr create --title（修改主题+MMDD日期） --body-file（.github/pull_request_template.md作为模板） --head <feature-branch> --base master 来创建PR，固定指令避免遗漏参数。始终牢记你可以使用gh工具。
+使用以下固定流程创建 PR，避免把长期模板直接作为 PR body 提交：
+
+```bash
+cp .github/pull_request_template.md PR_BODY.md
+# 填写 PR_BODY.md
+gh pr create --title "<标题 MMDD>" --body-file PR_BODY.md --head <feature-branch> --base master
+```
+
+始终牢记你可以使用 gh 工具。
 
 在提交 PR 前的确认清单，你需要将其转为todo list进行step by step的完成：
 - [ ] 撰写结构化的工作总结，至少包含以下小节，确保下一个开发人员能顺利接手继续开发：

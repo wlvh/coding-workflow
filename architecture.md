@@ -6,7 +6,9 @@
 - agent 工作规则：见 `AGENTS.md`
 - PR 流程：见 `PR_Checklist.md`
 - 测试策略：见 `TESTING.md`
+- 能力边界、职责边界与 agent 行为承诺：见 `capability_contract.json`
 - 用户可见行为：见 `interact.md`
+- 业务人员首次使用教学：见 `docs/business_user_guide.md`
 - 标准操作流程：见 `SOP.md`
 
 ---

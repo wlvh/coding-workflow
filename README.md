@@ -21,7 +21,7 @@
 
    ```text
    按照当前 issue 完成本次开发。
-   1. 读取 AGENTS.md / SOP.md / TESTING.md / PR_Checklist.md / interact.md。
+   1. 读取 AGENTS.md / SOP.md / TESTING.md / PR_Checklist.md / interact.md；如果项目存在 capability_contract.json / docs/business_user_guide.md，也必须按 AGENTS.md 的文档关系检查。
    2. 从 issue 中提取 Spec Unit，生成 SU -> 代码改动 -> 测试 -> 文档 的 todo list。
    3. 提交前根据 `.github/pull_request_template.md` 生成并更新本地临时文件 `PR_BODY.md`。
 PR_BODY.md 必须覆盖：背景与目标、实现方案、变更范围、文档影响、用户与架构影响、Review / 修复记录、已知限制与回滚。
@@ -168,15 +168,17 @@ E. 输出风格约束
 - `Repo Impact Forecast`：预测 FSD 与当前仓库的真实触点、风险、文档和测试影响。
 - `Target State Bridge`：定义开发完成后用户 / 调用方应该看到什么状态，以及如何验证。
 - `Issue`：把契约、范围、任务拆解、文档更新预测、测试更新预测、验收条件固化。
-- `PR_BODY.md`：覆盖当前 PR 和本地全部修改内容，是 review 的重要输入材料。
+- `PR_BODY.md`：本地临时 PR body 草稿，由 `.github/pull_request_template.md` 生成，不提交仓库；是 review 的重要输入材料。
 - `Merge Readiness Report`：判断当前 PR 是否具备合并条件。
 - `FSD 完备性验收报告`：Issue 关闭前的最后一道契约核查。
 
 ## 代码项目核心文档
-- `AGENTS.md`：agent 工作入口、文件简介、代码规范与流程导航。
-- `architecture.md`：项目架构、模块边界、数据流、架构不变量与扩展点。
+- `AGENTS.md`：agent 工作入口、文件简介、代码规范与文档关系。
+- `architecture.md`：系统架构、模块边界、数据流、架构不变量与扩展点。
+- `capability_contract.json`：能力边界、职责边界、agent 行为承诺的机器可读真相源。
+- `interact.md`：用户可观察行为与验收不变量。
+- `docs/business_user_guide.md`：面向首次接触业务人员的教学派生文档。
+- `TESTING.md`：测试策略、测试分层、测试证据与 contract alignment 测试原则。
+- `PR_Checklist.md`：PR 提交、commit / push、PR body 使用规则。
 - `SOP.md`：标准流程骨架，只做入口，不重复规范。
-- `interact.md`：用户可见行为与验收断言。
-- `PR_Checklist.md`：PR 提交、commit / push、PR body 使用规则的唯一权威。
-- `TESTING.md`：测试策略、测试分层、测试证据记录方式的唯一权威。
 - `.github/pull_request_template.md`：PR body 的长期模板。
