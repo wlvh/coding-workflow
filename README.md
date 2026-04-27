@@ -149,6 +149,7 @@ E. 输出风格约束
     短 prompt：
 
    ```text
+   针对这个issue和pr，指定一个验收计划。
    验收必须分两层：
    1，如何以用户的角度来验收这次的PR：UX 层：用户为了……进入……执行……看到……（按 interact.md 的剧本格式写）
    2，契约层：对照 issue 中的 Acceptance Checklist 逐条核查，每一条 SU/AC 给出
