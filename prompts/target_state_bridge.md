@@ -53,6 +53,4 @@
   TS / AC -> 测试目录 -> Stage
 - 不得擅自拍板关键失败路径；需要人类决定的失败路径要显式标注
 
-## C. 预估修改的代码量
-如果修改量超过 3000 行以上则分为主 issue 和 sub issue。每次我都会把主 issue 和 sub issue 输入给编程 agent，要求其开发 sub issue。sub issue 必须能独立验收、能独立回滚、能独立 code review。
 ```
