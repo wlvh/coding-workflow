@@ -23,9 +23,7 @@
    按照当前 issue 完成本次开发。
    1. 读取 AGENTS.md / SOP.md / TESTING.md / PR_Checklist.md / interact.md；如果项目存在 capability_contract.json / docs/business_user_guide.md，也必须按 AGENTS.md 的文档关系检查。
    2. 从 issue 中提取 Spec Unit，生成 SU -> 代码改动 -> 测试 -> 文档 的 todo list。
-   3. 提交前根据 `.github/pull_request_template.md` 生成并更新本地临时文件 `PR_BODY.md`。
-   4. PR_BODY.md 必须覆盖：背景与目标、实现方案、变更范围、文档影响、用户与架构影响、Review / 修复记录、已知限制与回滚。
-   测试策略与测试证据记录方式以 `TESTING.md` 为准。
+   3. 测试策略与测试证据记录方式以 `TESTING.md` 为准。
    ```
 
    备注：我在这里没有提FSD/Repo Impact Forecast/Target State Bridge，宪法文件已经转为issue。而且也没有提供编程开发的具体模板，因为我相信llm擅长做这个，issue也能做好制约。
