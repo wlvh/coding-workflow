@@ -143,15 +143,15 @@ E. 输出风格约束
     目的：从主干代码倒查 issue 中的每个 `Spec Unit` 是否已实现，并强制输出 `Updates to FSD`（如有偏差）。
 
 13. **再问 GPT 网页版：如何从用户视角验收这次 PR**
+    
     验收计划需要GPT网页版和claude code达成合意。
+    
     短 prompt：
 
    ```text
-   如何以用户的角度来验收这次的 PR？
-
    验收必须分两层：
-   1. UX 层：用户为了……进入……执行……看到……（按 interact.md 的剧本格式写）
-   2. 契约层：对照 issue 中的 Acceptance Checklist 逐条核查，每一条 SU/AC 给出
+   1，如何以用户的角度来验收这次的PR：UX 层：用户为了……进入……执行……看到……（按 interact.md 的剧本格式写）
+   2，契约层：对照 issue 中的 Acceptance Checklist 逐条核查，每一条 SU/AC 给出
       "实现位置 + 实际行为 + FSD 期望 + 是否一致"四列。
       如果发现任何不一致（即使工程上合理），明确标注"需要 Updates to FSD"
       并附偏差说明。
