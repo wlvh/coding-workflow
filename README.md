@@ -6,7 +6,7 @@
 
 2. **网页端 Pro 模型制定 `FSD Core Contract`**
    使用长 prompt：[prompts/fsd_core_contract.md](prompts/fsd_core_contract.md)
-   备注：当前默认前提是 GPT 5.4 Pro 不能自由探索本地代码和 GitHub，所以 FSD 先做黑盒契约。
+   备注：当前默认前提是 GPT Pro 不能自由探索本地代码和 GitHub，所以 FSD 先做黑盒契约。本阶段可以给AGENTS.md及其内链的文档，但不能直连代码仓库。
 
 3. **Target State Bridge Agent（codex） 根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`**
   * 如果GPT 5.4 Pro模型可以在不接触本地代码和GitHub的情况下产出也能由它代为产出
