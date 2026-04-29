@@ -170,8 +170,12 @@ E. 输出风格约束
 - `PR_BODY.md`：本地临时 PR body 草稿，由 `.github/pull_request_template.md` 生成，不提交仓库；是 review 的重要输入材料。
 - `Merge Readiness Report`：判断当前 PR 是否具备合并条件。
 - `FSD 完备性验收报告`：Issue 关闭前的最后一道契约核查。
+- `Workflow Docs Sync`：用 `scripts/sync.sh` 生成 full reconcile 证据、agent 工单和带 `Sync Review Contract` 的 sync PR body 骨架，最终由独立 reviewer 守语义质量门。
 
 ## 代码项目核心文档
+
+本仓库中的这些文件是给目标项目继承和项目化的 upstream 模板 / 样本文档。开发 sync 工具时，不因为工具实现细节去改写 `AGENTS.md`、`TESTING.md`、`architecture.md` 这类模板；sync 工具自身的行为说明落在 `README.md` 和 `scripts/` 下。例外是 `.github/pull_request_template.md`：它是长期 PR body 模板，可以直接继承 upstream。
+
 - `AGENTS.md`：agent 工作入口、文件简介、代码规范与文档关系。
 - `architecture.md`：系统架构、模块边界、数据流、架构不变量与扩展点。
 - `capability_contract.json`：能力边界、职责边界、agent 行为承诺的机器可读真相源。
@@ -181,3 +185,14 @@ E. 输出风格约束
 - `PR_Checklist.md`：PR 提交、commit / push、PR body 使用规则。
 - `SOP.md`：标准流程骨架，只做入口，不重复规范。
 - `.github/pull_request_template.md`：PR body 的长期模板。
+
+## Workflow Docs Sync
+
+sync 工具的机械合同由 `scripts/sync_coding_workflow.py` 生成到 PR body auto 区的 `Sync Review Contract`；`scripts/sync_pr_review_system.md` 只提供独立 reviewer 的薄启动入口。目标项目运行 sync 后，再把 contract 列出的核心模板按目标项目事实项目化。
+
+- 人机入口：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash`
+- final gate：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash -s -- --final`
+- 核心证据目录：`.coding_workflow/diffs/`
+- agent 先读：`.coding_workflow/diffs/agent_workorder.md`
+- PR body 骨架：`.coding_workflow/diffs/pr_body_skeleton.md`
+- review 真相源：`PR_BODY.md` auto 区的 `Sync Review Contract`

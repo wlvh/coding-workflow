@@ -1,0 +1,490 @@
+"""Regression tests for workflow-docs sync handoff behavior.
+
+Call flow:
+    python -m unittest discover -s tests
+      -> SyncWorkflowTests creates a temporary target git repository
+      -> scripts/sync.sh runs against this checkout as the upstream template
+      -> assertions verify final-gate and PR body refresh contracts
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import os
+import shutil
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SYNC_SH = REPO_ROOT / "scripts" / "sync.sh"
+
+
+def load_sync_module() -> object:
+    """Load the sync script under test without executing its CLI.
+
+    Parameters:
+        None.
+
+    Expected output:
+        Imported module object exposing the same constants used by sync.
+    """
+    module_path = REPO_ROOT / "scripts" / "sync_coding_workflow.py"
+    spec = importlib.util.spec_from_file_location(
+        "sync_coding_workflow_under_test",
+        module_path,
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot import sync script: {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+SYNC_MODULE = load_sync_module()
+CORE_FILES = tuple(SYNC_MODULE.CORE_FILES)
+REMOVED_AGENT_PROMPT = "scripts/sync_workflow_docs.md"
+
+
+def run_command(
+    args: list[str],
+    cwd: Path,
+    env: dict[str, str],
+    check: bool,
+) -> subprocess.CompletedProcess[str]:
+    """Run one command with UTF-8 capture for diagnosis.
+
+    Parameters:
+        args: Executable and split arguments.
+        cwd: Working directory.
+        env: Environment variables for the child process.
+        check: Whether a non-zero return code should fail the test helper.
+
+    Expected output:
+        CompletedProcess with stdout, stderr, and return code. When `check` is
+        true, failures raise AssertionError with captured output.
+    """
+    result = subprocess.run(
+        args=args,
+        cwd=cwd,
+        env=env,
+        check=False,
+        capture_output=True,
+        encoding="utf-8",
+        text=True,
+    )
+    if check and result.returncode != 0:
+        raise AssertionError(
+            f"command failed: {args}\nSTDOUT:\n{result.stdout}\n"
+            f"STDERR:\n{result.stderr}"
+        )
+    return result
+
+
+def sync_env(upstream_dir: Path) -> dict[str, str]:
+    """Return an environment that uses the checkout as upstream.
+
+    Parameters:
+        upstream_dir: Upstream coding-workflow checkout to exercise.
+
+    Expected output:
+        Environment dictionary. The override keeps tests offline and ensures
+        they exercise the script version under review.
+    """
+    env = os.environ.copy()
+    env["CODING_WORKFLOW_UPSTREAM_DIR"] = str(upstream_dir)
+    return env
+
+
+def write_core_files(repo_root: Path, omitted_paths: set[str]) -> None:
+    """Write project-specific core files into a temporary target repo.
+
+    Parameters:
+        repo_root: Temporary target repository root.
+        omitted_paths: Repository-relative core files to leave missing.
+
+    Expected output:
+        All non-omitted core files exist with marker-free project text.
+    """
+    for rel_path in CORE_FILES:
+        if rel_path in omitted_paths:
+            continue
+        path = repo_root / rel_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            f"project specific content for {rel_path}\n",
+            encoding="utf-8",
+        )
+
+
+def commit_initial_repo(repo_root: Path) -> None:
+    """Create the first git commit for a temporary target repo.
+
+    Parameters:
+        repo_root: Temporary target repository root.
+
+    Expected output:
+        A clean git repository with one commit, so sync can resolve HEAD.
+    """
+    env = os.environ.copy()
+    run_command(args=["git", "init", "-q"], cwd=repo_root, env=env, check=True)
+    run_command(
+        args=["git", "config", "user.email", "review@example.com"],
+        cwd=repo_root,
+        env=env,
+        check=True,
+    )
+    run_command(
+        args=["git", "config", "user.name", "review"],
+        cwd=repo_root,
+        env=env,
+        check=True,
+    )
+    run_command(args=["git", "add", "."], cwd=repo_root, env=env, check=True)
+    run_command(
+        args=["git", "commit", "-q", "-m", "init"],
+        cwd=repo_root,
+        env=env,
+        check=True,
+    )
+
+
+def create_target_repo(repo_root: Path, omitted_paths: set[str]) -> None:
+    """Create a temporary target repo ready for sync.
+
+    Parameters:
+        repo_root: Temporary target repository root.
+        omitted_paths: Core files intentionally absent before sync.
+
+    Expected output:
+        A committed repo whose files are safe for sync to inspect.
+    """
+    write_core_files(repo_root=repo_root, omitted_paths=omitted_paths)
+    commit_initial_repo(repo_root=repo_root)
+
+
+def create_upstream_without_prompt(
+    upstream_root: Path,
+    missing_prompt_path: str,
+) -> None:
+    """Create an upstream checkout whose HEAD lacks one prompt file.
+
+    Parameters:
+        upstream_root: Destination directory for a committed upstream copy.
+        missing_prompt_path: Repository-relative prompt file to delete.
+
+    Expected output:
+        A git worktree using the current source under review, with HEAD missing
+        the selected prompt so sync must reject its raw URL.
+    """
+    shutil.copytree(
+        src=REPO_ROOT,
+        dst=upstream_root,
+        ignore=shutil.ignore_patterns(
+            ".git",
+            ".coding_workflow",
+            "__pycache__",
+            "*.pyc",
+        ),
+    )
+    commit_initial_repo(repo_root=upstream_root)
+    (upstream_root / missing_prompt_path).unlink()
+    env = os.environ.copy()
+    run_command(
+        args=["git", "add", "-A"],
+        cwd=upstream_root,
+        env=env,
+        check=True,
+    )
+    run_command(
+        args=["git", "commit", "-q", "-m", "remove prompt"],
+        cwd=upstream_root,
+        env=env,
+        check=True,
+    )
+
+
+def fill_agent_placeholders(pr_body_path: Path) -> None:
+    """Replace script placeholders with review-safe test content.
+
+    Parameters:
+        pr_body_path: PR body file generated by sync.
+
+    Expected output:
+        Agent-owned sections no longer contain final-gate placeholder words.
+    """
+    text = pr_body_path.read_text(encoding="utf-8")
+    if "待补充" not in text or "待判断" not in text:
+        raise AssertionError("expected script placeholders before filling")
+    text = text.replace("待补充", "已填写")
+    text = text.replace("待判断", "无需更新")
+    pr_body_path.write_text(text, encoding="utf-8")
+
+
+def extract_review_contract(pr_body_text: str) -> str:
+    """Extract the script-owned review contract from a generated PR body.
+
+    Parameters:
+        pr_body_text: Full PR body skeleton or draft.
+
+    Expected output:
+        Markdown for `Sync Review Contract`. Missing boundaries fail the test
+        because reviewers must not infer contract values from any prompt.
+    """
+    start = "## Sync Review Contract"
+    end = "## Upstream Templates at Sync Time"
+    if start not in pr_body_text:
+        raise AssertionError("missing Sync Review Contract section")
+    if end not in pr_body_text:
+        raise AssertionError("missing upstream template section after contract")
+    start_index = pr_body_text.index(start)
+    end_index = pr_body_text.index(end)
+    if end_index <= start_index:
+        raise AssertionError("Sync Review Contract appears out of order")
+    return pr_body_text[start_index:end_index]
+
+
+class SyncWorkflowTests(unittest.TestCase):
+    """Behavioral regressions for sync shell and PR body helpers."""
+
+    def test_final_mode_rejects_stale_auto_without_refresh(self) -> None:
+        """`--final` must not repair stale auto content before checking it."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            create_target_repo(repo_root=target_root, omitted_paths=set())
+            (target_root / "PR_BODY.md").write_text(
+                "legacy draft\n",
+                encoding="utf-8",
+            )
+
+            run_command(
+                args=["bash", str(SYNC_SH)],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=True,
+            )
+            pr_body_path = target_root / "PR_BODY.md"
+            fill_agent_placeholders(pr_body_path=pr_body_path)
+            pr_body_text = pr_body_path.read_text(encoding="utf-8")
+            stale_pr_body = pr_body_text.replace(
+                "authoritative checklist",
+                "stale checklist",
+            )
+            pr_body_path.write_text(
+                stale_pr_body,
+                encoding="utf-8",
+            )
+
+            result = run_command(
+                args=["bash", str(SYNC_SH), "--final"],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "sync auto section differs",
+                f"{result.stdout}\n{result.stderr}",
+            )
+            self.assertIn(
+                "stale checklist",
+                pr_body_path.read_text(encoding="utf-8"),
+            )
+
+    def test_installed_template_reports_upstream_marker_hits(self) -> None:
+        """Installed templates should report markers agents must remove."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            create_target_repo(
+                repo_root=target_root,
+                omitted_paths={"docs/business_user_guide.md"},
+            )
+
+            run_command(
+                args=["bash", str(SYNC_SH)],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=True,
+            )
+
+            state_path = target_root / ".coding_workflow/diffs/sync_state.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            records = [
+                record
+                for record in state["core_files"]
+                if record["path"] == "docs/business_user_guide.md"
+            ]
+
+            self.assertEqual(len(records), 1)
+            self.assertEqual(records[0]["status"], "installed_template")
+            self.assertTrue(records[0]["marker_hits"])
+            self.assertIn("<项目名>", "\n".join(records[0]["marker_hits"]))
+
+    def test_refresh_rejects_content_outside_sync_sentinels(self) -> None:
+        """Refresh must fail before dropping content outside sentinel blocks."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            create_target_repo(repo_root=target_root, omitted_paths=set())
+            (target_root / "PR_BODY.md").write_text(
+                "legacy draft\n",
+                encoding="utf-8",
+            )
+
+            run_command(
+                args=["bash", str(SYNC_SH)],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=True,
+            )
+            pr_body_path = target_root / "PR_BODY.md"
+            fill_agent_placeholders(pr_body_path=pr_body_path)
+            with pr_body_path.open(mode="a", encoding="utf-8") as pr_body:
+                pr_body.write("\n## 验证\noutside sentinel\n")
+
+            result = run_command(
+                args=["bash", str(SYNC_SH)],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "content outside sync sentinel sections",
+                f"{result.stdout}\n{result.stderr}",
+            )
+            self.assertIn(
+                "outside sentinel",
+                pr_body_path.read_text(encoding="utf-8"),
+            )
+
+    def test_final_mode_passes_with_current_complete_pr_body(self) -> None:
+        """`--final` should pass when auto and agent sections are complete."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            create_target_repo(repo_root=target_root, omitted_paths=set())
+            (target_root / "PR_BODY.md").write_text(
+                "legacy draft\n",
+                encoding="utf-8",
+            )
+
+            run_command(
+                args=["bash", str(SYNC_SH)],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=True,
+            )
+            fill_agent_placeholders(pr_body_path=target_root / "PR_BODY.md")
+
+            result = run_command(
+                args=["bash", str(SYNC_SH), "--final"],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=True,
+            )
+
+            self.assertIn("Final sync check passed", result.stdout)
+
+    def test_pr_body_review_contract_lists_script_constants(self) -> None:
+        """Generated review contract should dump script-owned literals."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            create_target_repo(repo_root=target_root, omitted_paths=set())
+
+            run_command(
+                args=["bash", str(SYNC_SH)],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=True,
+            )
+
+            skeleton_path = (
+                target_root
+                / ".coding_workflow/diffs/pr_body_skeleton.md"
+            )
+            contract = extract_review_contract(
+                pr_body_text=skeleton_path.read_text(encoding="utf-8"),
+            )
+            self.assertNotIn(REMOVED_AGENT_PROMPT, contract)
+            self.assertNotIn(REMOVED_AGENT_PROMPT, SYNC_MODULE.SYNC_PROMPT_FILES)
+            expected_literals = [
+                *SYNC_MODULE.PR_BODY_REQUIRED_SECTIONS,
+                *SYNC_MODULE.required_sync_sentinels(),
+                *SYNC_MODULE.REPO_FACTS_HEADINGS,
+                *CORE_FILES,
+                *SYNC_MODULE.SYNC_PROMPT_FILES,
+            ]
+            for literal in expected_literals:
+                display_literal = SYNC_MODULE.contract_display_literal(
+                    value=str(literal),
+                )
+                self.assertIn(
+                    f"`{display_literal}`",
+                    contract,
+                    msg=f"missing review contract literal: {literal}",
+                )
+
+    def test_reviewer_prompt_does_not_copy_contract_literals(self) -> None:
+        """Thin reviewer prompt must not become a second mechanical contract."""
+        prompt_path = REPO_ROOT / "scripts" / "sync_pr_review_system.md"
+        prompt_text = prompt_path.read_text(encoding="utf-8")
+        forbidden_literals = [
+            *CORE_FILES,
+            *SYNC_MODULE.SYNC_PROMPT_FILES,
+            *SYNC_MODULE.required_sync_sentinels(),
+            *SYNC_MODULE.TEMPLATE_MARKERS,
+            *SYNC_MODULE.TODO_ANCHOR_COMMENTS,
+            *sorted(SYNC_MODULE.BLOCKING_FINAL_STATUSES),
+        ]
+        forbidden_phrases = (
+            "9 个",
+            "2 个",
+            "10 项",
+            "core files checked: 9",
+        )
+        for literal in forbidden_literals:
+            self.assertNotIn(
+                literal,
+                prompt_text,
+                msg=f"review prompt copied contract literal: {literal}",
+            )
+        for phrase in forbidden_phrases:
+            self.assertNotIn(
+                phrase,
+                prompt_text,
+                msg=f"review prompt copied fixed count: {phrase}",
+            )
+
+    def test_sync_rejects_missing_upstream_prompt_file(self) -> None:
+        """Sync must not publish raw URLs for missing review prompts."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            upstream_root = root / "upstream"
+            target_root = root / "target"
+            target_root.mkdir()
+            create_upstream_without_prompt(
+                upstream_root=upstream_root,
+                missing_prompt_path="scripts/sync_pr_review_system.md",
+            )
+            create_target_repo(repo_root=target_root, omitted_paths=set())
+
+            result = run_command(
+                args=["bash", str(upstream_root / "scripts" / "sync.sh")],
+                cwd=target_root,
+                env=sync_env(upstream_dir=upstream_root),
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "missing required sync prompt file",
+                f"{result.stdout}\n{result.stderr}",
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()
