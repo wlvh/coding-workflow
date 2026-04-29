@@ -5,10 +5,14 @@
 - `.github/pull_request_template.md`：PR body 长期模板，生成本地临时 `PR_BODY.md` 时使用。
 
 ### 核心模块
+- `scripts/sync.sh`：Workflow Docs Sync 一次性 shell 入口，负责定位目标仓库、准备 upstream clone 并调用 Python sync 工具。
+- `scripts/sync_coding_workflow.py`：Workflow Docs Sync 的 full reconcile 生成器，负责证据目录、PR body、agent 工单和 final gate。
+- `scripts/sync_pr_review_system.md`：Workflow Docs Sync 独立 reviewer 的薄系统 prompt。
 
 ### 业务逻辑 
 - `README.md`：编程工作流总入口、核心产物和核心文档索引。
 - `PR_Checklist.md`：PR 提交、commit / push、PR body 使用规则。
+- `scripts/OPERATIONS.md`：Workflow Docs Sync 的人工操作入口、agent 分工和 review 启动流程。
 
 ### 备注
 * 一旦文件有了修改或新增，需要对照文件简介相应部分进行修改。测试文件不在要求内，因为会有TESTING.md专门管理。

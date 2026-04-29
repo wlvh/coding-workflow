@@ -5,7 +5,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash
 #
 # What this does:
-#   1. Verifies current dir is a git repo with clean worktree
+#   1. Verifies current dir is a git worktree; Python rejects unmanaged dirty paths
 #   2. Shallow-clones wlvh/coding-workflow at the current default-branch HEAD
 #   3. Runs sync_coding_workflow.py with UPSTREAM_DIR pointing at the clone
 #   4. Without --final, refreshes PR_BODY.md when it exists

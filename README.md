@@ -182,11 +182,9 @@ E. 输出风格约束
 
 ## Workflow Docs Sync
 
-sync 工具的机械合同由 `scripts/sync_coding_workflow.py` 生成到 PR body auto 区的 `Sync Review Contract`；`scripts/sync_pr_review_system.md` 只提供独立 reviewer 的薄启动入口。目标项目运行 sync 后，再把 contract 列出的核心模板按目标项目事实项目化。
+完整操作入口见 `scripts/OPERATIONS.md`。该手册说明如何运行 `scripts/sync.sh`、
+把工单交给 sync agent、由 PR 提交 agent 运行 final gate，并用
+`scripts/sync_pr_review_system.md` 启动独立 review。
 
-- 人机入口：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash`
-- final gate：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash -s -- --final`
-- 核心证据目录：`.coding_workflow/diffs/`
-- agent 先读：`.coding_workflow/diffs/agent_workorder.md`
-- PR body 骨架：`.coding_workflow/diffs/pr_body_skeleton.md`
-- review 真相源：`PR_BODY.md` auto 区的 `Sync Review Contract`
+- 机械合同：`PR_BODY.md` auto 区的 `Sync Review Contract`
+- 本轮证据目录：`.coding_workflow/diffs/`

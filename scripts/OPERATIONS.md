@@ -1,139 +1,123 @@
 # Workflow Docs Sync - 操作手册
 
 本文档说明如何用脚本 + agent 自动完成目标项目的 workflow 文档 full reconcile。
-它是 agent 执行 sync 的长期操作入口；每次运行后的具体工单由
-`.coding_workflow/diffs/agent_workorder.md` 生成。独立 reviewer 的启动入口见：
+目标是把当前项目事实和最新 coding-workflow 规则对齐，最终由 PR reviewer 守语义质量门。
+每次运行后的具体工单由 `.coding_workflow/diffs/agent_workorder.md` 生成。独立 reviewer 的启动入口见：
 
 - `scripts/sync_pr_review_system.md`：独立 reviewer 的薄启动入口；具体审核规则来自 PR body auto 区中的 `Sync Review Contract`。
 
+流程摘要：普通 sync 生成证据和工单；sync agent 补 PR body 和核心文档；
+PR 提交 agent 运行 final gate 并创建或更新 PR；独立 reviewer 审查语义质量。
+
 ---
 
-## 1. 模式定义
+## 1. Quick Start：人在目标仓库里怎么完成 sync
+
+运行位置：
+
+- 在目标项目现有仓库目录里运行。
+
+sync 运行前工作区契约：
+
+- 首次运行普通 sync 前，不要混入代码、配置、测试等非 sync dirty 改动；脚本会拒绝这些 unmanaged dirty 文件并列出路径。
+- 根据本轮工单重跑普通 sync 时，只允许 sync 管理的文件处于 dirty 状态：本轮 contract 列出的核心文档、`.gitignore`、`PR_BODY.md` 和 `.coding_workflow/diffs/`。
+
+本轮权威入口：
+
+- sync agent 的本轮动作、读取顺序和角色边界以 `.coding_workflow/diffs/agent_workorder.md` 为准。
+- `PR_BODY.md` auto 区中的 `Sync Review Contract` 是独立 reviewer 的机械合同真相源。
+- `scripts/sync_pr_review_system.md` 是 reviewer 系统 prompt；本手册中的 reviewer 短 prompt 只负责启动审查。
+- PR 提交 agent 才在提交前运行 final gate；final gate 只证明机械一致性。
+
+1. 在目标项目现有仓库目录里运行普通 sync。
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash
+   ```
+
+   这一步会生成本轮 sync 工单和证据目录。本轮具体读什么、改什么，以
+   `.coding_workflow/diffs/agent_workorder.md` 为准；不要提交 `.coding_workflow/diffs/`。
+   如果已有 `PR_BODY.md` 不是 sync sentinel 草稿，普通 sync 会把旧内容保存到
+   `.coding_workflow/diffs/pr_body_previous.md`，再替换为本轮 sync PR body。
+   `pr_body_previous.md` 属于 scratch 证据，下次普通 sync 会重建 `.coding_workflow/diffs/`；
+   sync agent 如需保留旧草稿内容，必须先检查并迁入 PR body 的 agent-owned 区。
+
+2. 把下面的短 prompt 发给目标项目里的 agent，让 agent 接手执行工单：
+
+   ```text
+   当前仓库已经运行过普通 sync。请以本轮 `.coding_workflow/diffs/agent_workorder.md`
+   为 workflow docs sync 的权威工单，并读取 `.coding_workflow/diffs/agent_workorder.md`、
+   `.coding_workflow/diffs/pr_body_skeleton.md`、`.coding_workflow/diffs/full_reconcile_report.md`、
+   `.coding_workflow/diffs/installation_status.md`、`.coding_workflow/diffs/upstream_full/`
+   和 `.coding_workflow/diffs/upstream_vs_local/`。
+
+   如果 `PR_BODY.md` 不存在，用 `.coding_workflow/diffs/pr_body_skeleton.md` 初始化；
+   然后只补齐 PR_BODY.md 的 agent-owned 区，不要手改 script-owned auto 区，也不要在
+   sentinel 外写内容。按当前项目事实项目化 contract 列出的核心文档；无法从仓库证据
+   判断的问题写进 `remaining_human_decisions`，不要编造。
+
+   完成后必须重跑普通 sync，让脚本用最终工作区刷新 `sync_state.json` 和 PR body auto 区。
+   最后按 `agent_workorder.md` 的角色边界回报是否存在 `remaining_human_decisions`；
+   如无，说明已重跑普通 sync，可以进入 PR 提交流程。
+   ```
+
+3. 如果 agent 在 `remaining_human_decisions` 里留下问题，把回答连同下面的短 prompt
+   发回给 sync agent：
+
+   ```text
+   以下是 `remaining_human_decisions` 的回答。请据此继续完成 workflow docs sync：
+
+   <逐条回答>
+
+   请把这些回答写入 PR_BODY.md 的 agent-owned 区，并按需要同步核心文档。
+   完成后必须重跑普通 sync，让脚本用最终工作区刷新 `sync_state.json` 和 PR body auto 区。
+   最后按 `agent_workorder.md` 的角色边界回报是否仍有无法判断的问题。
+   如果仍有无法判断的问题，继续写入 `remaining_human_decisions`；
+   否则说明已重跑普通 sync，可以进入 PR 提交流程。
+   ```
+
+4. sync agent 回报可以进入 PR 提交流程后，用“PR 提交 agent 流程”创建或更新 PR。
+
+5. PR 提交 agent 给出 PR URL 后，用“sync PR review”启动独立 review，并按该节判定处理 PASS / WARN / BLOCKER。
+
+---
+
+## 2. PR 提交 agent 流程
+
+当 sync agent 回报普通 sync 已重跑、没有待回答的 `remaining_human_decisions` 后，把下面的短 prompt 发给 PR 提交 agent：
 
 ```text
-当前项目事实 + 最新 coding-workflow upstream 规则
-→ 脚本生成本轮 evidence epoch
-→ agent 只补 Repo Facts Map、项目化文档和语义证据
-→ 脚本生成 PR body auto 区的 Sync Review Contract
-→ 脚本校验 PR body auto 区与本轮 sync_state 一致
-→ 独立 reviewer 按 Sync Review Contract 守语义质量门
-```
+请按本项目 PR_Checklist.md 创建或更新 workflow docs sync PR。
 
----
+前置条件：sync agent 已经重跑普通 sync，且没有待回答的 `remaining_human_decisions`。
 
-## 2. 单入口命令
+提交前检查工作区：当前目录必须仍位于同一个目标项目仓库内。如果混有非 sync 的代码、配置或测试改动，先停止并要求用户处理。如果工作区又发生 sync 内容变化，先停止并要求回到 sync agent 重跑普通 sync。
 
-普通 sync：
+提交范围契约：sync PR 只允许提交本轮 contract 列出的核心文档、`.gitignore`、必要测试，以及目标项目规则允许提交的 `PR_BODY.md`；不得提交 `.coding_workflow/diffs/` 或临时 clone 目录。
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash
-```
+分支处理：PR 提交 agent 自己负责分支生命周期，不交给 sync agent。先确认当前分支和远端是否已有对应的 workflow docs sync PR；如果已有 PR 分支，就在该分支更新；如果没有，就在提交前基于当前 HEAD 创建 sync 专用分支，例如 `codex/workflow-docs-sync-YYYYMMDD`，再提交、推送并创建 PR。若当前 HEAD 不是预期 base，先停止并要求用户确认。
 
-最终机械校验：
+提交前必须运行 final gate：
 
-```bash
 curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash -s -- --final
+
+如果 final gate 失败，不要手修 PR body auto 区；停止并要求回到 sync agent 重跑普通 sync 并修复。final gate 只证明机械一致性，不证明 Repo Facts Map 证据真实性、项目化文案准确性或 upstream 新规则语义投影正确性；这些交给独立 reviewer。
+
+`PR_BODY.md` 按目标项目规则处理：先用 `git ls-files --error-unmatch PR_BODY.md` 判断是否已被仓库跟踪。已跟踪则遵循目标项目自己的 PR 规则；未跟踪则只用它更新 GitHub PR body，不提交。在 `wlvh/coding-workflow` 自身做 sync 时，遵循本仓库本地草稿和 sync sentinel 规则，不提交 `PR_BODY.md`。
+
+创建或更新 PR 后，请回报：
+1. PR URL。
+2. commit hash。
+3. 实际提交文件清单。
+4. final gate 和测试证据。
+5. `PR_BODY.md` 是已提交还是仅用于更新 GitHub PR body。
 ```
 
-`sync.sh` 是唯一人机入口。Python 的 `--update-pr-body` 和 `--check-final` 是内部 CLI，agent 不需要直接记。
-
 ---
 
-## 3. 前置条件
+## 3. sync PR review
 
-- 当前目录位于目标项目的 git worktree 内。
-- 项目代码、配置、测试变更已经 commit / stash / discard。
-- 允许 dirty 的文件只有 contract 列出的核心文档、`.gitignore`、`PR_BODY.md` 和 `.coding_workflow/diffs/`。
-
-原因：full reconcile 的 PR body 要描述当前已提交项目事实。如果混入未提交代码，reviewer 无法判断这些事实是否会进入主干。
-
----
-
-## 4. 脚本产物
-
-每次 sync 会清空并重建 `.coding_workflow/diffs/`：
-
-| 文件 / 目录 | 用途 |
-|---|---|
-| `agent_workorder.md` | agent 首读工单，把脚本信号翻译成动作。 |
-| `pr_body_skeleton.md` | 带 sentinel 的 sync PR body 骨架。 |
-| `sync_state.json` | 本轮 evidence epoch 的结构化状态，只供本轮 update / final check 使用。 |
-| `upstream_full/` | contract 列出的 upstream 原文，给当前 agent 本地读取。 |
-| `upstream_vs_local/` | contract 列出的 upstream vs local diff。 |
-| `full_reconcile_report.md` | 本轮 commit、raw URL 和 review signals。 |
-| `installation_status.md` | contract 列出的核心文档机械状态表。 |
-
-注意：`upstream_full/` 只降低当前 agent 的读取成本；PR body 仍必须保留 commit-pinned raw URL，供独立 reviewer 复验。
-
----
-
-## 5. Agent 工作流
-
-1. 运行普通 sync。
-2. 读取 `.coding_workflow/diffs/agent_workorder.md`。
-3. 如果 `PR_BODY.md` 不存在，用 `.coding_workflow/diffs/pr_body_skeleton.md` 初始化。
-4. 填写 `PR_BODY.md` 中 agent-owned sentinel 区：
-   - `repo_facts_map`
-   - `full_document_reconcile`
-   - `remaining_human_decisions`
-5. 根据工单项目化 contract 列出的核心文档。
-6. 重跑普通 sync，让脚本刷新 script-owned auto 区。
-   原因：agent 修改核心文档和 PR body 的 agent-owned 区后，第一次 sync 生成的 `sync_state.json`、文档状态、dirty core files 和 auto 区可能已经过期。重跑 sync 会用最终工作区重新生成本轮 evidence epoch，并保留 agent-owned 区，避免 reviewer 看到旧证据。
-7. 提交前运行 `sync.sh --final`。final 会重新生成 evidence epoch，但不会刷新 `PR_BODY.md`；如果第 6 步漏跑、auto 区被手改或引用旧 upstream commit，final 必须 fail fast。
-8. 将 PR URL 交给独立 sync PR reviewer；reviewer 按 PR body auto 区的 `Sync Review Contract` 审核。
-
-脚本只表达机械信号。`specialized` 只表示脚本未发现模板复制、模板残留或 TODO anchor；如 Repo Facts Map 或 upstream 新规则要求，仍可修改。
-
----
-
-## 6. PR Body Sentinel 合同
-
-`PR_BODY.md` 分两类区：
-
-- script-owned auto 区：由当前 `sync_state.json` 渲染，agent 不手改。
-- agent-owned 区：由 agent 填写，重跑 sync 时保留。
-- sentinel 外非空内容：不允许。重跑 sync 会 fail fast，agent 必须把人工内容搬进 `repo_facts_map`、`full_document_reconcile` 或 `remaining_human_decisions`。
-
-关键 sentinel 由脚本渲染到 `Sync Review Contract`，不要在 reviewer prompt 或人工文档里维护第二份清单。
-
-`sync.sh --final` 会字节级比较 auto 区和当前 `sync_state.json` 的渲染结果；如果 agent 忘了重跑 sync、手改 auto 区、或者 auto 区引用旧 upstream commit，都会 fail fast。
-
----
-
-## 7. Final Gate 能证明什么
-
-`sync.sh --final` 能证明：
-
-- `PR_BODY.md` auto 区与当前 `sync_state.json` 一致，其中包括 script-owned `Sync Review Contract`。
-- contract 列出的 core files、upstream raw URL 和 upstream instruction raw URL 结构齐全。
-- Repo Facts Map 有 contract 列出的标题。
-- Full Document Reconcile 覆盖 contract 列出的核心文档。
-- PR body 和核心文档不含模板 marker / TODO anchor。
-- PR body 不再包含脚本生成的 `待补充` / `待判断` 占位符。
-- 没有 `installed_template`、`template_copy_requires_specialization`、`partially_specialized` 这类未处理机械状态。
-
-`sync.sh --final` 不能证明：
-
-- Repo Facts Map 的证据是否真实。
-- 项目化文案是否准确。
-- upstream 新规则是否被正确投影到所有本地文档。
-
-这些质量门由 PR body auto 区的 `Sync Review Contract` 定义，并由 `scripts/sync_pr_review_system.md` 启动的独立 reviewer 执行。
-
----
-
-## 8. 提交规则
-
-只提交长期文件和必要测试。不要提交：
-
-- `.coding_workflow/diffs/`
-- 临时 clone 目录
-
-`PR_BODY.md` 按目标项目规则处理：如果目标项目把它作为本地临时草稿，就不要提交；如果目标项目历史上已经跟踪它，必须遵循该项目自己的 PR 规则。
-
----
-
-## 9. sync PR review
+下面的短 prompt 用作触发；reviewer 的系统 prompt 在 `scripts/sync_pr_review_system.md`，contract 真相源在 PR body auto 区的 `Sync Review Contract`。
 
 把 PR URL 给独立 reviewer，并使用：
 
@@ -147,4 +131,4 @@ curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/s
 
 - PASS：进入用户视角验收。
 - WARN：在 PR body 说明为什么可接受，再进入用户视角验收。
-- BLOCKER：修复后重跑 sync，刷新 PR body，再重新 review。
+- BLOCKER：先分类处理。机械 BLOCKER（final gate、auto 区、raw URL、contract 状态或 blocking status）交回 sync agent 重跑普通 sync；语义 BLOCKER（证据真实性、项目化文案准确性、upstream 规则投影）先补证据或让用户判断，再交 sync agent 写入文档和 PR body。sync agent 重跑普通 sync 后，重新走“PR 提交 agent 流程”，由 PR 提交 agent 再跑 final gate、更新 PR、重新 review。
