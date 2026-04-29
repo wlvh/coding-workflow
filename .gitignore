@@ -1,1 +1,6 @@
 PR_BODY.md
+.coding_workflow/diffs/
+
+.DS_Store
+__pycache__/
+*.py[cod]
