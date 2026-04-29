@@ -1,9 +1,10 @@
 # Workflow Docs Sync - 操作手册
 
-本文档说明如何用全量模式同步目标项目的 workflow 文档体系。设计哲学和审核规则见：
+本文档说明如何用脚本 + agent 自动完成目标项目的 workflow 文档 full reconcile。
+它是 agent 执行 sync 的长期操作入口；每次运行后的具体工单由
+`.coding_workflow/diffs/agent_workorder.md` 生成。独立 reviewer 的启动入口见：
 
-- `scripts/sync_workflow_docs.md`：执行 full reconcile 的 agent 工作流。
-- `scripts/sync_pr_review_system.md`：审核 full reconcile PR 的 reviewer 规则。
+- `scripts/sync_pr_review_system.md`：独立 reviewer 的薄启动入口；具体审核规则来自 PR body auto 区中的 `Sync Review Contract`。
 
 ---
 
@@ -19,23 +20,32 @@ full_reconcile
 
 ```text
 当前项目事实 + 最新 coding-workflow upstream 规则
-→ 重新形成 Repo Facts Map
-→ 全量检查 9 个核心文档
-→ 生成本次 PR review 证据
+→ 脚本生成本轮 evidence epoch
+→ agent 只补 Repo Facts Map、项目化文档和语义证据
+→ 脚本生成 PR body auto 区的 Sync Review Contract
+→ 脚本校验 PR body auto 区与本轮 sync_state 一致
+→ 独立 reviewer 按 Sync Review Contract 守语义质量门
 ```
 
-本工具不维护 `.coding_workflow/source.json`，也不记录“上次同步到哪个项目 commit”。目标项目的日常文档维护由项目自身的 `AGENTS.md` / `TESTING.md` / `PR_Checklist.md` / `architecture.md` 等长期文件承担；sync 只负责在需要时全量复核当前状态。
+本工具不维护 `.coding_workflow/source.json`，也不记录“上次同步到哪个项目 commit”。`.coding_workflow/diffs/sync_state.json` 只属于本次运行生成的 evidence epoch，每次 sync 都会随 `.coding_workflow/diffs/` 清空重建。
 
 ---
 
-## 2. 适用场景
+## 2. 单入口命令
 
-| 场景 | 何时用 | 结果 |
-|---|---|---|
-| 首次接入 | 目标项目第一次引入 workflow 文档体系 | 安装缺失核心文档并要求项目化 |
-| 周期复核 | 怀疑项目文档已漂移 | 重新审当前项目事实和 9 个核心文档 |
-| upstream 升级吸收 | coding-workflow 新增或修改规则 | 用最新 upstream 规则全量检查本地文档 |
-| PR review 前证据刷新 | sync PR 打开前或修复后 | 生成最新 `.coding_workflow/diffs/` 证据 |
+普通 sync：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash
+```
+
+最终机械校验：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash -s -- --final
+```
+
+`sync.sh` 是唯一人机入口。Python 的 `--update-pr-body` 和 `--check-final` 是内部 CLI，agent 不需要直接记。
 
 ---
 
@@ -43,128 +53,104 @@ full_reconcile
 
 - 当前目录位于目标项目的 git worktree 内。
 - 项目代码、配置、测试变更已经 commit / stash / discard。
-- 允许 dirty 的文件只有 9 个核心文档、`.gitignore`、`PR_BODY.md` 和 `.coding_workflow/diffs/`。
+- 允许 dirty 的文件只有 contract 列出的核心文档、`.gitignore`、`PR_BODY.md` 和 `.coding_workflow/diffs/`。
 
 原因：full reconcile 的 PR body 要描述当前已提交项目事实。如果混入未提交代码，reviewer 无法判断这些事实是否会进入主干。
 
 ---
 
-## 4. 运行命令
+## 4. 脚本产物
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash
-```
+每次 sync 会清空并重建 `.coding_workflow/diffs/`：
 
-## 5. 预期输出
+| 文件 / 目录 | 用途 |
+|---|---|
+| `agent_workorder.md` | agent 首读工单，把脚本信号翻译成动作。 |
+| `pr_body_skeleton.md` | 带 sentinel 的 sync PR body 骨架。 |
+| `sync_state.json` | 本轮 evidence epoch 的结构化状态，只供本轮 update / final check 使用。 |
+| `upstream_full/` | contract 列出的 upstream 原文，给当前 agent 本地读取。 |
+| `upstream_vs_local/` | contract 列出的 upstream vs local diff。 |
+| `full_reconcile_report.md` | 本轮 commit、raw URL 和 review signals。 |
+| `installation_status.md` | contract 列出的核心文档机械状态表。 |
 
-```text
-sync mode: full_reconcile
-upstream:  <12 char sha>
-project:   <12 char sha>
-
-Read these in order:
-  1. .coding_workflow/diffs/full_reconcile_report.md
-  2. .coding_workflow/diffs/installation_status.md
-  3. .coding_workflow/diffs/upstream_vs_local/
-
-Then read these upstream instructions pinned to upstream_resolved_commit:
-  - scripts/sync_workflow_docs.md: https://raw.githubusercontent.com/wlvh/coding-workflow/<full sha>/scripts/sync_workflow_docs.md
-  - scripts/sync_pr_review_system.md: https://raw.githubusercontent.com/wlvh/coding-workflow/<full sha>/scripts/sync_pr_review_system.md
-First action: produce a full Repo Facts Map in PR body.
-The PR will be reviewed by an LLM using the pinned sync PR review system URL above.
-
-Sync Summary fields for PR body (transcribe verbatim):
-  - sync mode: full_reconcile
-  - upstream_resolved_commit: <full sha>
-  - project_head_commit: <full sha>
-  - evidence_source: working_tree
-  - core files checked: 9
-
-Working Tree State at Sync Time:
-  - project_head_commit is the base commit; evidence content is read from the working tree.
-  - evidence_source: working_tree
-  - dirty core files (working tree differs from HEAD):
-    - none / <core file path>
-```
+注意：`upstream_full/` 只降低当前 agent 的读取成本；PR body 仍必须保留 commit-pinned raw URL，供独立 reviewer 复验。
 
 ---
 
-## 6. 运行后读取顺序
+## 5. Agent 工作流
 
-1. `.coding_workflow/diffs/full_reconcile_report.md`
-   - 本次 upstream commit、项目 HEAD、raw URL、review signals。
-2. `.coding_workflow/diffs/installation_status.md`
-   - 9 个核心文件的状态。
-3. `.coding_workflow/diffs/upstream_vs_local/`
-   - 最新 upstream 模板和本地文件的逐文件 diff。
-4. `scripts/sync_workflow_docs.md`
-   - 按 full reconcile 流程写 PR body 和修改文档。
+1. 运行普通 sync。
+2. 读取 `.coding_workflow/diffs/agent_workorder.md`。
+3. 如果 `PR_BODY.md` 不存在，用 `.coding_workflow/diffs/pr_body_skeleton.md` 初始化。
+4. 填写 `PR_BODY.md` 中 agent-owned sentinel 区：
+   - `repo_facts_map`
+   - `full_document_reconcile`
+   - `remaining_human_decisions`
+5. 根据工单项目化 contract 列出的核心文档。
+6. 重跑普通 sync，让脚本刷新 script-owned auto 区。
+   原因：agent 修改核心文档和 PR body 的 agent-owned 区后，第一次 sync 生成的 `sync_state.json`、文档状态、dirty core files 和 auto 区可能已经过期。重跑 sync 会用最终工作区重新生成本轮 evidence epoch，并保留 agent-owned 区，避免 reviewer 看到旧证据。
+7. 提交前运行 `sync.sh --final`。final 会重新生成 evidence epoch，但不会刷新 `PR_BODY.md`；如果第 6 步漏跑、auto 区被手改或引用旧 upstream commit，final 必须 fail fast。
+8. 将 PR URL 交给独立 sync PR reviewer；reviewer 按 PR body auto 区的 `Sync Review Contract` 审核。
 
----
-
-## 7. PR Body 必填段
-
-```markdown
-## Repo Facts Map
-(完整 10 项，每项必须有代码路径 / 文档路径 / 命令输出等证据)
-
-## Sync Summary
-- sync mode: full_reconcile
-- upstream_resolved_commit:
-- project_head_commit:
-- evidence_source: working_tree
-- core files checked: 9
-
-## Working Tree State at Sync Time
-(复制 full_reconcile_report.md 中的工作区状态；`project_head_commit` 是 sync 运行时 base commit，证据内容来自 working tree)
-
-## Upstream Templates at Sync Time
-(复制 sync 输出的 9 个 raw URL)
-
-## Installation Status
-(复制 installation_status.md 的 9 行表格)
-
-## Full Document Reconcile
-| 文件 | 当前判断 | 是否需要更新 | 证据 |
-|---|---|---|---|
-
-## Remaining Human Decisions
-(没有也写 none)
-```
+脚本只表达机械信号。`specialized` 只表示脚本未发现模板复制、模板残留或 TODO anchor；如 Repo Facts Map 或 upstream 新规则要求，仍可修改。
 
 ---
 
-## 8. 判定规则
+## 6. PR Body Sentinel 合同
 
-- `installed_template`：sync 刚安装 upstream 模板，必须项目化后才能合并。
-- `template_copy_requires_specialization`：文件与 upstream 完全一致，除 PR template 外必须解释或项目化。
-- `partially_specialized`：仍有模板占位符，必须修。
-- `inherited_upstream_allowed`：只允许 `.github/pull_request_template.md` 使用。
-- `specialized`：看起来已项目化，但 reviewer 仍需对照 upstream raw URL 检查。
+`PR_BODY.md` 分两类区：
+
+- script-owned auto 区：由当前 `sync_state.json` 渲染，agent 不手改。
+- agent-owned 区：由 agent 填写，重跑 sync 时保留。
+- sentinel 外非空内容：不允许。重跑 sync 会 fail fast，agent 必须把人工内容搬进 `repo_facts_map`、`full_document_reconcile` 或 `remaining_human_decisions`。
+
+关键 sentinel 由脚本渲染到 `Sync Review Contract`，不要在 reviewer prompt 或人工文档里维护第二份清单。
+
+`sync.sh --final` 会字节级比较 auto 区和当前 `sync_state.json` 的渲染结果；如果 agent 忘了重跑 sync、手改 auto 区、或者 auto 区引用旧 upstream commit，都会 fail fast。
 
 ---
 
-## 9. 提交规则
+## 7. Final Gate 能证明什么
+
+`sync.sh --final` 能证明：
+
+- `PR_BODY.md` auto 区与当前 `sync_state.json` 一致，其中包括 script-owned `Sync Review Contract`。
+- contract 列出的 core files、upstream raw URL 和 upstream instruction raw URL 结构齐全。
+- Repo Facts Map 有 contract 列出的标题。
+- Full Document Reconcile 覆盖 contract 列出的核心文档。
+- PR body 和核心文档不含模板 marker / TODO anchor。
+- PR body 不再包含脚本生成的 `待补充` / `待判断` 占位符。
+- 没有 `installed_template`、`template_copy_requires_specialization`、`partially_specialized` 这类未处理机械状态。
+
+`sync.sh --final` 不能证明：
+
+- Repo Facts Map 的证据是否真实。
+- 项目化文案是否准确。
+- upstream 新规则是否被正确投影到所有本地文档。
+
+这些质量门由 PR body auto 区的 `Sync Review Contract` 定义，并由 `scripts/sync_pr_review_system.md` 启动的独立 reviewer 执行。
+
+---
+
+## 8. 提交规则
 
 只提交长期文件和必要测试。不要提交：
 
 - `.coding_workflow/diffs/`
 - 临时 clone 目录
 
-重跑 sync 会先清空旧的 `.coding_workflow/diffs/` 证据，再生成本次 full reconcile 的新证据。
-
-`PR_BODY.md` 按当前仓库规则处理：如果目标项目把它作为本地临时草稿，就不要提交；如果目标项目历史上已经跟踪它，必须遵循该项目自己的 PR 规则。
+`PR_BODY.md` 按目标项目规则处理：如果目标项目把它作为本地临时草稿，就不要提交；如果目标项目历史上已经跟踪它，必须遵循该项目自己的 PR 规则。
 
 ---
 
-## 10. sync PR review
+## 9. sync PR review
 
 把 PR URL 给独立 reviewer，并使用：
 
 ```text
-你是 sync PR reviewer。请按 PR body 中 `scripts/sync_pr_review_system.md` 对应的 upstream_resolved_commit raw URL 规则审核 PR <URL>，输出格式严格按其 "## Sync PR Review" 模板。
+你是 sync PR reviewer。请按 PR body auto 区的 `Sync Review Contract` 审核 PR <URL>，并使用 PR body 中 commit-pinned 的 reviewer prompt raw URL 对齐输出格式。
 
-特别注意：PR body 必须包含 9 个 upstream raw GitHub URL。你必须打开这些 URL，并对照 PR head 上的 9 个核心文档做 full reconcile cross-check。
+特别注意：你必须打开 contract 列出的全部 raw GitHub URL，并对照 PR head 上 contract 列出的核心文档做 full reconcile cross-check。
 ```
 
 通过条件：
