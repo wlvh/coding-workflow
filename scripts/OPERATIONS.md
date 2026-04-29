@@ -10,14 +10,6 @@
 
 ## 1. 模式定义
 
-本工具只保留一种模式：
-
-```text
-full_reconcile
-```
-
-含义：
-
 ```text
 当前项目事实 + 最新 coding-workflow upstream 规则
 → 脚本生成本轮 evidence epoch
@@ -26,8 +18,6 @@ full_reconcile
 → 脚本校验 PR body auto 区与本轮 sync_state 一致
 → 独立 reviewer 按 Sync Review Contract 守语义质量门
 ```
-
-本工具不维护 `.coding_workflow/source.json`，也不记录“上次同步到哪个项目 commit”。`.coding_workflow/diffs/sync_state.json` 只属于本次运行生成的 evidence epoch，每次 sync 都会随 `.coding_workflow/diffs/` 清空重建。
 
 ---
 
