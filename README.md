@@ -188,7 +188,7 @@ E. 输出风格约束
 `OPERATIONS.md` 的 commit-pinned URL，不复制四段长 prompt。
 
 - 机械合同：`sync.sh --final`；`PR_BODY.md` auto 区的 `Sync Review Contract` 只保留本轮 reviewer 输入和分工边界
-- 语义交接：`scripts/OPERATIONS.md` 承载 4 个 pass prompt；`PR_BODY.md` agent 区的 `Sync Pass Status` 只记录每个 pass 的 ready 状态和证据索引
+- 语义交接：`scripts/OPERATIONS.md` 承载 4 个 pass prompt；`PR_BODY.md` agent 区的 `Full Document Reconcile` 记录每个核心文档的 upstream semantic delta、采纳 / 拒绝位置、证据和 downstream impact，`Remaining Human Decisions` 暴露仍需判断的语义事项
 - 独立 reviewer 是必经语义质量门；final gate 只证明机械一致性，不能替代证据真实性和 upstream 规则吸收审查
 - 如果已有 `PR_BODY.md` 不是 sync sentinel body，普通 sync 会 fail-fast；先移走、删除，或手动迁入 sync PR body 的 agent-owned 区后再运行
 - 本轮证据目录：`.coding_workflow/diffs/`
@@ -198,7 +198,7 @@ E. 输出风格约束
 - reviewer 启动 prompt：`scripts/sync_pr_review_system.md`
 - 回归测试：`tests/test_sync_coding_workflow.py`
 
-开发 sync 工具时，若改动工单、PR body、final gate、reviewer prompt 或 pass status 合同，必须同步检查：
+开发 sync 工具时，若改动工单、PR body、final gate、reviewer prompt 或 pass 交接合同，必须同步检查：
 
 - `scripts/sync_coding_workflow.py`
 - `scripts/OPERATIONS.md`

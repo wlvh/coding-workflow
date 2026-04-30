@@ -258,16 +258,21 @@ def fill_agent_placeholders(pr_body_path: Path) -> None:
         Agent-owned sections no longer contain final-gate placeholder words.
     """
     text = pr_body_path.read_text(encoding="utf-8")
-    if "待补充" not in text or "待判断" not in text:
+    if "待补充" not in text:
         raise AssertionError("expected script placeholders before filling")
-    text = text.replace("待补充", "已填写")
-    text = text.replace("待判断", "无需更新")
-    for sync_pass in SYNC_MODULE.SYNC_PASSES:
-        pass_id = str(sync_pass["id"])
-        title = str(sync_pass["title"])
-        text = text.replace(
-            f"| `{pass_id}` | {title} | 已填写 | 已填写 |",
-            f"| `{pass_id}` | {title} | `ready_for_next_pass` | 已填写 |",
+    for section_name in SYNC_MODULE.AGENT_SECTIONS:
+        start = SYNC_MODULE.agent_section_start(section_name=section_name)
+        end = SYNC_MODULE.agent_section_end(section_name=section_name)
+        start_index, end_index = SYNC_MODULE.sentinel_span(
+            text=text,
+            start=start,
+            end=end,
+        )
+        section = text[start_index:end_index]
+        text = (
+            text[:start_index]
+            + section.replace("待补充", "已填写")
+            + text[end_index:]
         )
     pr_body_path.write_text(text, encoding="utf-8")
 
@@ -295,8 +300,215 @@ def extract_review_contract(pr_body_text: str) -> str:
     return pr_body_text[start_index:end_index]
 
 
+def sample_sync_state() -> dict[str, object]:
+    """Build a minimal state for render-only PR body tests.
+
+    Parameters:
+        None.
+
+    Expected output:
+        State dictionary with all core and prompt records needed by
+        `render_pr_body_skeleton`. URLs are inert because the test only verifies
+        local rendering from constants.
+    """
+    core_records = []
+    for rel_path in CORE_FILES:
+        core_records.append({
+            "path": rel_path,
+            "sync_pass_id": SYNC_MODULE.sync_pass_id_for_file(
+                rel_path=rel_path,
+            ),
+            "status": "specialized",
+            "note": "ok",
+            "upstream_raw_url": f"https://example.invalid/{rel_path}",
+        })
+    prompt_records = [
+        {
+            "path": rel_path,
+            "upstream_raw_url": f"https://example.invalid/{rel_path}",
+        }
+        for rel_path in SYNC_MODULE.SYNC_PROMPT_FILES
+    ]
+    return SYNC_MODULE.build_sync_state(
+        upstream_sha="a" * 40,
+        project_sha="b" * 40,
+        dirty_core_files=[],
+        core_records=core_records,
+        sync_prompt_records=prompt_records,
+    )
+
+
 class SyncWorkflowTests(unittest.TestCase):
     """Behavioral regressions for sync shell and PR body helpers."""
+
+    def test_pr_body_skeleton_renders_sync_constants(self) -> None:
+        """Generated skeleton should own PR body structure literals."""
+        state = sample_sync_state()
+        skeleton = SYNC_MODULE.render_pr_body_skeleton(
+            state=state,
+        )
+        expected_literals = [
+            SYNC_MODULE.SYNC_PR_BODY_MARKER,
+            SYNC_MODULE.SYNC_AUTO_START,
+            SYNC_MODULE.SYNC_AUTO_END,
+            "| " + " | ".join(SYNC_MODULE.FULL_RECONCILE_COLUMNS) + " |",
+        ]
+        for section_name in SYNC_MODULE.AGENT_SECTIONS:
+            expected_literals.extend((
+                SYNC_MODULE.agent_section_start(section_name=section_name),
+                SYNC_MODULE.agent_section_end(section_name=section_name),
+            ))
+        expected_literals.extend(SYNC_MODULE.REPO_FACTS_HEADINGS)
+        for sync_pass in SYNC_MODULE.SYNC_PASSES:
+            expected_literals.append(str(sync_pass["title"]))
+
+        for literal in expected_literals:
+            self.assertIn(
+                literal,
+                skeleton,
+                msg=f"PR body skeleton missing sync literal: {literal}",
+            )
+        self.assertNotIn(
+            "待补充 | 待补充 | none | 待补充 | 待判断",
+            skeleton,
+        )
+        for record in state["core_files"]:
+            pass_title = SYNC_MODULE.sync_pass_title_for_id(
+                pass_id=str(record["sync_pass_id"]),
+            )
+            expected_row = (
+                f"| {pass_title} | `{record['path']}` | "
+                f"`{record['status']}` | "
+                "待补充 | 待补充 | 待补充 | 待补充 | 待补充 |"
+            )
+            self.assertIn(expected_row, skeleton)
+
+    def test_each_pass_prompt_contains_common_execution_rules(self) -> None:
+        """Every copyable pass prompt should carry its own guardrails."""
+        operations_text = (
+            REPO_ROOT / "scripts/OPERATIONS.md"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("### 2.0 共用执行契约", operations_text)
+        self.assertNotIn("ready_for_next_pass", operations_text)
+        self.assertNotIn("Sync Pass Status", operations_text)
+        self.assertNotIn("pass_handoffs", operations_text)
+        self.assertNotIn(
+            "PASS 4 回报普通 sync 已重跑、全部 pass ready",
+            operations_text,
+        )
+        self.assertNotIn("整体任务：更新本地代码", operations_text)
+        self.assertIn(
+            "每次新开对话，只复制并执行对应 PASS 的 code block",
+            operations_text,
+        )
+        self.assertIn(
+            "不以\nPASS 4 的聊天摘要作为事实源",
+            operations_text,
+        )
+        self.assertNotIn("第一步打开", operations_text)
+        self.assertIn(
+            "用户只需要从 PASS 1 开始复制对应 PASS 的 code block 到新对话",
+            operations_text,
+        )
+        self.assertIn(
+            "给执行 agent 的本轮工单和机器信号",
+            operations_text,
+        )
+        self.assertIn(
+            "用户不阅读也不影响启动下一步",
+            operations_text,
+        )
+        self.assertIn("执行 agent 会按 prompt 读取它", operations_text)
+        reconcile_agent_columns = [
+            column
+            for column in SYNC_MODULE.FULL_RECONCILE_COLUMNS
+            if column not in {"pass", "文件", "当前脚本信号"}
+        ]
+        common_literals = [
+            "整体目标：完成本轮 workflow docs sync",
+            "owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区",
+            "当前任务：只执行",
+            "不要执行其他 PASS",
+            "共用执行规则",
+            ".coding_workflow/diffs/agent_workorder.md",
+            ".coding_workflow/diffs/pr_body_skeleton.md",
+            "PR_BODY.md",
+            "初始化；如果 skeleton 缺失",
+            SYNC_MODULE.SYNC_AUTO_START,
+            SYNC_MODULE.SYNC_AUTO_END,
+            "任何 sync sentinel、sentinel 外内容",
+            "agent-owned 内容不能保留 `待补充`",
+            "`待判断` 留给 reviewer 和用户",
+            "文档语义对账表",
+            "没有拒绝项或下游影响时写",
+            "三类漂移定义",
+            "class-1 template/missing：本地缺文档",
+            "class-2 upstream：`upstream_full` 有新规则 / 新说明",
+            "class-3 code/test/behavior drift：当前代码、测试、用户可见行为已经发展",
+            "evidence 列必须显式覆盖三类漂移",
+            "class-1 template/missing",
+            "class-2 upstream",
+            "class-3 code/test/behavior drift",
+            (
+                "curl -fsSL https://raw.githubusercontent.com/"
+                "wlvh/coding-workflow/main/scripts/sync.sh | bash"
+            ),
+            "不要手修 auto 区",
+            "回报普通 sync 已成功",
+        ]
+        common_literals.extend(str(column) for column in reconcile_agent_columns)
+        sync_passes = list(SYNC_MODULE.SYNC_PASSES)
+        for index, sync_pass in enumerate(sync_passes, start=1):
+            title = str(sync_pass["title"])
+            start = f"### 2.{index} {title}"
+            if index < len(sync_passes):
+                next_title = str(sync_passes[index]["title"])
+                end = f"### 2.{index + 1} {next_title}"
+            else:
+                end = "---\n\n## 3. PR 提交 Agent"
+            self.assertIn(start, operations_text)
+            self.assertIn(end, operations_text)
+            pass_text = operations_text.split(start, maxsplit=1)[1].split(
+                end,
+                maxsplit=1,
+            )[0]
+            self.assertNotIn("本文档", pass_text)
+            self.assertEqual(
+                pass_text.count("如果不存在，先用"),
+                1,
+                msg=f"{title} prompt should define PR_BODY init once",
+            )
+            self.assertNotIn("回报修改了哪些文件", pass_text)
+            self.assertNotIn("回报是否写入 downstream impact", pass_text)
+            self.assertNotIn("PR body sections", pass_text)
+            self.assertNotIn("是否全部 pass ready", pass_text)
+            pass_specific_literals = []
+            if title == "PASS 3 - TESTING Independent Review":
+                pass_specific_literals.extend((
+                    "机械信号收集",
+                    "find tests -type f -name 'test_*.py'",
+                    "grep -rh",
+                    "git log --since='3 months ago'",
+                    "按项目等价工具改写并在 evidence 写明实际命令",
+                ))
+            if title == "PASS 4 - Governance / Reverse Closure":
+                pass_specific_literals.extend((
+                    "downstream impact 列必须逐 pass 显式列出",
+                    "PASS 1 找到 N 条 class-3 漂移",
+                    "PASS 2 ... 闭合于 capability_contract.json",
+                    "PASS 3 ... 闭合于 TESTING_REVIEW_PACKET",
+                ))
+            expected_literals = [*common_literals]
+            expected_literals.extend(pass_specific_literals)
+            expected_literals.extend(
+                f"`{rel_path}`" for rel_path in sync_pass["files"]
+            )
+            for literal in expected_literals:
+                self.assertIn(
+                    literal,
+                    pass_text,
+                    msg=f"{title} prompt missing self-contained rule: {literal}",
+                )
 
     def test_final_mode_rejects_stale_auto_without_refresh(self) -> None:
         """`--final` must not repair stale auto content before checking it."""
@@ -427,8 +639,8 @@ class SyncWorkflowTests(unittest.TestCase):
 
             self.assertIn("Final sync check passed", result.stdout)
 
-    def test_final_mode_rejects_unready_pass_status(self) -> None:
-        """Final gate should require ready status for every sync pass."""
+    def test_final_mode_rejects_unfilled_placeholder(self) -> None:
+        """Final gate should reject agent-owned script placeholders."""
         with tempfile.TemporaryDirectory() as temp_dir:
             target_root = Path(temp_dir)
             create_target_repo(repo_root=target_root, omitted_paths=set())
@@ -436,10 +648,8 @@ class SyncWorkflowTests(unittest.TestCase):
             fill_agent_placeholders(pr_body_path=pr_body_path)
             pr_body_path.write_text(
                 pr_body_path.read_text(encoding="utf-8").replace(
-                    "| `code_architecture` | PASS 1 - Code Facts / "
-                    "Architecture | `ready_for_next_pass` | 已填写 |",
-                    "| `code_architecture` | PASS 1 - Code Facts / "
-                    "Architecture | blocked_human_decision | 已填写 |",
+                    "已填写",
+                    "待补充",
                     1,
                 ),
                 encoding="utf-8",
@@ -454,40 +664,35 @@ class SyncWorkflowTests(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn(
-                "status column must be ready_for_next_pass",
+                "still contains placeholder: 待补充",
                 f"{result.stdout}\n{result.stderr}",
             )
 
-    def test_final_mode_rejects_ready_token_outside_status(self) -> None:
-        """Only the Sync Pass Status table can make a pass ready."""
+    def test_final_mode_allows_visible_semantic_pending_decisions(self) -> None:
+        """Final gate should leave semantic uncertainty to independent review."""
         with tempfile.TemporaryDirectory() as temp_dir:
             target_root = Path(temp_dir)
             create_target_repo(repo_root=target_root, omitted_paths=set())
             pr_body_path = create_sync_pr_body(repo_root=target_root)
             fill_agent_placeholders(pr_body_path=pr_body_path)
-            text = pr_body_path.read_text(encoding="utf-8")
-            text = text.replace(
-                "| `code_architecture` | PASS 1 - Code Facts / "
-                "Architecture | `ready_for_next_pass` | 已填写 |",
-                "| `code_architecture` | PASS 1 - Code Facts / "
-                "Architecture | blocked_human_decision | "
-                "提到 ready_for_next_pass 但状态未闭合 |",
-                1,
+            pr_body_path.write_text(
+                pr_body_path.read_text(encoding="utf-8").replace(
+                    "已填写",
+                    "待判断",
+                    1,
+                ),
+                encoding="utf-8",
             )
-            pr_body_path.write_text(text, encoding="utf-8")
 
             result = run_command(
                 args=["bash", str(SYNC_SH), "--final"],
                 cwd=target_root,
                 env=sync_env(upstream_dir=REPO_ROOT),
-                check=False,
+                check=True,
             )
 
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn(
-                "status column must be ready_for_next_pass",
-                f"{result.stdout}\n{result.stderr}",
-            )
+            self.assertIn("Final sync check passed", result.stdout)
+            self.assertIn("待判断", pr_body_path.read_text(encoding="utf-8"))
 
     def test_generated_workorder_stays_thin_and_points_to_runbook(self) -> None:
         """Sync workorder should list machine facts, not duplicate prompts."""
@@ -495,7 +700,16 @@ class SyncWorkflowTests(unittest.TestCase):
             target_root = Path(temp_dir)
             create_target_repo(repo_root=target_root, omitted_paths=set())
 
-            run_sync(repo_root=target_root, check=True)
+            result = run_sync(repo_root=target_root, check=True)
+            output = f"{result.stdout}\n{result.stderr}"
+            self.assertIn("sync OK: full_reconcile", output)
+            self.assertIn("runbook:", output)
+            self.assertIn("raw.githubusercontent.com", output)
+            self.assertIn("agent workorder:", output)
+            self.assertNotIn("Read these in order", output)
+            self.assertNotIn("First action", output)
+            self.assertNotIn("installation_status.md", output)
+            self.assertNotIn("full_reconcile_report.md", output)
 
             workorder_path = (
                 target_root
@@ -503,27 +717,38 @@ class SyncWorkflowTests(unittest.TestCase):
             )
             workorder = workorder_path.read_text(encoding="utf-8")
             self.assertIn("scripts/OPERATIONS.md", workorder)
-            self.assertIn("## Sync Pass Plan", workorder)
             self.assertIn("## 文件处理清单", workorder)
-            self.assertIn("Sync Pass Status", workorder)
+            self.assertNotIn("## 入口", workorder)
+            self.assertNotIn("## 角色边界", workorder)
+            self.assertNotIn("## Sync Pass Plan", workorder)
+            self.assertNotIn("## 本地读取优先级", workorder)
+            self.assertNotIn("Sync Pass Status", workorder)
             self.assertIn("PASS 3 - TESTING Independent Review", workorder)
             workorder_lines = workorder.splitlines()
-            plan_header_index = workorder_lines.index("| Pass | 处理文件 |")
-            self.assertEqual("|---|---|", workorder_lines[plan_header_index + 1])
+            file_header_index = workorder_lines.index(
+                "| Pass | 文件 | 脚本信号 | 机械动作 | marker / TODO 命中 |"
+            )
             self.assertTrue(
-                workorder_lines[plan_header_index + 2].startswith(
-                    "| PASS 1 - Code Facts / Architecture |"
-                )
+                workorder_lines[file_header_index + 2].startswith(
+                    "| PASS 1 - Code Facts / Architecture | `architecture.md` |"
+                ),
             )
             self.assertNotIn("## Copyable Pass Prompts", workorder)
             self.assertEqual(0, workorder.count("```text"))
             self.assertNotIn("tests_not_worth_adding", workorder)
             self.assertNotIn("propagation_targets", workorder)
             self.assertNotIn("kick_back_to", workorder)
-            self.assertIn("AGENTS.md ## 文件简介", workorder)
+            self.assertNotIn("AGENTS.md ## 文件简介", workorder)
+            self.assertNotIn("Repo Facts Map", workorder)
             self.assertNotIn("upstream_vs_local", workorder)
             self.assertFalse(
                 (target_root / ".coding_workflow/diffs/upstream_vs_local").exists()
+            )
+            self.assertFalse(
+                (target_root / ".coding_workflow/diffs/installation_status.md").exists()
+            )
+            self.assertFalse(
+                (target_root / ".coding_workflow/diffs/full_reconcile_report.md").exists()
             )
 
     def test_final_mode_delegates_semantic_table_to_review(self) -> None:
