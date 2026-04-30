@@ -164,11 +164,11 @@ E. 输出风格约束
 - `PR_BODY.md`：本地临时 PR body 草稿，由 `.github/pull_request_template.md` 生成，不提交仓库；是 review 的重要输入材料。
 - `Merge Readiness Report`：判断当前 PR 是否具备合并条件。
 - `FSD 完备性验收报告`：Issue 关闭前的最后一道契约核查。
-- `Workflow Docs Sync`：用 `scripts/sync.sh` 生成 full reconcile 证据、agent 工单和带 `Sync Review Contract` 的 sync PR body 骨架，最终由独立 reviewer 守语义质量门。
+- `Workflow Docs Sync`：用 `scripts/sync.sh` 生成 full reconcile 证据、薄工单和带紧凑 `Sync Review Contract` 的 sync PR body 骨架，4 个 pass prompt 由 `scripts/OPERATIONS.md` 承载，最终由独立 reviewer 守语义质量门。
 
 ## 代码项目核心文档
 
-本仓库中的这些文件是给目标项目继承和项目化的 upstream 模板 / 样本文档。开发 sync 工具时，不因为工具实现细节去改写 `AGENTS.md`、`TESTING.md`、`architecture.md` 这类模板；sync 工具自身的行为说明落在 `README.md` 和 `scripts/` 下。例外是 `.github/pull_request_template.md`：它是长期 PR body 模板，可以直接继承 upstream。
+本仓库中的这些文件是给目标项目继承和项目化的 upstream 模板 / 样本文档。开发 sync 工具时，不因为工具实现细节去改写 `AGENTS.md`、`TESTING.md`、`PR_Checklist.md`、`architecture.md` 这类模板；sync 工具自身的操作说明、实现文件清单和回归测试说明落在 `README.md` 和 `scripts/` 下。例外是 `.github/pull_request_template.md`：它是长期 PR body 模板，可以直接继承 upstream。
 
 - `AGENTS.md`：agent 工作入口、文件简介、代码规范与文档关系。
 - `architecture.md`：系统架构、模块边界、数据流、架构不变量与扩展点。
@@ -183,8 +183,29 @@ E. 输出风格约束
 ## Workflow Docs Sync
 
 完整操作入口见 `scripts/OPERATIONS.md`。该手册说明如何运行 `scripts/sync.sh`、
-把工单交给 sync agent、由 PR 提交 agent 运行 final gate，并用
-`scripts/sync_pr_review_system.md` 启动独立 review。
+用四个专用 prompt / 新对话按 pass 接力执行 sync、由 PR 提交 agent 运行 final gate，并用
+`scripts/sync_pr_review_system.md` 启动独立 review。`agent_workorder.md` 只列本轮机器信号和
+`OPERATIONS.md` 的 commit-pinned URL，不复制四段长 prompt。
 
-- 机械合同：`PR_BODY.md` auto 区的 `Sync Review Contract`
+- 机械合同：`sync.sh --final`；`PR_BODY.md` auto 区的 `Sync Review Contract` 只保留本轮 reviewer 输入和分工边界
+- 语义交接：`scripts/OPERATIONS.md` 承载 4 个 pass prompt；`PR_BODY.md` agent 区的 `Sync Pass Status` 只记录每个 pass 的 ready 状态和证据索引
+- 独立 reviewer 是必经语义质量门；final gate 只证明机械一致性，不能替代证据真实性和 upstream 规则吸收审查
+- 如果已有 `PR_BODY.md` 不是 sync sentinel body，普通 sync 会 fail-fast；先移走、删除，或手动迁入 sync PR body 的 agent-owned 区后再运行
 - 本轮证据目录：`.coding_workflow/diffs/`
+- 工具实现：`scripts/sync_coding_workflow.py`
+- 一次性启动入口：`scripts/sync.sh`
+- 操作手册：`scripts/OPERATIONS.md`
+- reviewer 启动 prompt：`scripts/sync_pr_review_system.md`
+- 回归测试：`tests/test_sync_coding_workflow.py`
+
+开发 sync 工具时，若改动工单、PR body、final gate、reviewer prompt 或 pass status 合同，必须同步检查：
+
+- `scripts/sync_coding_workflow.py`
+- `scripts/OPERATIONS.md`
+- `scripts/sync_pr_review_system.md`
+- `README.md`
+- `tests/test_sync_coding_workflow.py`
+
+这些要求属于本仓库 sync 工具维护规则，不写入下游项目会继承的 `AGENTS.md` / `TESTING.md` / `PR_Checklist.md` 模板。
+
+当前 sync 工具的 `TESTING.md` 独立 pass 是生成工单和 PR body 的合同，不是 `TESTING.md` 模板正文。该 pass 要求 sync agent 单独检查测试冗余、必要性、真实失败覆盖、mock-only 风险、E2E/scenario 价值和不值得新增的测试。
