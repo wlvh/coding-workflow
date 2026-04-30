@@ -23,8 +23,6 @@ curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/s
 - 不要混入非 sync 的代码、配置或测试 dirty 改动；脚本会 fail-fast 并列出路径。
 - 根据本轮工单重跑普通 sync 时，只允许本轮核心文档、`.gitignore`、
   `PR_BODY.md` 和 `.coding_workflow/diffs/` 处于 dirty 状态。
-- 如果已有 `PR_BODY.md` 不是 sync sentinel body，普通 sync 会 fail-fast；
-  先移走、删除，或手动迁入 sync PR body 的 agent-owned 区后再运行。
 
 普通 sync 输出：
 
@@ -33,17 +31,9 @@ curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/s
 - `.coding_workflow/diffs/sync_state.json`：final gate 使用的机器状态。
 - `.coding_workflow/diffs/upstream_full/`：本轮上游模板本地副本。
 
-不要提交 `.coding_workflow/diffs/`。
-
 ---
 
 ## 2. Sync Agent Pass
-
-每个 pass 必须用一个新对话和下方专用 prompt，在同一个目标仓库工作区继续。
-不要把四个 pass 共用同一段 prompt；专用 prompt 的目的，是降低用户心智负担，
-并把 agent 审核能力固定在对应证据域。普通 sync 不再复制这些 prompt 到代码生成的
-`agent_workorder.md`；工单只列本轮文件清单、脚本信号、上游模板路径和本文档的
-commit-pinned raw URL。
 
 PASS 1 - Code Facts / Architecture：
 
