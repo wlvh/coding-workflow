@@ -1,4 +1,4 @@
-"""Regression tests for workflow-docs sync handoff behavior.
+"""Regression tests for workflow-docs sync behavior.
 
 Call flow:
     python -m unittest discover -s tests
@@ -46,7 +46,6 @@ def load_sync_module() -> object:
 
 SYNC_MODULE = load_sync_module()
 CORE_FILES = tuple(SYNC_MODULE.CORE_FILES)
-REMOVED_AGENT_PROMPT = "scripts/sync_workflow_docs.md"
 
 
 def run_command(
@@ -166,6 +165,48 @@ def create_target_repo(repo_root: Path, omitted_paths: set[str]) -> None:
     commit_initial_repo(repo_root=repo_root)
 
 
+def run_sync(repo_root: Path, check: bool) -> subprocess.CompletedProcess[str]:
+    """Run the public sync launcher against the checkout under test.
+
+    Parameters:
+        repo_root: Temporary target repository root.
+        check: Whether a non-zero result should fail immediately.
+
+    Expected output:
+        Completed sync process using this repository as the upstream template.
+    """
+    return run_command(
+        args=["bash", str(SYNC_SH)],
+        cwd=repo_root,
+        env=sync_env(upstream_dir=REPO_ROOT),
+        check=check,
+    )
+
+
+def create_sync_pr_body(repo_root: Path) -> Path:
+    """Run ordinary sync and create a sentinel PR body for final-gate tests.
+
+    Parameters:
+        repo_root: Temporary target repository root.
+
+    Expected output:
+        Path to `PR_BODY.md` created from the current sync skeleton.
+    """
+    run_sync(repo_root=repo_root, check=True)
+    run_command(
+        args=[
+            "python3",
+            str(REPO_ROOT / "scripts" / "sync_coding_workflow.py"),
+            "--update-pr-body",
+            "PR_BODY.md",
+        ],
+        cwd=repo_root,
+        env=sync_env(upstream_dir=REPO_ROOT),
+        check=True,
+    )
+    return repo_root / "PR_BODY.md"
+
+
 def create_upstream_without_prompt(
     upstream_root: Path,
     missing_prompt_path: str,
@@ -221,11 +262,18 @@ def fill_agent_placeholders(pr_body_path: Path) -> None:
         raise AssertionError("expected script placeholders before filling")
     text = text.replace("待补充", "已填写")
     text = text.replace("待判断", "无需更新")
+    for sync_pass in SYNC_MODULE.SYNC_PASSES:
+        pass_id = str(sync_pass["id"])
+        title = str(sync_pass["title"])
+        text = text.replace(
+            f"| `{pass_id}` | {title} | 已填写 | 已填写 |",
+            f"| `{pass_id}` | {title} | `ready_for_next_pass` | 已填写 |",
+        )
     pr_body_path.write_text(text, encoding="utf-8")
 
 
 def extract_review_contract(pr_body_text: str) -> str:
-    """Extract the script-owned review contract from a generated PR body.
+    """Extract the compact review contract from a generated PR body.
 
     Parameters:
         pr_body_text: Full PR body skeleton or draft.
@@ -255,23 +303,12 @@ class SyncWorkflowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             target_root = Path(temp_dir)
             create_target_repo(repo_root=target_root, omitted_paths=set())
-            (target_root / "PR_BODY.md").write_text(
-                "legacy draft\n",
-                encoding="utf-8",
-            )
-
-            run_command(
-                args=["bash", str(SYNC_SH)],
-                cwd=target_root,
-                env=sync_env(upstream_dir=REPO_ROOT),
-                check=True,
-            )
-            pr_body_path = target_root / "PR_BODY.md"
+            pr_body_path = create_sync_pr_body(repo_root=target_root)
             fill_agent_placeholders(pr_body_path=pr_body_path)
             pr_body_text = pr_body_path.read_text(encoding="utf-8")
             stale_pr_body = pr_body_text.replace(
-                "authoritative checklist",
-                "stale checklist",
+                "Final gate owns sentinels",
+                "Stale gate owns sentinels",
             )
             pr_body_path.write_text(
                 stale_pr_body,
@@ -291,7 +328,7 @@ class SyncWorkflowTests(unittest.TestCase):
                 f"{result.stdout}\n{result.stderr}",
             )
             self.assertIn(
-                "stale checklist",
+                "Stale gate",
                 pr_body_path.read_text(encoding="utf-8"),
             )
 
@@ -304,12 +341,7 @@ class SyncWorkflowTests(unittest.TestCase):
                 omitted_paths={"docs/business_user_guide.md"},
             )
 
-            run_command(
-                args=["bash", str(SYNC_SH)],
-                cwd=target_root,
-                env=sync_env(upstream_dir=REPO_ROOT),
-                check=True,
-            )
+            run_sync(repo_root=target_root, check=True)
 
             state_path = target_root / ".coding_workflow/diffs/sync_state.json"
             state = json.loads(state_path.read_text(encoding="utf-8"))
@@ -329,18 +361,7 @@ class SyncWorkflowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             target_root = Path(temp_dir)
             create_target_repo(repo_root=target_root, omitted_paths=set())
-            (target_root / "PR_BODY.md").write_text(
-                "legacy draft\n",
-                encoding="utf-8",
-            )
-
-            run_command(
-                args=["bash", str(SYNC_SH)],
-                cwd=target_root,
-                env=sync_env(upstream_dir=REPO_ROOT),
-                check=True,
-            )
-            pr_body_path = target_root / "PR_BODY.md"
+            pr_body_path = create_sync_pr_body(repo_root=target_root)
             fill_agent_placeholders(pr_body_path=pr_body_path)
             with pr_body_path.open(mode="a", encoding="utf-8") as pr_body:
                 pr_body.write("\n## 验证\noutside sentinel\n")
@@ -362,23 +383,40 @@ class SyncWorkflowTests(unittest.TestCase):
                 pr_body_path.read_text(encoding="utf-8"),
             )
 
+    def test_refresh_rejects_non_sync_pr_body(self) -> None:
+        """Ordinary sync should fail fast instead of migrating old drafts."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            create_target_repo(repo_root=target_root, omitted_paths=set())
+            (target_root / "PR_BODY.md").write_text(
+                "ordinary draft\n",
+                encoding="utf-8",
+            )
+
+            result = run_command(
+                args=["bash", str(SYNC_SH)],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "exists but is not a sync PR body",
+                f"{result.stdout}\n{result.stderr}",
+            )
+            self.assertEqual(
+                "ordinary draft\n",
+                (target_root / "PR_BODY.md").read_text(encoding="utf-8"),
+            )
+
     def test_final_mode_passes_with_current_complete_pr_body(self) -> None:
         """`--final` should pass when auto and agent sections are complete."""
         with tempfile.TemporaryDirectory() as temp_dir:
             target_root = Path(temp_dir)
             create_target_repo(repo_root=target_root, omitted_paths=set())
-            (target_root / "PR_BODY.md").write_text(
-                "legacy draft\n",
-                encoding="utf-8",
-            )
-
-            run_command(
-                args=["bash", str(SYNC_SH)],
-                cwd=target_root,
-                env=sync_env(upstream_dir=REPO_ROOT),
-                check=True,
-            )
-            fill_agent_placeholders(pr_body_path=target_root / "PR_BODY.md")
+            pr_body_path = create_sync_pr_body(repo_root=target_root)
+            fill_agent_placeholders(pr_body_path=pr_body_path)
 
             result = run_command(
                 args=["bash", str(SYNC_SH), "--final"],
@@ -389,8 +427,135 @@ class SyncWorkflowTests(unittest.TestCase):
 
             self.assertIn("Final sync check passed", result.stdout)
 
-    def test_pr_body_review_contract_lists_script_constants(self) -> None:
-        """Generated review contract should dump script-owned literals."""
+    def test_final_mode_rejects_unready_pass_status(self) -> None:
+        """Final gate should require ready status for every sync pass."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            create_target_repo(repo_root=target_root, omitted_paths=set())
+            pr_body_path = create_sync_pr_body(repo_root=target_root)
+            fill_agent_placeholders(pr_body_path=pr_body_path)
+            pr_body_path.write_text(
+                pr_body_path.read_text(encoding="utf-8").replace(
+                    "| `code_architecture` | PASS 1 - Code Facts / "
+                    "Architecture | `ready_for_next_pass` | 已填写 |",
+                    "| `code_architecture` | PASS 1 - Code Facts / "
+                    "Architecture | blocked_human_decision | 已填写 |",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_command(
+                args=["bash", str(SYNC_SH), "--final"],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "status column must be ready_for_next_pass",
+                f"{result.stdout}\n{result.stderr}",
+            )
+
+    def test_final_mode_rejects_ready_token_outside_status(self) -> None:
+        """Only the Sync Pass Status table can make a pass ready."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            create_target_repo(repo_root=target_root, omitted_paths=set())
+            pr_body_path = create_sync_pr_body(repo_root=target_root)
+            fill_agent_placeholders(pr_body_path=pr_body_path)
+            text = pr_body_path.read_text(encoding="utf-8")
+            text = text.replace(
+                "| `code_architecture` | PASS 1 - Code Facts / "
+                "Architecture | `ready_for_next_pass` | 已填写 |",
+                "| `code_architecture` | PASS 1 - Code Facts / "
+                "Architecture | blocked_human_decision | "
+                "提到 ready_for_next_pass 但状态未闭合 |",
+                1,
+            )
+            pr_body_path.write_text(text, encoding="utf-8")
+
+            result = run_command(
+                args=["bash", str(SYNC_SH), "--final"],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "status column must be ready_for_next_pass",
+                f"{result.stdout}\n{result.stderr}",
+            )
+
+    def test_generated_workorder_stays_thin_and_points_to_runbook(self) -> None:
+        """Sync workorder should list machine facts, not duplicate prompts."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            create_target_repo(repo_root=target_root, omitted_paths=set())
+
+            run_sync(repo_root=target_root, check=True)
+
+            workorder_path = (
+                target_root
+                / ".coding_workflow/diffs/agent_workorder.md"
+            )
+            workorder = workorder_path.read_text(encoding="utf-8")
+            self.assertIn("scripts/OPERATIONS.md", workorder)
+            self.assertIn("## Sync Pass Plan", workorder)
+            self.assertIn("## 文件处理清单", workorder)
+            self.assertIn("Sync Pass Status", workorder)
+            self.assertIn("PASS 3 - TESTING Independent Review", workorder)
+            workorder_lines = workorder.splitlines()
+            plan_header_index = workorder_lines.index("| Pass | 处理文件 |")
+            self.assertEqual("|---|---|", workorder_lines[plan_header_index + 1])
+            self.assertTrue(
+                workorder_lines[plan_header_index + 2].startswith(
+                    "| PASS 1 - Code Facts / Architecture |"
+                )
+            )
+            self.assertNotIn("## Copyable Pass Prompts", workorder)
+            self.assertEqual(0, workorder.count("```text"))
+            self.assertNotIn("tests_not_worth_adding", workorder)
+            self.assertNotIn("propagation_targets", workorder)
+            self.assertNotIn("kick_back_to", workorder)
+            self.assertIn("AGENTS.md ## 文件简介", workorder)
+            self.assertNotIn("upstream_vs_local", workorder)
+            self.assertFalse(
+                (target_root / ".coding_workflow/diffs/upstream_vs_local").exists()
+            )
+
+    def test_final_mode_delegates_semantic_table_to_review(self) -> None:
+        """Final gate should not deep-parse reviewer-owned evidence table."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            create_target_repo(repo_root=target_root, omitted_paths=set())
+            pr_body_path = create_sync_pr_body(repo_root=target_root)
+            fill_agent_placeholders(pr_body_path=pr_body_path)
+            text = pr_body_path.read_text(encoding="utf-8")
+            text = text.replace(
+                (
+                    "| pass | 文件 | 当前脚本信号 | upstream semantic delta | "
+                    "adopted where | not adopted because | evidence | "
+                    "downstream impact |"
+                ),
+                "| reviewer owned malformed full reconcile table |",
+                1,
+            )
+            pr_body_path.write_text(text, encoding="utf-8")
+
+            result = run_command(
+                args=["bash", str(SYNC_SH), "--final"],
+                cwd=target_root,
+                env=sync_env(upstream_dir=REPO_ROOT),
+                check=True,
+            )
+
+            self.assertIn("Final sync check passed", result.stdout)
+
+    def test_pr_body_review_contract_stays_compact(self) -> None:
+        """Generated review contract should not dump script constants."""
         with tempfile.TemporaryDirectory() as temp_dir:
             target_root = Path(temp_dir)
             create_target_repo(repo_root=target_root, omitted_paths=set())
@@ -409,33 +574,36 @@ class SyncWorkflowTests(unittest.TestCase):
             contract = extract_review_contract(
                 pr_body_text=skeleton_path.read_text(encoding="utf-8"),
             )
-            self.assertNotIn(REMOVED_AGENT_PROMPT, contract)
-            self.assertNotIn(REMOVED_AGENT_PROMPT, SYNC_MODULE.SYNC_PROMPT_FILES)
-            expected_literals = [
-                *SYNC_MODULE.PR_BODY_REQUIRED_SECTIONS,
-                *SYNC_MODULE.required_sync_sentinels(),
-                *SYNC_MODULE.REPO_FACTS_HEADINGS,
-                *CORE_FILES,
-                *SYNC_MODULE.SYNC_PROMPT_FILES,
-            ]
-            for literal in expected_literals:
-                display_literal = SYNC_MODULE.contract_display_literal(
-                    value=str(literal),
-                )
-                self.assertIn(
-                    f"`{display_literal}`",
-                    contract,
-                    msg=f"missing review contract literal: {literal}",
-                )
+            self.assertIn("Final gate owns sentinels", contract)
+            self.assertIn("Reviewer must cross-check", contract)
+            self.assertIn("architecture.md", contract)
+            self.assertIn("scripts/OPERATIONS.md", contract)
+            self.assertIn("scripts/sync_pr_review_system.md", contract)
+            self.assertNotIn("Required sync sentinels", contract)
+            self.assertNotIn("pass_id | pass | status | evidence", contract)
+            self.assertNotIn("Full Document Reconcile columns", contract)
+            self.assertNotIn("<!-- sync:", contract)
 
     def test_reviewer_prompt_does_not_copy_contract_literals(self) -> None:
         """Thin reviewer prompt must not become a second mechanical contract."""
         prompt_path = REPO_ROOT / "scripts" / "sync_pr_review_system.md"
         prompt_text = prompt_path.read_text(encoding="utf-8")
+        sentinel_literals = [
+            SYNC_MODULE.SYNC_PR_BODY_MARKER,
+            SYNC_MODULE.SYNC_AUTO_START,
+            SYNC_MODULE.SYNC_AUTO_END,
+        ]
+        for section_name in SYNC_MODULE.AGENT_SECTIONS:
+            sentinel_literals.append(
+                SYNC_MODULE.agent_section_start(section_name=section_name)
+            )
+            sentinel_literals.append(
+                SYNC_MODULE.agent_section_end(section_name=section_name)
+            )
         forbidden_literals = [
             *CORE_FILES,
             *SYNC_MODULE.SYNC_PROMPT_FILES,
-            *SYNC_MODULE.required_sync_sentinels(),
+            *sentinel_literals,
             *SYNC_MODULE.TEMPLATE_MARKERS,
             *SYNC_MODULE.TODO_ANCHOR_COMMENTS,
             *sorted(SYNC_MODULE.BLOCKING_FINAL_STATUSES),
@@ -484,6 +652,14 @@ class SyncWorkflowTests(unittest.TestCase):
                 "missing required sync prompt file",
                 f"{result.stdout}\n{result.stderr}",
             )
+
+    def test_pr_body_marker_counts_as_sync_sentinel(self) -> None:
+        """A marker-only damaged sync draft should not look like plain text."""
+        self.assertTrue(
+            SYNC_MODULE.pr_body_has_any_sync_sentinel(
+                text=f"{SYNC_MODULE.SYNC_PR_BODY_MARKER}\n"
+            )
+        )
 
 
 if __name__ == "__main__":

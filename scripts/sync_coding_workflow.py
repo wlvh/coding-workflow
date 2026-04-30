@@ -11,7 +11,6 @@ Call flow:
       -> assert_git_repo()
       -> assert_upstream_repo()
       -> assert_no_unmanaged_dirty()
-      -> assert_no_legacy_source()
       -> ensure_gitignore()
       -> stage_full_reconcile_outputs()
       -> render_pr_body_skeleton()
@@ -29,11 +28,9 @@ import os
 import shutil
 import subprocess
 import sys
-from difflib import unified_diff
 from pathlib import Path
 
 CORE_FILES = (
-    "AGENTS.md",
     "architecture.md",
     "capability_contract.json",
     "interact.md",
@@ -41,10 +38,62 @@ CORE_FILES = (
     "TESTING.md",
     "PR_Checklist.md",
     "SOP.md",
+    "AGENTS.md",
     ".github/pull_request_template.md",
 )
 
+SYNC_PASSES = (
+    {
+        "id": "code_architecture",
+        "title": "PASS 1 - Code Facts / Architecture",
+        "files": ("architecture.md",),
+    },
+    {
+        "id": "capability_behavior",
+        "title": "PASS 2 - Capability / User Behavior",
+        "files": (
+            "capability_contract.json",
+            "interact.md",
+            "docs/business_user_guide.md",
+        ),
+    },
+    {
+        "id": "testing_quality",
+        "title": "PASS 3 - TESTING Independent Review",
+        "files": ("TESTING.md",),
+    },
+    {
+        "id": "governance_closure",
+        "title": "PASS 4 - Governance / Reverse Closure",
+        "files": (
+            "PR_Checklist.md",
+            "SOP.md",
+            "AGENTS.md",
+            ".github/pull_request_template.md",
+        ),
+    },
+)
+
+PASS_STATUS_COLUMNS = (
+    "pass_id",
+    "pass",
+    "status",
+    "evidence",
+)
+
+FULL_RECONCILE_COLUMNS = (
+    "pass",
+    "文件",
+    "当前脚本信号",
+    "upstream semantic delta",
+    "adopted where",
+    "not adopted because",
+    "evidence",
+    "downstream impact",
+)
+
 SYNC_PROMPT_FILES = (
+    "scripts/OPERATIONS.md",
     "scripts/sync_pr_review_system.md",
 )
 
@@ -88,7 +137,6 @@ DIFFS_DIR = ".coding_workflow/diffs"
 STATE_FILE = "sync_state.json"
 WORKORDER_FILE = "agent_workorder.md"
 PR_BODY_SKELETON_FILE = "pr_body_skeleton.md"
-PR_BODY_PREVIOUS_FILE = "pr_body_previous.md"
 UPSTREAM_FULL_DIR = "upstream_full"
 
 SYNC_AUTO_START = "<!-- sync:auto:start -->"
@@ -96,6 +144,7 @@ SYNC_AUTO_END = "<!-- sync:auto:end -->"
 SYNC_PR_BODY_MARKER = "<!-- sync:pr-body version=1 -->"
 AGENT_SECTIONS = (
     "repo_facts_map",
+    "pass_handoffs",
     "full_document_reconcile",
     "remaining_human_decisions",
 )
@@ -107,6 +156,7 @@ PR_BODY_REQUIRED_SECTIONS = (
     "Upstream Templates at Sync Time",
     "Upstream Instructions at Sync Time",
     "Installation Status",
+    "Sync Pass Status",
     "Full Document Reconcile",
     "Remaining Human Decisions",
 )
@@ -125,18 +175,10 @@ REPO_FACTS_HEADINGS = (
 BLOCKING_FINAL_STATUSES = frozenset({
     "installed_template",
     "template_copy_requires_specialization",
-    "partially_specialized",
 })
 UNFILLED_AGENT_PLACEHOLDERS = (
     "待补充",
     "待判断",
-)
-
-LEGACY_SOURCE_PATH = ".coding_workflow/source.json"
-LEGACY_SOURCE_MIGRATION_NOTE = (
-    ".coding_workflow/source.json belonged to the removed incremental baseline "
-    "flow. Full reconcile does not use it; delete or archive it after "
-    "confirming it is no longer needed."
 )
 
 
@@ -236,28 +278,6 @@ def agent_section_end(section_name: str) -> str:
         refreshing deterministic sync evidence.
     """
     return f"<!-- sync:agent:end {section_name} -->"
-
-
-def required_sync_sentinels() -> tuple[str, ...]:
-    """Return all PR body sentinels required by the sync contract.
-
-    Parameters:
-        None.
-
-    Expected output:
-        Tuple of exact sentinel strings rendered into `PR_BODY.md`. Keeping the
-        list derived from existing constants prevents the reviewer prompt from
-        becoming a second source of truth.
-    """
-    sentinels = [
-        SYNC_PR_BODY_MARKER,
-        SYNC_AUTO_START,
-        SYNC_AUTO_END,
-    ]
-    for section_name in AGENT_SECTIONS:
-        sentinels.append(agent_section_start(section_name=section_name))
-        sentinels.append(agent_section_end(section_name=section_name))
-    return tuple(sentinels)
 
 
 def diffs_root_for(repo_root: Path) -> Path:
@@ -392,34 +412,11 @@ def assert_no_unmanaged_dirty(repo_root: Path) -> None:
         if not is_sync_managed_dirty_path(path):
             unmanaged.append(path)
     if unmanaged:
-        legacy_source_note = ""
-        if LEGACY_SOURCE_PATH in unmanaged:
-            legacy_source_note = f"\n\nMigration note: {LEGACY_SOURCE_MIGRATION_NOTE}"
         sys.exit(
             "FATAL: uncommitted changes outside sync-managed files.\n"
             "Commit, stash, or discard project code/config/test changes before "
             "running full workflow-docs reconcile.\n\n"
             "Unmanaged dirty:\n  " + "\n  ".join(unmanaged)
-            + legacy_source_note
-        )
-
-
-def assert_no_legacy_source(repo_root: Path) -> None:
-    """Refuse repositories that still contain the removed baseline manifest.
-
-    Parameters:
-        repo_root: Target project path.
-
-    Expected output:
-        None. A tracked or otherwise clean `.coding_workflow/source.json` exits
-        before sync writes new evidence, because full reconcile has no baseline
-        source of truth to maintain.
-    """
-    if (repo_root / LEGACY_SOURCE_PATH).exists():
-        sys.exit(
-            f"FATAL: legacy incremental baseline file exists: "
-            f"{LEGACY_SOURCE_PATH}\n\n"
-            f"Migration note: {LEGACY_SOURCE_MIGRATION_NOTE}"
         )
 
 
@@ -460,7 +457,11 @@ def ensure_gitignore(repo_root: Path) -> None:
         does not leave surprise edits behind.
     """
     gitignore_path = repo_root / ".gitignore"
-    existing = gitignore_path.read_text(encoding="utf-8") if gitignore_path.exists() else ""
+    existing = (
+        gitignore_path.read_text(encoding="utf-8")
+        if gitignore_path.exists()
+        else ""
+    )
     existing_lines = set(existing.splitlines())
     missing = [line for line in GITIGNORE_LINES if line not in existing_lines]
     if not missing:
@@ -487,29 +488,6 @@ def normalize_text(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
-def render_diff(left: str, right: str, left_label: str, right_label: str) -> str:
-    """Render a unified diff between two text blobs.
-
-    Parameters:
-        left: Baseline text.
-        right: Compared text.
-        left_label: Diff label for `left`.
-        right_label: Diff label for `right`.
-
-    Expected output:
-        Unified diff text ending with a newline, or an empty string when equal.
-    """
-    lines = unified_diff(
-        normalize_text(text=left).splitlines(),
-        normalize_text(text=right).splitlines(),
-        fromfile=left_label,
-        tofile=right_label,
-        lineterm="",
-    )
-    diff = "\n".join(lines)
-    return f"{diff}\n" if diff else ""
-
-
 def marker_hits(text: str) -> list[str]:
     """Return line-level template marker hits in one text blob.
 
@@ -530,6 +508,69 @@ def marker_hits(text: str) -> list[str]:
     return hits
 
 
+def sync_pass_for_file(rel_path: str) -> dict[str, object]:
+    """Return the sync pass that owns one core document.
+
+    Parameters:
+        rel_path: Repository-relative core document path.
+
+    Expected output:
+        Pass metadata from `SYNC_PASSES`. Missing ownership exits because every
+        core document must have an explicit evidence-domain owner.
+    """
+    for sync_pass in SYNC_PASSES:
+        if rel_path in sync_pass["files"]:
+            return sync_pass
+    sys.exit(f"FATAL: core file has no sync pass owner: {rel_path}")
+
+
+def sync_pass_id_for_file(rel_path: str) -> str:
+    """Return the pass id that owns one core document.
+
+    Parameters:
+        rel_path: Repository-relative core document path.
+
+    Expected output:
+        Stable pass id for PR body tables and sync state records.
+    """
+    sync_pass = sync_pass_for_file(rel_path=rel_path)
+    return str(sync_pass["id"])
+
+
+def sync_pass_title_for_id(pass_id: str) -> str:
+    """Return a human-readable title for one sync pass id.
+
+    Parameters:
+        pass_id: Stable id from `SYNC_PASSES`.
+
+    Expected output:
+        Title used in generated status tables. Unknown ids fail fast to avoid
+        silently producing an unowned pass row.
+    """
+    for sync_pass in SYNC_PASSES:
+        if str(sync_pass["id"]) == pass_id:
+            return str(sync_pass["title"])
+    sys.exit(f"FATAL: unknown sync pass id: {pass_id}")
+
+
+def prompt_raw_url(state: dict[str, object], rel_path: str) -> str:
+    """Return the commit-pinned raw URL for one sync instruction file.
+
+    Parameters:
+        state: Current sync state loaded from `.coding_workflow/diffs`.
+        rel_path: Repository-relative instruction file path.
+
+    Expected output:
+        Raw GitHub URL pinned to the same upstream commit as the core evidence.
+        Missing records fail fast because the workorder must not point agents to
+        moving or unverified instructions.
+    """
+    for record in state["sync_prompt_files"]:
+        if str(record["path"]) == rel_path:
+            return str(record["upstream_raw_url"])
+    sys.exit(f"FATAL: sync state missing instruction file: {rel_path}")
+
+
 def mechanical_action_for_status(status: str) -> str:
     """Translate a script status into a bounded agent action.
 
@@ -542,17 +583,20 @@ def mechanical_action_for_status(status: str) -> str:
         semantically aligned.
     """
     if status == "installed_template":
-        return "必须基于 Repo Facts Map 项目化；不能把 upstream 模板原样提交。"
+        return (
+            "必须基于 Repo Facts Map 项目化；"
+            "不能把 upstream 模板原样提交。"
+        )
     if status == "template_copy_requires_specialization":
-        return "必须解释为什么可继承，或基于当前项目事实项目化。"
-    if status == "partially_specialized":
-        return "必须清理模板残留或 TODO anchor，再重跑 sync。"
+        return (
+            "必须解释为什么可继承，或基于当前项目事实项目化。"
+        )
     if status == "inherited_upstream_allowed":
         return "脚本允许继承 upstream；仍需在 PR body 写清证据。"
     if status == "specialized":
         return (
-            "脚本未发现机械必改项；如 Repo Facts Map 或 upstream 新规则要求，"
-            "仍可修改。"
+            "脚本未发现机械必改项；如 Repo Facts Map 或 upstream "
+            "新规则要求，仍可修改。"
         )
     sys.exit(f"FATAL: unknown sync status: {status}")
 
@@ -598,19 +642,10 @@ def classify_core_file(
             "template_copy_requires_specialization",
             "File matches upstream verbatim; project-specific review is required.",
         )
-    if any(marker in normalized_local_text for marker in TEMPLATE_MARKERS):
-        return (
-            "partially_specialized",
-            "File contains template placeholders; agent must finish specialization.",
-        )
-    if any(comment in normalized_local_text for comment in TODO_ANCHOR_COMMENTS):
-        return (
-            "partially_specialized",
-            "File contains TODO anchor comments; agent must finish specialization.",
-        )
     return (
         "specialized",
-        "File appears project-specific; reviewer must still cross-check latest upstream rules.",
+        "File appears project-specific; reviewer must still cross-check latest "
+        "upstream rules.",
     )
 
 
@@ -743,13 +778,14 @@ def build_sync_state(
         `.coding_workflow/diffs/` evidence epoch.
     """
     return {
-        "schema_version": "0.2.0",
+        "schema_version": "0.4.0",
         "sync_mode": "full_reconcile",
         "upstream_resolved_commit": upstream_sha,
         "project_head_commit": project_sha,
         "evidence_source": "working_tree",
         "core_files_checked": len(CORE_FILES),
         "dirty_core_files": dirty_core_files,
+        "sync_passes": SYNC_PASSES,
         "sync_prompt_files": sync_prompt_records,
         "core_files": core_records,
     }
@@ -776,85 +812,49 @@ def write_sync_state(repo_root: Path, state: dict[str, object]) -> None:
     )
 
 
-def render_contract_list(title: str, values: tuple[str, ...] | list[str]) -> list[str]:
-    """Render one titled list inside the script-owned review contract.
-
-    Parameters:
-        title: Markdown subsection title.
-        values: Contract literals derived from sync constants or current state.
-
-    Expected output:
-        Markdown lines. Empty lists are rendered as `none` so reviewers do not
-        infer missing data from a blank subsection.
-    """
-    lines = ["", f"### {title}", ""]
-    if values:
-        lines.extend(
-            f"- `{contract_display_literal(value=str(value))}`"
-            for value in values
-        )
-    if not values:
-        lines.append("- none")
-    return lines
-
-
-def contract_display_literal(value: str) -> str:
-    """Return a contract display literal that cannot act as Markdown syntax.
-
-    Parameters:
-        value: Script-owned literal to show to reviewers.
-
-    Expected output:
-        Markdown-safe text. Angle brackets are escaped so sentinels and HTML
-        comments listed in the review contract do not become real delimiters.
-    """
-    return value.replace("<", "&lt;").replace(">", "&gt;")
-
-
 def render_review_contract(state: dict[str, object]) -> str:
-    """Render the script-owned contract used by independent sync reviewers.
+    """Render the compact review contract for one sync run.
 
     Parameters:
         state: Current sync state loaded from `.coding_workflow/diffs`.
 
     Expected output:
-        Markdown contract generated from script constants and current sync
-        state. The reviewer prompt must point to this section instead of
-        copying file lists, markers, sentinels, or blocking statuses.
+        Markdown contract containing run-specific review inputs. The final gate
+        owns mechanical constants, so this section stays small.
     """
     core_paths = [str(record["path"]) for record in state["core_files"]]
-    prompt_paths = [
-        str(record["path"]) for record in state["sync_prompt_files"]
-    ]
+    prompt_paths = [str(record["path"]) for record in state["sync_prompt_files"]]
     lines = [
         "## Sync Review Contract",
         "",
         (
-            "This script-owned contract is the authoritative checklist for "
-            "the independent sync reviewer. Final gate owns mechanical "
-            "structure, status, and residue checks; reviewers focus on "
-            "evidence, upstream cross-check, and operability."
+            "Final gate owns sentinels, stale auto checks, pass readiness, "
+            "blocking statuses, and template residue. The independent reviewer "
+            "owns evidence truth, table quality, upstream cross-check, and "
+            "operability."
         ),
+        "",
+        "Reviewer must cross-check:",
+        "",
     ]
-    lines.extend(render_contract_list(
-        title="Required PR body sections",
-        values=list(PR_BODY_REQUIRED_SECTIONS),
+    lines.extend(f"- `{path}` against its upstream raw URL" for path in core_paths)
+    lines.extend((
+        "",
+        "Reviewer instruction files:",
+        "",
     ))
-    lines.extend(render_contract_list(
-        title="Required sync sentinels",
-        values=list(required_sync_sentinels()),
-    ))
-    lines.extend(render_contract_list(
-        title="Repo Facts Map headings",
-        values=list(REPO_FACTS_HEADINGS),
-    ))
-    lines.extend(render_contract_list(
-        title="Core documents to reconcile",
-        values=core_paths,
-    ))
-    lines.extend(render_contract_list(
-        title="Upstream instruction files",
-        values=prompt_paths,
+    lines.extend(f"- `{path}`" for path in prompt_paths)
+    lines.extend((
+        "",
+        "Required evidence focus:",
+        "",
+        "- Repo Facts Map has concrete code, document, or command evidence.",
+        "- Sync Pass Status records every pass as `ready_for_next_pass`.",
+        "- Full Document Reconcile explains adopted and rejected upstream rules.",
+        (
+            "- Remaining Human Decisions exposes unresolved semantic decisions "
+            "for reviewer judgment."
+        ),
     ))
     return "\n".join(lines)
 
@@ -942,11 +942,43 @@ def render_repo_facts_template() -> str:
     lines = [
         "## Repo Facts Map",
         "",
-        "每项必须有代码路径 / 文档路径 / 命令输出等证据；不能编。",
+        (
+            "每项必须有代码路径 / 文档路径 / 命令输出等证据；"
+            "不能编。"
+        ),
         "",
     ]
     for heading in REPO_FACTS_HEADINGS:
         lines.extend((heading, "证据: 待补充", ""))
+    return "\n".join(lines).rstrip()
+
+
+def render_pass_status_template(state: dict[str, object]) -> str:
+    """Render the agent-owned pass readiness table.
+
+    Parameters:
+        state: Current sync state loaded from `.coding_workflow/diffs`.
+
+    Expected output:
+        A compact Markdown table with one row per sync pass. The detailed pass
+        prompts live in `scripts/OPERATIONS.md`; the final gate only checks this
+        small status surface before PR submission.
+    """
+    lines = [
+        "## Sync Pass Status",
+        "",
+        (
+            "四个 pass 的专用 prompt 以 `scripts/OPERATIONS.md` 为准。"
+            "本表只记录 PR 提交前的机械 ready 状态和最短证据索引。"
+        ),
+        "",
+        "| " + " | ".join(PASS_STATUS_COLUMNS) + " |",
+        "| " + " | ".join("---" for _ in PASS_STATUS_COLUMNS) + " |",
+    ]
+    for sync_pass in SYNC_PASSES:
+        title = str(sync_pass["title"])
+        pass_id = str(sync_pass["id"])
+        lines.append(f"| `{pass_id}` | {title} | 待补充 | 待补充 |")
     return "\n".join(lines).rstrip()
 
 
@@ -965,13 +997,16 @@ def render_full_document_reconcile_template(
     lines = [
         "## Full Document Reconcile",
         "",
-        "| 文件 | 当前脚本信号 | 是否需要更新 | 证据 |",
-        "|---|---|---|---|",
+        "| " + " | ".join(FULL_RECONCILE_COLUMNS) + " |",
+        "| " + " | ".join("---" for _ in FULL_RECONCILE_COLUMNS) + " |",
     ]
     for record in state["core_files"]:
+        pass_title = sync_pass_title_for_id(
+            pass_id=str(record["sync_pass_id"]),
+        )
         lines.append(
-            f"| `{record['path']}` | `{record['status']}` | "
-            "待判断 | 待补充 |"
+            f"| {pass_title} | `{record['path']}` | `{record['status']}` | "
+            "待补充 | 待补充 | none | 待补充 | 待判断 |"
         )
     return "\n".join(lines)
 
@@ -983,8 +1018,9 @@ def render_remaining_human_decisions_template() -> str:
         None.
 
     Expected output:
-        A minimal Markdown section. Agents keep `none` only when no unresolved
-        project decision remains after reconcile.
+        A minimal Markdown section. Agents keep `none` when no unresolved
+        project decision remains, or list explicit semantic decisions for
+        reviewer and user judgment.
     """
     return "\n".join((
         "## Remaining Human Decisions",
@@ -1010,6 +1046,43 @@ def wrap_agent_section(section_name: str, content: str) -> str:
     ))
 
 
+def render_pr_body_from_sections(
+    state: dict[str, object],
+    sections: dict[str, str],
+) -> str:
+    """Render a complete sentinel PR body from agent-owned sections.
+
+    Parameters:
+        state: Current sync state used for the script-owned auto block.
+        sections: Mapping for every key in `AGENT_SECTIONS`.
+
+    Expected output:
+        Complete PR body text with the auto block in the same stable position.
+        Missing section keys raise immediately instead of producing partial body.
+    """
+    body_sections = [
+        SYNC_PR_BODY_MARKER,
+        wrap_agent_section(
+            section_name="repo_facts_map",
+            content=sections["repo_facts_map"],
+        ),
+        wrap_agent_section(
+            section_name="pass_handoffs",
+            content=sections["pass_handoffs"],
+        ),
+        render_sync_auto_section(state=state),
+        wrap_agent_section(
+            section_name="full_document_reconcile",
+            content=sections["full_document_reconcile"],
+        ),
+        wrap_agent_section(
+            section_name="remaining_human_decisions",
+            content=sections["remaining_human_decisions"],
+        ),
+    ]
+    return "\n\n".join(body_sections) + "\n"
+
+
 def render_pr_body_skeleton(state: dict[str, object]) -> str:
     """Render a complete sentinel-based PR body skeleton.
 
@@ -1020,23 +1093,15 @@ def render_pr_body_skeleton(state: dict[str, object]) -> str:
         Markdown body whose auto block can be replaced deterministically while
         preserving agent-owned semantic sections.
     """
-    sections = [
-        SYNC_PR_BODY_MARKER,
-        wrap_agent_section(
-            section_name="repo_facts_map",
-            content=render_repo_facts_template(),
+    sections = {
+        "repo_facts_map": render_repo_facts_template(),
+        "pass_handoffs": render_pass_status_template(state=state),
+        "full_document_reconcile": render_full_document_reconcile_template(
+            state=state,
         ),
-        render_sync_auto_section(state=state),
-        wrap_agent_section(
-            section_name="full_document_reconcile",
-            content=render_full_document_reconcile_template(state=state),
-        ),
-        wrap_agent_section(
-            section_name="remaining_human_decisions",
-            content=render_remaining_human_decisions_template(),
-        ),
-    ]
-    return "\n\n".join(sections) + "\n"
+        "remaining_human_decisions": render_remaining_human_decisions_template(),
+    }
+    return render_pr_body_from_sections(state=state, sections=sections)
 
 
 def write_pr_body_skeleton(
@@ -1073,6 +1138,10 @@ def write_agent_workorder(
         `.coding_workflow/diffs/agent_workorder.md` translates script signals
         into actions without claiming semantic alignment.
     """
+    operations_url = prompt_raw_url(
+        state=state,
+        rel_path="scripts/OPERATIONS.md",
+    )
     lines = [
         "# Agent Workorder",
         "",
@@ -1088,12 +1157,19 @@ def write_agent_workorder(
             "`.coding_workflow/diffs/pr_body_skeleton.md` 初始化。"
         ),
         "2. 补 `PR_BODY.md` 的 `Repo Facts Map`。",
-        f"3. 按下表处理 {len(state['core_files'])} 个核心文档。",
         (
-            "4. 无法从仓库证据判断的事项写入 "
-            "`remaining_human_decisions`，并在回报中等待用户回答。"
+            "3. 打开本轮 commit-pinned 操作手册，按其中 4 个 "
+            "Sync Agent Pass 专用 prompt 接力工作："
         ),
-        "5. 重跑普通 sync，让 auto 区和 `sync_state.json` 回到最终工作区状态。",
+        f"   {operations_url}",
+        (
+            "4. 每个 pass 只更新自己负责的核心文档、`Sync Pass Status` "
+            "本 pass 行和对应 `Full Document Reconcile` 行。"
+        ),
+        (
+            "5. 每个 pass 结束都重跑普通 sync，让 auto 区和 "
+            "`sync_state.json` 回到当前工作区状态，再交给下一个 pass。"
+        ),
         "",
         "## 角色边界",
         "",
@@ -1102,25 +1178,44 @@ def write_agent_workorder(
             "不提交 `.coding_workflow/diffs/`。"
         ),
         (
-            "- sync agent 如留下 `remaining_human_decisions`，"
-            "不进入 PR 提交流程。"
+            "- PR 提交 agent 才在提交前检查 `Sync Pass Status` 全部 ready，"
+            "确认 `Remaining Human Decisions` 已显式记录为 none 或待判断项，"
+            "并运行 `sync.sh --final`。"
         ),
-        "- PR 提交 agent 才在提交前运行 `sync.sh --final`。",
         (
-            "- final gate 只证明机械一致性；证据真实性、项目化文案准确性"
-            "和 upstream 规则语义吸收由独立 reviewer 判断。"
+            "- final gate 只证明机械一致性；证据真实性、"
+            "项目化文案准确性和 upstream 规则语义吸收由独立 "
+            "reviewer 判断。"
         ),
+        (
+            "- `AGENTS.md ## 文件简介` 的内部条目属于目标项目代码 "
+            "PR 责任；sync 只确认该 heading 存在，不在 workflow sync "
+            "中重写内部文件清单。"
+        ),
+        "",
+        "## Sync Pass Plan",
+        "",
+        "| Pass | 处理文件 |",
+        "|---|---|",
+    ]
+    for sync_pass in SYNC_PASSES:
+        files = "<br>".join(str(value) for value in sync_pass["files"])
+        lines.append(f"| {sync_pass['title']} | {files} |")
+    lines.extend((
         "",
         "## 文件处理清单",
         "",
-        "| 文件 | 脚本信号 | 机械动作 | marker / TODO 命中 |",
-        "|---|---|---|---|",
-    ]
+        "| Pass | 文件 | 脚本信号 | 机械动作 | marker / TODO 命中 |",
+        "|---|---|---|---|---|",
+    ))
     for record in state["core_files"]:
         hits = record["marker_hits"]
         hit_text = "<br>".join(str(hit) for hit in hits) if hits else "none"
+        pass_title = sync_pass_title_for_id(
+            pass_id=str(record["sync_pass_id"]),
+        )
         lines.append(
-            f"| `{record['path']}` | `{record['status']}` | "
+            f"| {pass_title} | `{record['path']}` | `{record['status']}` | "
             f"{record['mechanical_action']} | {hit_text} |"
         )
     lines.extend((
@@ -1128,7 +1223,6 @@ def write_agent_workorder(
         "## 本地读取优先级",
         "",
         "- 上游原文：`.coding_workflow/diffs/upstream_full/`。",
-        "- 本地 diff：`.coding_workflow/diffs/upstream_vs_local/`。",
         "- PR body 骨架：`.coding_workflow/diffs/pr_body_skeleton.md`。",
         "- 独立 reviewer 仍使用 PR body 中的 commit-pinned raw URL 复验。",
     ))
@@ -1205,9 +1299,7 @@ def stage_full_reconcile_outputs(
     diffs_root = diffs_root_for(repo_root=repo_root)
     if diffs_root.exists():
         shutil.rmtree(diffs_root)
-    comparison_root = diffs_root / "upstream_vs_local"
     upstream_full_root = diffs_root / UPSTREAM_FULL_DIR
-    comparison_root.mkdir(parents=True, exist_ok=True)
     upstream_full_root.mkdir(parents=True, exist_ok=True)
 
     core_records: list[dict[str, object]] = []
@@ -1233,16 +1325,6 @@ def stage_full_reconcile_outputs(
             upstream_text=upstream_text,
         )
 
-        safe_name = rel_path.replace("/", "__") + ".diff"
-        diff_rel_path = f"{DIFFS_DIR}/upstream_vs_local/{safe_name}"
-        diff_text = render_diff(
-            left=upstream_text,
-            right=local_text,
-            left_label=f"upstream/{rel_path}",
-            right_label=f"local/{rel_path}",
-        )
-        (comparison_root / safe_name).write_text(diff_text, encoding="utf-8")
-
         upstream_full_path = upstream_full_root / rel_path
         upstream_full_path.parent.mkdir(parents=True, exist_ok=True)
         upstream_full_path.write_text(upstream_text, encoding="utf-8")
@@ -1251,6 +1333,7 @@ def stage_full_reconcile_outputs(
         marker_source_text = upstream_text if not exists else local_text
         core_records.append({
             "path": rel_path,
+            "sync_pass_id": sync_pass_id_for_file(rel_path=rel_path),
             "status": status,
             "note": note,
             "mechanical_action": mechanical_action_for_status(status=status),
@@ -1260,7 +1343,6 @@ def stage_full_reconcile_outputs(
                 rel_path=rel_path,
             ),
             "upstream_full_path": upstream_full_rel_path,
-            "diff_path": diff_rel_path,
         })
 
         if not exists:
@@ -1322,17 +1404,16 @@ def print_summary(
     print("  2. .coding_workflow/diffs/pr_body_skeleton.md")
     print("  3. .coding_workflow/diffs/full_reconcile_report.md")
     print("  4. .coding_workflow/diffs/installation_status.md")
-    print("  5. .coding_workflow/diffs/upstream_vs_local/")
-    print("  6. .coding_workflow/diffs/upstream_full/")
+    print("  5. .coding_workflow/diffs/upstream_full/")
     print()
-    print("Reviewer prompt pinned to upstream_resolved_commit:")
+    print("Sync instruction files pinned to upstream_resolved_commit:")
     for rel_path in SYNC_PROMPT_FILES:
         url = upstream_raw_url(upstream_sha=upstream_sha, rel_path=rel_path)
         print(f"  - {rel_path}: {url}")
     print("First action: produce a full Repo Facts Map in PR body.")
     print(
-        "The PR will be reviewed by an LLM using the thin reviewer prompt URL "
-        "above and the script-owned Sync Review Contract in PR_BODY.md."
+        "The sync passes use OPERATIONS.md; the PR is reviewed with the thin "
+        "reviewer prompt and the script-owned Sync Review Contract in PR_BODY.md."
     )
     print()
     print("Sync Summary fields for PR body (transcribe verbatim):")
@@ -1403,6 +1484,7 @@ def load_sync_state(repo_root: Path) -> dict[str, object]:
         "evidence_source",
         "core_files_checked",
         "dirty_core_files",
+        "sync_passes",
         "sync_prompt_files",
         "core_files",
     )
@@ -1424,15 +1506,12 @@ def extract_block(text: str, start: str, end: str) -> str:
         Raw content between sentinels. Duplicate or malformed sentinels fail
         fast so script-owned and agent-owned regions cannot drift silently.
     """
-    if text.count(start) != 1:
-        sys.exit(f"FATAL: expected exactly one sentinel: {start}")
-    if text.count(end) != 1:
-        sys.exit(f"FATAL: expected exactly one sentinel: {end}")
-    start_index = text.index(start) + len(start)
-    end_index = text.index(end)
-    if end_index < start_index:
-        sys.exit(f"FATAL: malformed sentinel order: {start} before {end}")
-    return text[start_index:end_index].strip("\n")
+    start_index, end_index = sentinel_span(
+        text=text,
+        start=start,
+        end=end,
+    )
+    return text[start_index + len(start):end_index - len(end)].strip("\n")
 
 
 def sentinel_span(text: str, start: str, end: str) -> tuple[int, int]:
@@ -1458,11 +1537,17 @@ def sentinel_span(text: str, start: str, end: str) -> tuple[int, int]:
     return start_index, end_index
 
 
-def assert_no_content_outside_sync_sections(text: str) -> None:
+def assert_no_content_outside_sync_sections(
+    text: str,
+    require_all_agent_sections: bool,
+) -> None:
     """Fail when a sentinel PR body contains refresh-unsafe outer content.
 
     Parameters:
         text: Existing PR body text with sync sentinels.
+        require_all_agent_sections: Whether every current agent section must
+            already exist. Refresh mode allows older sentinel PR bodies to miss
+            newly introduced agent sections so the script can insert them.
 
     Expected output:
         None. Human-authored content must live inside one of the three
@@ -1479,11 +1564,13 @@ def assert_no_content_outside_sync_sections(text: str) -> None:
         end=SYNC_AUTO_END,
     ))
     for section_name in AGENT_SECTIONS:
-        spans.append(sentinel_span(
-            text=text,
-            start=agent_section_start(section_name=section_name),
-            end=agent_section_end(section_name=section_name),
-        ))
+        start = agent_section_start(section_name=section_name)
+        end = agent_section_end(section_name=section_name)
+        start_count = text.count(start)
+        end_count = text.count(end)
+        if start_count == 0 and end_count == 0 and not require_all_agent_sections:
+            continue
+        spans.append(sentinel_span(text=text, start=start, end=end))
     spans.sort()
 
     outside_parts: list[str] = []
@@ -1499,8 +1586,8 @@ def assert_no_content_outside_sync_sections(text: str) -> None:
         sys.exit(
             "FATAL: PR_BODY.md contains content outside sync sentinel "
             "sections. Move human-authored text into repo_facts_map, "
-            "full_document_reconcile, or remaining_human_decisions before "
-            "rerunning sync."
+            "pass_handoffs, full_document_reconcile, or "
+            "remaining_human_decisions before rerunning sync."
         )
 
 
@@ -1514,6 +1601,8 @@ def pr_body_has_any_sync_sentinel(text: str) -> bool:
         True when any known sync sentinel appears. This distinguishes a prior
         sync PR body from an unrelated local PR draft.
     """
+    if SYNC_PR_BODY_MARKER in text:
+        return True
     if SYNC_AUTO_START in text or SYNC_AUTO_END in text:
         return True
     for section_name in AGENT_SECTIONS:
@@ -1524,57 +1613,60 @@ def pr_body_has_any_sync_sentinel(text: str) -> bool:
     return False
 
 
-def preserved_agent_sections(text: str) -> dict[str, str]:
+def render_agent_section_template(
+    section_name: str,
+    state: dict[str, object],
+) -> str:
+    """Render the default content for one agent-owned section.
+
+    Parameters:
+        section_name: Stable section key from `AGENT_SECTIONS`.
+        state: Current sync state, required for pass status and reconcile
+            tables.
+
+    Expected output:
+        Default Markdown section content. Unknown section names fail fast so
+        schema migrations cannot silently drop an agent-owned region.
+    """
+    if section_name == "repo_facts_map":
+        return render_repo_facts_template()
+    if section_name == "pass_handoffs":
+        return render_pass_status_template(state=state)
+    if section_name == "full_document_reconcile":
+        return render_full_document_reconcile_template(state=state)
+    if section_name == "remaining_human_decisions":
+        return render_remaining_human_decisions_template()
+    sys.exit(f"FATAL: unknown agent section: {section_name}")
+
+
+def preserved_agent_sections(
+    text: str,
+    state: dict[str, object],
+) -> dict[str, str]:
     """Return agent-owned sections from an existing sentinel PR body.
 
     Parameters:
         text: Existing PR body text with sync sentinels.
+        state: Current sync state used to render defaults for newly introduced
+            sections that older PR bodies do not yet contain.
 
     Expected output:
-        Mapping from section name to existing content. The script preserves
-        these regions across deterministic auto-section refreshes.
+        Mapping from section name to existing or default content. The script
+        preserves old regions across deterministic auto-section refreshes and
+        inserts new schema sections during ordinary sync.
     """
     sections: dict[str, str] = {}
     for section_name in AGENT_SECTIONS:
-        sections[section_name] = extract_block(
-            text=text,
-            start=agent_section_start(section_name=section_name),
-            end=agent_section_end(section_name=section_name),
-        )
+        start = agent_section_start(section_name=section_name)
+        end = agent_section_end(section_name=section_name)
+        if start not in text and end not in text:
+            sections[section_name] = render_agent_section_template(
+                section_name=section_name,
+                state=state,
+            )
+            continue
+        sections[section_name] = extract_block(text=text, start=start, end=end)
     return sections
-
-
-def render_pr_body_with_preserved_sections(
-    state: dict[str, object],
-    sections: dict[str, str],
-) -> str:
-    """Render a PR body using fresh auto state and preserved agent text.
-
-    Parameters:
-        state: Current sync state.
-        sections: Existing agent-owned Markdown sections.
-
-    Expected output:
-        Complete sentinel PR body. Script-owned sections come from current
-        state; semantic sections come from `sections`.
-    """
-    body_sections = [
-        SYNC_PR_BODY_MARKER,
-        wrap_agent_section(
-            section_name="repo_facts_map",
-            content=sections["repo_facts_map"],
-        ),
-        render_sync_auto_section(state=state),
-        wrap_agent_section(
-            section_name="full_document_reconcile",
-            content=sections["full_document_reconcile"],
-        ),
-        wrap_agent_section(
-            section_name="remaining_human_decisions",
-            content=sections["remaining_human_decisions"],
-        ),
-    ]
-    return "\n\n".join(body_sections) + "\n"
 
 
 def update_pr_body(repo_root: Path, pr_body_path: Path) -> None:
@@ -1585,9 +1677,8 @@ def update_pr_body(repo_root: Path, pr_body_path: Path) -> None:
         pr_body_path: PR body file to create or update.
 
     Expected output:
-        `PR_BODY.md` contains current deterministic sync sections. If an older
-        non-sync draft exists, it is copied into scratch evidence before the
-        file is replaced with the sync skeleton.
+        `PR_BODY.md` contains current deterministic sync sections. A non-sync
+        draft fails fast because the script cannot migrate semantic content.
     """
     state = load_sync_state(repo_root=repo_root)
     skeleton = render_pr_body_skeleton(state=state)
@@ -1598,18 +1689,18 @@ def update_pr_body(repo_root: Path, pr_body_path: Path) -> None:
 
     existing = pr_body_path.read_text(encoding="utf-8")
     if not pr_body_has_any_sync_sentinel(text=existing):
-        previous_path = diffs_root_for(repo_root=repo_root) / PR_BODY_PREVIOUS_FILE
-        previous_path.write_text(existing, encoding="utf-8")
-        pr_body_path.write_text(skeleton, encoding="utf-8")
-        print(
-            f"Replaced non-sync {pr_body_path}; previous content saved to "
-            f"{DIFFS_DIR}/{PR_BODY_PREVIOUS_FILE}."
+        sys.exit(
+            f"FATAL: {pr_body_path} exists but is not a sync PR body. Move or "
+            "delete the draft, or manually migrate required content into a "
+            "sync agent-owned section before rerunning sync."
         )
-        return
 
-    assert_no_content_outside_sync_sections(text=existing)
-    sections = preserved_agent_sections(text=existing)
-    refreshed = render_pr_body_with_preserved_sections(
+    assert_no_content_outside_sync_sections(
+        text=existing,
+        require_all_agent_sections=False,
+    )
+    sections = preserved_agent_sections(text=existing, state=state)
+    refreshed = render_pr_body_from_sections(
         state=state,
         sections=sections,
     )
@@ -1659,69 +1750,58 @@ def check_no_unfilled_agent_placeholders(text: str) -> list[str]:
     return failures
 
 
-def remove_review_contract_section(text: str) -> str:
-    """Remove the script-owned review contract before residue scanning.
+def markdown_table_cells(line: str) -> list[str]:
+    """Split one Markdown table row into cells.
 
     Parameters:
-        text: Full PR body text.
+        line: One Markdown table row.
 
     Expected output:
-        PR body text without the generated contract section. The contract must
-        list marker literals for reviewer use, so residue checks should inspect
-        human-authored sections and other auto evidence, not this checklist.
+        Cell text without surrounding table pipes. This helper intentionally
+        avoids interpreting semantic table content; callers only use it for the
+        small `Sync Pass Status` readiness surface.
     """
-    start = "\n## Sync Review Contract\n"
-    end = "\n## Upstream Templates at Sync Time\n"
-    if start not in text or end not in text:
-        return text
-    start_index = text.index(start)
-    end_index = text.index(end)
-    if end_index <= start_index:
-        return text
-    return text[:start_index] + text[end_index:]
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
 
-def check_repo_facts_section(text: str) -> list[str]:
-    """Return structural failures for the Repo Facts Map section.
+def check_pass_status_section(text: str) -> list[str]:
+    """Return final-gate failures for unready sync pass status rows.
 
     Parameters:
         text: Existing PR body text.
 
     Expected output:
-        Missing-heading failures only. Evidence quality is intentionally left to
-        the independent sync PR reviewer.
+        Missing row, malformed row, or non-ready status failures. Semantic pass
+        reasoning remains reviewer-owned and lives in docs plus reconcile text.
     """
     section = extract_block(
         text=text,
-        start=agent_section_start(section_name="repo_facts_map"),
-        end=agent_section_end(section_name="repo_facts_map"),
+        start=agent_section_start(section_name="pass_handoffs"),
+        end=agent_section_end(section_name="pass_handoffs"),
     )
     failures: list[str] = []
-    for heading in REPO_FACTS_HEADINGS:
-        if heading not in section:
-            failures.append(f"Repo Facts Map missing heading: {heading}")
-    return failures
-
-
-def check_full_document_reconcile_section(text: str) -> list[str]:
-    """Return structural failures for Full Document Reconcile.
-
-    Parameters:
-        text: Existing PR body text.
-
-    Expected output:
-        Missing-core-file failures. This verifies coverage, not the truth of the
-        agent's semantic evidence.
-    """
-    section = extract_block(
-        text=text,
-        start=agent_section_start(section_name="full_document_reconcile"),
-        end=agent_section_end(section_name="full_document_reconcile"),
-    )
-    failures: list[str] = []
-    for rel_path in CORE_FILES:
-        if rel_path not in section:
-            failures.append(f"Full Document Reconcile missing file: {rel_path}")
+    for sync_pass in SYNC_PASSES:
+        pass_id = str(sync_pass["id"])
+        title = str(sync_pass["title"])
+        row_prefix = f"| `{pass_id}` |"
+        rows = [
+            line.strip()
+            for line in section.splitlines()
+            if line.strip().startswith(row_prefix)
+        ]
+        if len(rows) != 1:
+            failures.append(f"Sync Pass Status missing one row for: {title}")
+            continue
+        cells = markdown_table_cells(line=rows[0])
+        if len(cells) != len(PASS_STATUS_COLUMNS):
+            failures.append(f"Sync Pass Status malformed row for: {title}")
+            continue
+        status = cells[2].strip().strip("`").strip()
+        if status != "ready_for_next_pass":
+            failures.append(
+                f"Sync Pass Status pass not ready: {title} status column must "
+                "be ready_for_next_pass before final gate."
+            )
     return failures
 
 
@@ -1803,8 +1883,8 @@ def check_final_pr_body(repo_root: Path, pr_body_path: Path) -> None:
         pr_body_path: PR body file to validate.
 
     Expected output:
-        Exit 0 when structure, sentinels, auto state, raw URLs, and mechanical
-        residue checks pass. This does not certify Repo Facts Map quality.
+        Exit 0 when sentinels, auto state, pass readiness, blocking statuses,
+        and residue checks pass. This does not certify semantic evidence quality.
     """
     if not pr_body_path.exists():
         sys.exit(f"FATAL: missing PR body file: {pr_body_path}")
@@ -1813,15 +1893,17 @@ def check_final_pr_body(repo_root: Path, pr_body_path: Path) -> None:
     failures: list[str] = []
     if SYNC_PR_BODY_MARKER not in text:
         failures.append("PR_BODY.md missing sync PR body marker.")
-    assert_no_content_outside_sync_sections(text=text)
+    assert_no_content_outside_sync_sections(
+        text=text,
+        require_all_agent_sections=True,
+    )
     failures.extend(check_sync_state_shape(state=state))
     failures.extend(check_pr_body_auto_section(state=state, text=text))
-    failures.extend(check_repo_facts_section(text=text))
-    failures.extend(check_full_document_reconcile_section(text=text))
+    failures.extend(check_pass_status_section(text=text))
     failures.extend(check_blocking_statuses(state=state))
     failures.extend(check_no_template_residue(
         path=pr_body_path,
-        text=remove_review_contract_section(text=text),
+        text=text,
     ))
     failures.extend(check_no_unfilled_agent_placeholders(text=text))
     for rel_path in CORE_FILES:
@@ -1835,7 +1917,7 @@ def check_final_pr_body(repo_root: Path, pr_body_path: Path) -> None:
         sys.exit("FATAL: final sync check failed:\n  " + "\n  ".join(failures))
     print(
         "Final sync check passed: PR_BODY.md matches current sync_state.json "
-        "and contains required structural coverage."
+        "and sync pass statuses are ready."
     )
 
 
@@ -1883,7 +1965,6 @@ def run_full_reconcile() -> int:
 
     assert_upstream_repo(upstream_dir=upstream_dir)
     assert_no_unmanaged_dirty(repo_root=repo_root)
-    assert_no_legacy_source(repo_root=repo_root)
     ensure_gitignore(repo_root=repo_root)
 
     upstream_sha = git("rev-parse", "HEAD", cwd=upstream_dir).strip()
