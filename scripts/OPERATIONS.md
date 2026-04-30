@@ -35,23 +35,40 @@ curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/s
 
 ## 2. Sync Agent Pass
 
+每个 pass 的固定读取顺序：
+
+1. 读取 `.coding_workflow/diffs/agent_workorder.md`，确认本轮文件清单和
+   commit-pinned 操作手册 URL。
+2. 读取 `.coding_workflow/diffs/upstream_full/` 中本 pass 拥有文件的上游版本，
+   先理解目标形状。
+3. 确认 `PR_BODY.md` 存在；如果不存在，先用
+   `.coding_workflow/diffs/pr_body_skeleton.md` 初始化。
+4. 读取 `PR_BODY.md` 的 agent-owned sections：
+   `Repo Facts Map`、`Sync Pass Status`、`Full Document Reconcile`、
+   `Remaining Human Decisions`。
+5. 读取本 pass 的项目证据源和前置 pass 产物，再修改本 pass 拥有的文件。
+
+PASS 1/2/3 不当场追问用户；没有证据的内容写入不确定项、对应 evidence 或
+downstream impact。PASS 4 负责治理反向闭合，只有治理决策无法从前三个 pass
+证据推出时才当场追问；仍拿不到答案才写入 `Remaining Human Decisions`。
+
 PASS 1 - Code Facts / Architecture：
 
 ```text
 当前仓库已经运行过普通 sync。请只执行本文档的
 PASS 1 - Code Facts / Architecture。
 
-先读取 `.coding_workflow/diffs/agent_workorder.md`、`PR_BODY.md`
-或 `.coding_workflow/diffs/pr_body_skeleton.md`、`.coding_workflow/diffs/upstream_full/`
-以及当前仓库的代码入口、模块边界、数据流、状态模型、外部依赖和关键不变量。
+按本节固定读取顺序读取工单、上游 `architecture.md`、PR body agent-owned sections，
+再读取当前仓库的代码入口、模块边界、数据流、状态模型、外部依赖和代码层不变量。
 
 专属目标：重建代码事实图，用可定位代码 / 文档 / 命令证据补 Repo Facts Map；
-没有证据的内容写不确定项。只同步 `architecture.md`、`Sync Pass Status`
-的 PASS 1 行和 `Full Document Reconcile` 的 `architecture.md` 行；把影响能力、
-测试或治理的结论写入 `Full Document Reconcile` 的 downstream impact。
+只把证据足够的代码事实写入 `architecture.md`。没有证据、需要后续 pass
+确认或需要用户判断的内容，写入 Repo Facts Map 的不确定项、`Full Document Reconcile`
+的 evidence 或 downstream impact，不得写成最终架构结论。
 
-如果 `PR_BODY.md` 不存在，先用 `.coding_workflow/diffs/pr_body_skeleton.md`
-初始化。不要手改 script-owned auto 区，不要在 sentinel 外写内容。
+只修改 `architecture.md`、`Repo Facts Map`、`Sync Pass Status` 的 PASS 1 行和
+`Full Document Reconcile` 的 `architecture.md` 行。不要手改 script-owned auto 区，
+不要在 sentinel 外写内容。
 完成后必须重跑普通 sync，并回报本 pass 的 `Sync Pass Status` 是否为
 `ready_for_next_pass`。
 ```
@@ -64,19 +81,22 @@ PASS 2 - Capability / User Behavior：
 前置条件：先确认 `Sync Pass Status` 中 PASS 1 为 `ready_for_next_pass`；
 否则停止并回报需要先完成 PASS 1。
 
-先读取 `.coding_workflow/diffs/agent_workorder.md`、PASS 1 状态和证据、
-`PR_BODY.md`、
-`.coding_workflow/diffs/upstream_full/`、`capability_contract.json`、`interact.md`
-和 `docs/business_user_guide.md`。
+按本节固定读取顺序读取工单、上游 `capability_contract.json` / `interact.md` /
+`docs/business_user_guide.md`、PR body agent-owned sections，再读取 PASS 1 状态、
+Repo Facts Map、`architecture.md`、`capability_contract.json`、`interact.md` 和
+`docs/business_user_guide.md`。
 
 专属目标：基于 PASS 1 code facts 复核能力边界和用户可观察行为是否一致。
-所有“能做 / 不能做 / 必须追问 / 必须拒绝 / 不得猜测”等声明必须有
-contract、interact 或测试锚点。business guide 只能解释已存在能力，不新增能力。
+所有“能做 / 不能做 / 必须追问 / 必须拒绝 / 不得猜测”等能力边界声明必须锚定
+`capability_contract.json`；用户可观察行为必须锚定 `interact.md`。测试可以作为
+实现存在的辅助证据，但不能替代 contract 或 interact 锚点。`docs/business_user_guide.md`
+只解释已存在能力，不新增能力；如果它与 contract 或 interact 冲突，修改 business guide。
 把测试和治理要承接的规则写入 `Full Document Reconcile` 的 downstream impact。
 
-只修改本 pass 拥有的核心文档、`Sync Pass Status` 的 PASS 2 行和对应
-`Full Document Reconcile` 行。
-完成后重跑普通 sync，并回报 PASS 2 是否 ready。
+只修改 `capability_contract.json`、`interact.md`、`docs/business_user_guide.md`、
+`Sync Pass Status` 的 PASS 2 行和对应 `Full Document Reconcile` 行。
+完成后必须重跑普通 sync，并回报本 pass 的 `Sync Pass Status` 是否为
+`ready_for_next_pass`。
 ```
 
 PASS 3 - TESTING Independent Review：
@@ -87,22 +107,26 @@ PASS 3 - TESTING Independent Review：
 前置条件：先确认 `Sync Pass Status` 中 PASS 1 和 PASS 2 都是 `ready_for_next_pass`；
 否则停止并回报应该回到哪个 pass。
 
-先读取 `.coding_workflow/diffs/agent_workorder.md`、PASS 1/2 状态和证据、`PR_BODY.md`、
-`.coding_workflow/diffs/upstream_full/`、`TESTING.md`、`tests/` 和目标项目测试入口。
+按本节固定读取顺序读取工单、上游 `TESTING.md`、PR body agent-owned sections，
+再读取 PASS 1/2 状态、Repo Facts Map、`architecture.md`、`capability_contract.json`、
+`interact.md`、`docs/business_user_guide.md`、`TESTING.md`、`tests/` 和目标项目测试入口。
 
-专属目标：把 `TESTING.md` 当作测试体系审查，不是文字同步。必须从冗余度、
+专属目标：把 `TESTING.md` 当作测试体系审查，不是文字同步，也不是修改测试代码。
+必须重新设计 `TESTING.md` 中的测试策略，并从冗余度、
 必要性、真实性、mock-only 风险、真实失败模式覆盖、unit/contract/scenario/E2E
-分层、以及哪些测试不值得新增等角度重构测试体系。
+分层、以及哪些测试不值得新增等角度审查。
 
-必须填写 TESTING_REVIEW_PACKET：existing_test_inventory、redundant_tests、
-missing_high_value_tests、tests_not_worth_adding、unit_vs_contract_vs_e2e_decision、
+必须在 `TESTING.md` 中填写 9 项 TESTING_REVIEW_PACKET：existing_test_inventory、redundant_tests、
+missing_high_value_tests、tests_not_worth_adding、unit_vs_contract_vs_scenario_vs_e2e_decision、
 real_failure_modes_covered、mock_only_risks、recommended_gate、
 downstream_requirements_for_PR_Checklist。
 
 只修改 `TESTING.md`、`Sync Pass Status` 的 PASS 3 行和 `Full Document Reconcile`
 的 `TESTING.md` 行。把 PR_Checklist 或治理流程必须承接的测试门禁写入
-downstream impact。
-完成后重跑普通 sync，并回报 PASS 3 是否 ready。
+downstream impact。如果发现 PASS 1/2 的事实或锚点不足以支撑测试策略，不要顺手改
+PASS 1/2 文件；在 downstream impact 写清应该回到哪个 pass。
+完成后必须重跑普通 sync，并回报本 pass 的 `Sync Pass Status` 是否为
+`ready_for_next_pass`。
 ```
 
 PASS 4 - Governance / Reverse Closure：
@@ -113,18 +137,25 @@ PASS 4 - Governance / Reverse Closure：
 前置条件：先确认 `Sync Pass Status` 中 PASS 1/2/3 都是 `ready_for_next_pass`；
 否则停止并回报应该回到哪个 pass。
 
-先读取 `.coding_workflow/diffs/agent_workorder.md`、前三个 pass 状态和证据、`PR_BODY.md`、
-`.coding_workflow/diffs/upstream_full/`、`PR_Checklist.md`、`SOP.md`、`AGENTS.md`
+按本节固定读取顺序读取工单、上游 `PR_Checklist.md` / `SOP.md` / `AGENTS.md` /
+`.github/pull_request_template.md`、PR body agent-owned sections，再读取前三个 pass
+状态和证据、`architecture.md`、`capability_contract.json`、`interact.md`、
+`docs/business_user_guide.md`、`TESTING.md`、`PR_Checklist.md`、`SOP.md`、`AGENTS.md`
 和 `.github/pull_request_template.md`。
 
 专属目标：消费前三个 pass 的 downstream impact，对必须落到治理文档的规则做反向闭合。
 同步 PR_Checklist、SOP、AGENTS 结构性骨架和 PR template override decision。
+PR template override decision 指：判断目标项目是否继承上游 PR template、是否有本地覆盖，
+以及覆盖原因是否已在 PR body 或治理文档中说明。
 `AGENTS.md ## 文件简介` 内部项目文件条目不由 sync 重写；只能确认 heading 和同步治理规则。
+`AGENTS.md` 其他章节只同步上游工作规则、文档关系和治理流程，不替目标项目补内部模块清单。
 
-只修改本 pass 拥有的核心文档、`Sync Pass Status` 的 PASS 4 行和对应
-`Full Document Reconcile` 行。闭合不了就写清应该回到哪个 pass；
-需要用户判断时由 PASS 4 当场追问，仍拿不到答案才写 Remaining Human Decisions。
-不能替上游补语义结论。完成后重跑普通 sync，并回报是否全部 pass ready、
+只修改 `PR_Checklist.md`、`SOP.md`、`AGENTS.md`、`.github/pull_request_template.md`、
+`Sync Pass Status` 的 PASS 4 行和对应 `Full Document Reconcile` 行。
+闭合不了就写清应该回到哪个 pass；
+需要用户判断时由 PASS 4 当场追问，仍拿不到答案才写 `Remaining Human Decisions`。
+不能替上游补语义结论。完成后必须重跑普通 sync，并回报本 pass 的
+`Sync Pass Status` 是否为 `ready_for_next_pass`、是否全部 pass ready、
 是否可以进入 PR 提交流程。
 ```
 
