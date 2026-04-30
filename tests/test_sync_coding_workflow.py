@@ -298,6 +298,47 @@ def extract_review_contract(pr_body_text: str) -> str:
 class SyncWorkflowTests(unittest.TestCase):
     """Behavioral regressions for sync shell and PR body helpers."""
 
+    def test_operations_contract_matches_sync_constants(self) -> None:
+        """Runbook contract should not drift from sync script constants."""
+        operations_text = (
+            REPO_ROOT / "scripts/OPERATIONS.md"
+        ).read_text(encoding="utf-8")
+        expected_literals = [
+            SYNC_MODULE.SYNC_PR_BODY_MARKER,
+            SYNC_MODULE.SYNC_AUTO_START,
+            SYNC_MODULE.SYNC_AUTO_END,
+            "ready_for_next_pass",
+            (
+                "curl -fsSL https://raw.githubusercontent.com/"
+                "wlvh/coding-workflow/main/scripts/sync.sh | bash"
+            ),
+            (
+                "curl -fsSL https://raw.githubusercontent.com/"
+                "wlvh/coding-workflow/main/scripts/sync.sh | bash -s -- --final"
+            ),
+            "| " + " | ".join(SYNC_MODULE.PASS_STATUS_COLUMNS) + " |",
+            "| " + " | ".join(SYNC_MODULE.FULL_RECONCILE_COLUMNS) + " |",
+        ]
+        for section_name in SYNC_MODULE.AGENT_SECTIONS:
+            expected_literals.extend((
+                section_name,
+                SYNC_MODULE.agent_section_start(section_name=section_name),
+                SYNC_MODULE.agent_section_end(section_name=section_name),
+            ))
+        expected_literals.extend(SYNC_MODULE.REPO_FACTS_HEADINGS)
+        for sync_pass in SYNC_MODULE.SYNC_PASSES:
+            expected_literals.extend((
+                str(sync_pass["id"]),
+                str(sync_pass["title"]),
+            ))
+
+        for literal in expected_literals:
+            self.assertIn(
+                literal,
+                operations_text,
+                msg=f"OPERATIONS.md missing sync contract literal: {literal}",
+            )
+
     def test_final_mode_rejects_stale_auto_without_refresh(self) -> None:
         """`--final` must not repair stale auto content before checking it."""
         with tempfile.TemporaryDirectory() as temp_dir:
