@@ -7,6 +7,8 @@
 
 本提示词只负责启动独立审查。必读输入和 PR body 结构以 PR body auto 区中的
 script-owned review contract 为准；不要从本提示词推断或补造第二套规则。
+分工边界：contract 负责机械结构、必读输入和状态清单；本提示词负责语义审查方法，
+包括证据真实性、upstream 规则吸收和可操作性判断。
 
 ---
 

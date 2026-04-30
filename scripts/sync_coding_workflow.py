@@ -1083,9 +1083,33 @@ def write_agent_workorder(
         "",
         "## 入口",
         "",
-        "1. 先补 `PR_BODY.md` 的 `Repo Facts Map`。",
-        f"2. 按下表处理 {len(state['core_files'])} 个核心文档。",
-        "3. 重跑 sync；最终提交前运行 `sync.sh --final`。",
+        (
+            "1. 如果 `PR_BODY.md` 不存在，先用 "
+            "`.coding_workflow/diffs/pr_body_skeleton.md` 初始化。"
+        ),
+        "2. 补 `PR_BODY.md` 的 `Repo Facts Map`。",
+        f"3. 按下表处理 {len(state['core_files'])} 个核心文档。",
+        (
+            "4. 无法从仓库证据判断的事项写入 "
+            "`remaining_human_decisions`，并在回报中等待用户回答。"
+        ),
+        "5. 重跑普通 sync，让 auto 区和 `sync_state.json` 回到最终工作区状态。",
+        "",
+        "## 角色边界",
+        "",
+        (
+            "- sync agent 不运行 final gate，不创建或更新 PR，"
+            "不提交 `.coding_workflow/diffs/`。"
+        ),
+        (
+            "- sync agent 如留下 `remaining_human_decisions`，"
+            "不进入 PR 提交流程。"
+        ),
+        "- PR 提交 agent 才在提交前运行 `sync.sh --final`。",
+        (
+            "- final gate 只证明机械一致性；证据真实性、项目化文案准确性"
+            "和 upstream 规则语义吸收由独立 reviewer 判断。"
+        ),
         "",
         "## 文件处理清单",
         "",

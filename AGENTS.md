@@ -7,12 +7,10 @@
 ### 核心模块
 
 ### 业务逻辑 
-- `README.md`：编程工作流总入口、核心产物和核心文档索引。
-- `PR_Checklist.md`：PR 提交、commit / push、PR body 使用规则。
 
 ### 备注
 * 一旦文件有了修改或新增，需要对照文件简介相应部分进行修改。测试文件不在要求内，因为会有TESTING.md专门管理。
-* 统一编码与查看约定：仓库所有文件均为 UTF-8 编码。使用命令行或脚本查看/编辑时必须显式指定 UTF-8（例如 PowerShell `Get-Content -Encoding UTF8 <file>`，Python `open(..., encoding="utf-8")`）。
+* 统一编码与查看约定：仓库所有文件均为 UTF-8 编码。使用命令行或脚本查看/编辑时必须显式指定 UTF-8。
 * artifacts文件夹目录是一次性产出物，批准豁免不加入文件简介。
 
 ## 架构说明
