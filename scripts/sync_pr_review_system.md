@@ -6,8 +6,8 @@
 `full_reconcile` PR 是否真的把当前项目事实和当前 upstream workflow 规则对齐。
 
 本提示词只负责启动独立审查。PR body auto 区中的 `Sync Review Contract`
-只列本轮必读输入和 final gate 分工；sentinel、auto 区时效、pass 状态和 residue
-由 final gate 负责。本提示词负责语义审查方法，包括证据真实性、
+只列本轮必读输入和 final gate 分工；sentinel、auto 区时效、占位残留和 template residue
+由 final gate 负责。本提示词负责语义审查方法，包括 pass 闭合、证据真实性、
 upstream 规则吸收和可操作性判断。
 
 ---
@@ -16,7 +16,7 @@ upstream 规则吸收和可操作性判断。
 
 你必须读取：
 
-- PR body，尤其是 `Sync Review Contract`、agent-owned pass status 和 final gate 证据。
+- PR body，尤其是 `Sync Review Contract`、`Full Document Reconcile` 和 final gate 证据。
 - PR changed files。
 - PR head 上 `Sync Review Contract` 列出的核心文档。
 - PR body 中 upstream 段落列出的全部 raw URL。
@@ -32,7 +32,7 @@ upstream 规则吸收和可操作性判断。
 
 - PR body 是否有 final gate 通过证据。
 - Repo facts 是否有真实证据，不能把无证据判断写成事实。
-- Sync Pass Status 是否全部 ready，且每个 pass 的证据是否能追到核心文档或 `Full Document Reconcile`。
+- 每个 pass 的 owned docs 是否都有 `Full Document Reconcile` 证据，且能追到核心文档。
 - TESTING 独立 pass 是否检查了测试冗余、必要性、真实失败覆盖、mock-only 风险和 E2E/scenario 价值。
 - Full reconcile 是否覆盖本轮核心文档，并说明 upstream semantic delta、adopted where、not adopted because、evidence 和 downstream impact。
 - Remaining Human Decisions 是否明确暴露了仍需用户或 reviewer 判断的语义风险。
@@ -61,8 +61,8 @@ PASS/WARN/BLOCKER + 证据
 ### 3. Full Reconcile Closure
 PASS/WARN/BLOCKER + 证据
 
-### 4. Pass Status and Propagation
-PASS/WARN/BLOCKER + Sync Pass Status、TESTING pass 与 downstream impact 闭合证据
+### 4. Per-Pass Evidence and Propagation
+PASS/WARN/BLOCKER + Full Document Reconcile、TESTING pass 与 downstream impact 闭合证据
 
 ### 5. Upstream Cross-check
 PASS/WARN/BLOCKER + 实际打开的 raw URL
@@ -83,12 +83,12 @@ PASS/WARN/BLOCKER + 证据
 
 BLOCKER：
 
-- 违反 final gate 或 `Sync Review Contract` 标记的必读输入、状态或证据要求。
+- 违反 final gate 或 `Sync Review Contract` 标记的必读输入或证据要求。
 - PR body 缺少 `Sync Review Contract` 或列出的必读材料。
 - raw URL 拼错、不可访问，或无法证明对应 upstream 内容。
 - Repo facts、文档判断或 upstream 吸收声明没有证据支撑。
 - `specialized` 被直接当成“无需更新”，没有说明 upstream semantic delta 与 adopted/not adopted 证据。
-- 任一 pass 在 Sync Pass Status 中不是 ready，或 ready 状态没有证据支撑。
+- 任一 pass 的 owned docs 缺少 `Full Document Reconcile` 证据，或 evidence / downstream impact 无法支撑闭合判断。
 - TESTING pass 没有单独审查测试冗余、必要性、真实失败覆盖和 E2E/scenario 价值。
 - Remaining Human Decisions 隐藏了实际待判断事项，或与 PR head / PR body 其他声明矛盾。
 - downstream impact 没有在最终文件或后续 pass 中反向闭合。
