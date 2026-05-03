@@ -9,7 +9,9 @@ Call flow:
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import shutil
@@ -352,6 +354,9 @@ class SyncWorkflowTests(unittest.TestCase):
             SYNC_MODULE.SYNC_AUTO_START,
             SYNC_MODULE.SYNC_AUTO_END,
             "| " + " | ".join(SYNC_MODULE.FULL_RECONCILE_COLUMNS) + " |",
+            "## PR Test Evidence",
+            "## Upstream Drift Log",
+            "## Agent Execution Evidence",
         ]
         for section_name in SYNC_MODULE.AGENT_SECTIONS:
             expected_literals.extend((
@@ -438,6 +443,8 @@ class SyncWorkflowTests(unittest.TestCase):
             SYNC_MODULE.SYNC_AUTO_END,
             "任何 sync sentinel、sentinel 外内容",
             "agent-owned 内容不能保留 `待补充`",
+            "`pr_test_evidence` 区只由 PR 提交 Agent 填写",
+            "`agent_execution_evidence` 是执行自报清单",
             "`待判断` 留给 reviewer 和用户",
             "文档语义对账表",
             "没有拒绝项或下游影响时写",
@@ -445,6 +452,7 @@ class SyncWorkflowTests(unittest.TestCase):
             "class-1 template/missing",
             "class-2 upstream",
             "class-3 code/test/behavior drift",
+            "不得字面引用上游模板 marker",
             "本 pass owned docs 的漂移触发器",
             "本 pass owned docs 的闭合规则",
             (
@@ -553,14 +561,21 @@ class SyncWorkflowTests(unittest.TestCase):
             "`.github/pull_request_template.md`",
             "`.coding_workflow/diffs/sync_state.json`",
             "`PR_BODY.md` 的 `Full Document Reconcile` 表",
-            "`<!-- sync:agent:full_document_reconcile:start -->` 到",
+            "`<!-- sync:agent:start full_document_reconcile -->` 到",
+            "`PR_BODY.md` 的 `PR Test Evidence` 段",
+            "`PR_BODY.md` 的 `Upstream Drift Log` 段",
+            "`PR_BODY.md` 的 `Agent Execution Evidence` 表",
             "`PR_BODY.md` 的 `Remaining Human Decisions` 段",
-            "`<!-- sync:agent:remaining_human_decisions:start -->` 到",
+            "`<!-- sync:agent:start remaining_human_decisions -->` 到",
             "`git branch --show-current`",
             "`git status --short`",
             "`git diff --name-only <base>...HEAD`",
             "PR body 中列了但 diff",
             "`PR_BODY.md` 的 `Full Document Reconcile` 表覆盖本轮核心文档",
+            "`Agent Execution Evidence` 四个 PASS 行都已填写",
+            "`Upstream Drift Log`",
+            "`PR Test Evidence` 区",
+            "不得把本 PR 一次性测试证据写入 `Repo Facts Map`",
             "`PR_BODY.md` 默认只用于更新 GitHub PR body，不提交仓库",
             "不得提交 `.coding_workflow/diffs/`",
             "`gh pr list --state open --head <branch>`",
@@ -570,6 +585,8 @@ class SyncWorkflowTests(unittest.TestCase):
             "`gh pr create --draft --title <title> --body-file PR_BODY.md --base <base> --head <branch>`",
             "禁止使用裸 `git push --force`",
             "不要手修 PR body auto 区",
+            "`PR Test Evidence` 是否已记录测试命令、结果和 N/A 原因",
+            "`Upstream Drift Log` 是否为 `none`",
             "`PR_BODY.md` 是已提交，还是仅用于更新 GitHub PR body",
             "`Remaining Human Decisions` 是否为 `none`",
         ]
@@ -955,6 +972,55 @@ class SyncWorkflowTests(unittest.TestCase):
                 text=f"{SYNC_MODULE.SYNC_PR_BODY_MARKER}\n"
             )
         )
+
+    def test_warns_when_pr_body_is_tracked(self) -> None:
+        """Sync should warn instead of silently accepting tracked PR_BODY.md."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            (target_root / "PR_BODY.md").write_text(
+                "tracked draft\n",
+                encoding="utf-8",
+            )
+            commit_initial_repo(repo_root=target_root)
+
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                SYNC_MODULE.warn_if_pr_body_tracked(repo_root=target_root)
+
+            self.assertIn("WARN: PR_BODY.md is tracked", output.getvalue())
+            self.assertIn("git rm --cached PR_BODY.md", output.getvalue())
+
+    def test_refresh_appends_upstream_drift_log(self) -> None:
+        """Refreshing across upstream commits should preserve a drift warning."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target_root = Path(temp_dir)
+            old_state = sample_sync_state()
+            new_state = sample_sync_state()
+            new_state["upstream_resolved_commit"] = "c" * 40
+            state_path = SYNC_MODULE.state_path_for(repo_root=target_root)
+            state_path.parent.mkdir(parents=True, exist_ok=True)
+            state_path.write_text(
+                json.dumps(new_state, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            pr_body_path = target_root / "PR_BODY.md"
+            pr_body_path.write_text(
+                SYNC_MODULE.render_pr_body_skeleton(state=old_state),
+                encoding="utf-8",
+            )
+
+            SYNC_MODULE.update_pr_body(
+                repo_root=target_root,
+                pr_body_path=pr_body_path,
+            )
+
+            refreshed = pr_body_path.read_text(encoding="utf-8")
+            self.assertIn("## Upstream Drift Log", refreshed)
+            self.assertIn(f"{'a' * 40} -> {'c' * 40}", refreshed)
+            self.assertIn(
+                "- upstream_resolved_commit: " + "c" * 40,
+                refreshed,
+            )
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ upstream 规则吸收和可操作性判断。
 你必须读取：
 
 - PR body，尤其是 `Sync Review Contract`、`Full Document Reconcile` 和 final gate 证据。
+- PR body 的 `PR Test Evidence`、`Upstream Drift Log`、`Agent Execution Evidence`。
 - PR changed files。
 - PR head 上 `Sync Review Contract` 列出的核心文档。
 - PR body 中 upstream 段落列出的全部 raw URL。
@@ -35,10 +36,14 @@ upstream 规则吸收和可操作性判断。
 - 每个 pass 的 owned docs 是否都有 `Full Document Reconcile` 证据，且能追到核心文档。
 - TESTING 独立 pass 是否检查了测试冗余、必要性、真实失败覆盖、mock-only 风险和 E2E/scenario 价值。
 - Full reconcile 是否覆盖本轮核心文档，并说明 upstream semantic delta、adopted where、not adopted because、evidence 和 downstream impact。
+- PR Test Evidence 是否记录实际测试命令、结果和 N/A 原因，且没有把一次性测试证据混进长期 Repo Facts。
+- Upstream Drift Log 是否暴露了本轮 PR body 刷新期间的 upstream commit 漂移；如存在漂移，必须按当前 raw URL 重新核对 reconcile 行。
+- Agent Execution Evidence 是否给出每个 pass 的自报读取清单；这只是抽查入口，不能当成工具级读取证明。
 - Remaining Human Decisions 是否明确暴露了仍需用户或 reviewer 判断的语义风险。
 - 每条 downstream impact 是否被后续 pass 或治理文档消费，不能停在口头声明。
 - PR head 是否真正吸收或合理解释了 upstream 规则。
 - 下一位 agent 或开发者能否按本轮核心文档完成进入项目、测试、提交、架构理解和用户视角验收。
+- 至少抽查若干条 PR body 证据路径或命令声明，直接对照 PR head 内容或可复现命令，确认 agent 自报和文档 evidence 没有明显编造。
 
 你看不到目标项目的本轮 scratch 目录时，不能假设里面的证据成立；PR body 必须转写关键证据。
 
@@ -64,16 +69,19 @@ PASS/WARN/BLOCKER + 证据
 ### 4. Per-Pass Evidence and Propagation
 PASS/WARN/BLOCKER + Full Document Reconcile、TESTING pass 与 downstream impact 闭合证据
 
-### 5. Upstream Cross-check
+### 5. Test, Drift, and Execution Evidence
+PASS/WARN/BLOCKER + PR Test Evidence、Upstream Drift Log、Agent Execution Evidence 与抽查证据
+
+### 6. Upstream Cross-check
 PASS/WARN/BLOCKER + 实际打开的 raw URL
 
-### 6. Operability
+### 7. Operability
 PASS/WARN/BLOCKER + 证据
 
-### 7. Top Issues
+### 8. Top Issues
 只列最高影响的问题，包含文件路径和行号 / PR body 引用
 
-### 8. Evidence Index
+### 9. Evidence Index
 列出实际读取过的 PR body 段、核心文档、raw URL 和验证命令
 ```
 
@@ -90,6 +98,9 @@ BLOCKER：
 - `specialized` 被直接当成“无需更新”，没有说明 upstream semantic delta 与 adopted/not adopted 证据。
 - 任一 pass 的 owned docs 缺少 `Full Document Reconcile` 证据，或 evidence / downstream impact 无法支撑闭合判断。
 - TESTING pass 没有单独审查测试冗余、必要性、真实失败覆盖和 E2E/scenario 价值。
+- PR Test Evidence 缺少必要测试命令、结果或 N/A 原因。
+- Upstream Drift Log 非 `none`，但 reviewer 没有重新核对当前 upstream raw URL。
+- Agent Execution Evidence 把自报读取清单表述成工具级读取证明，或与 PR body 证据明显矛盾。
 - Remaining Human Decisions 隐藏了实际待判断事项，或与 PR head / PR body 其他声明矛盾。
 - downstream impact 没有在最终文件或后续 pass 中反向闭合。
 - final gate 失败，或者 PR body 没有说明 final gate 结果。

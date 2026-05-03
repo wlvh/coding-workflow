@@ -12,6 +12,7 @@ Call flow:
       -> assert_upstream_repo()
       -> assert_no_unmanaged_dirty()
       -> ensure_gitignore()
+      -> warn_if_pr_body_tracked()
       -> stage_full_reconcile_outputs()
       -> render_pr_body_skeleton()
       -> print_summary()
@@ -28,6 +29,7 @@ import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 CORE_FILES = (
@@ -139,6 +141,9 @@ SYNC_PR_BODY_MARKER = "<!-- sync:pr-body version=1 -->"
 AGENT_SECTIONS = (
     "repo_facts_map",
     "full_document_reconcile",
+    "pr_test_evidence",
+    "upstream_drift_log",
+    "agent_execution_evidence",
     "remaining_human_decisions",
 )
 PR_BODY_REQUIRED_SECTIONS = (
@@ -150,6 +155,9 @@ PR_BODY_REQUIRED_SECTIONS = (
     "Upstream Instructions at Sync Time",
     "Installation Status",
     "Full Document Reconcile",
+    "PR Test Evidence",
+    "Upstream Drift Log",
+    "Agent Execution Evidence",
     "Remaining Human Decisions",
 )
 REPO_FACTS_HEADINGS = (
@@ -464,6 +472,33 @@ def ensure_gitignore(repo_root: Path) -> None:
     gitignore_path.write_text(content, encoding="utf-8")
 
 
+def warn_if_pr_body_tracked(repo_root: Path) -> None:
+    """Warn when PR_BODY.md is already tracked in the target repo.
+
+    Parameters:
+        repo_root: Target project path.
+
+    Expected output:
+        A warning on stdout when `PR_BODY.md` is tracked. Sync treats the file
+        as local PR-body scratch, but automatically untracking it would mutate
+        the target repo index and should be an explicit cleanup PR decision.
+    """
+    tracked = git_optional(
+        "ls-files",
+        "--error-unmatch",
+        "PR_BODY.md",
+        cwd=repo_root,
+    )
+    if tracked is None:
+        return
+    print(
+        "WARN: PR_BODY.md is tracked in this repo. Workflow docs sync treats "
+        "PR_BODY.md as a local PR body scratch file; run "
+        "`git rm --cached PR_BODY.md` in a cleanup PR if this project wants "
+        "PR_BODY.md to stay untracked."
+    )
+
+
 def normalize_text(text: str) -> str:
     """Normalize line endings without changing semantic document content.
 
@@ -658,7 +693,7 @@ def build_sync_state(
         `.coding_workflow/diffs/` evidence epoch.
     """
     return {
-        "schema_version": "0.4.0",
+        "schema_version": "0.5.0",
         "sync_mode": "full_reconcile",
         "upstream_resolved_commit": upstream_sha,
         "project_head_commit": project_sha,
@@ -730,6 +765,15 @@ def render_review_contract(state: dict[str, object]) -> str:
         "",
         "- Repo Facts Map has concrete code, document, or command evidence.",
         "- Full Document Reconcile has per-document evidence and downstream closure.",
+        "- PR Test Evidence records submission-time test commands, results, and N/A reasons.",
+        (
+            "- Upstream Drift Log exposes upstream commit changes that occurred "
+            "while the same PR body was being refreshed."
+        ),
+        (
+            "- Agent Execution Evidence is self-reported read coverage for "
+            "reviewer spot-checks; it is not a harness-authenticated read log."
+        ),
         (
             "- Remaining Human Decisions exposes unresolved semantic decisions "
             "for reviewer judgment."
@@ -879,6 +923,71 @@ def render_remaining_human_decisions_template() -> str:
     ))
 
 
+def render_pr_test_evidence_template() -> str:
+    """Render the PR-submission test evidence placeholder.
+
+    Parameters:
+        None.
+
+    Expected output:
+        Markdown section that the PR submission agent must fill before final
+        gate. PASS 1-4 agents must not invent submission-time test results.
+    """
+    return "\n".join((
+        "## PR Test Evidence",
+        "",
+        "- commands: 待补充",
+        "- result: 待补充",
+        "- not run / N/A: 待补充",
+    ))
+
+
+def render_upstream_drift_log_template() -> str:
+    """Render the upstream drift log placeholder.
+
+    Parameters:
+        None.
+
+    Expected output:
+        Markdown section preserved across refreshes. Ordinary sync appends to
+        it when a sentinel PR body is refreshed across upstream commits.
+    """
+    return "\n".join((
+        "## Upstream Drift Log",
+        "",
+        "- none",
+    ))
+
+
+def render_agent_execution_evidence_template() -> str:
+    """Render the per-pass self-reported execution evidence placeholder.
+
+    Parameters:
+        None.
+
+    Expected output:
+        Markdown table that each PASS agent fills with actual files read,
+        observed facts, and skipped files. This is reviewer-facing discipline,
+        not authenticated tool telemetry.
+    """
+    lines = [
+        "## Agent Execution Evidence",
+        "",
+        (
+            "Self-report for reviewer spot-checks only; this does not prove "
+            "tool-level reads without external harness logs."
+        ),
+        "",
+        "| pass | required files read | key facts observed | skipped files / reason |",
+        "| --- | --- | --- | --- |",
+    ]
+    for sync_pass in SYNC_PASSES:
+        lines.append(
+            f"| {sync_pass['title']} | 待补充 | 待补充 | 待补充 |"
+        )
+    return "\n".join(lines)
+
+
 def wrap_agent_section(section_name: str, content: str) -> str:
     """Wrap one agent-owned section with stable sentinels.
 
@@ -922,6 +1031,18 @@ def render_pr_body_from_sections(
             content=sections["full_document_reconcile"],
         ),
         wrap_agent_section(
+            section_name="pr_test_evidence",
+            content=sections["pr_test_evidence"],
+        ),
+        wrap_agent_section(
+            section_name="upstream_drift_log",
+            content=sections["upstream_drift_log"],
+        ),
+        wrap_agent_section(
+            section_name="agent_execution_evidence",
+            content=sections["agent_execution_evidence"],
+        ),
+        wrap_agent_section(
             section_name="remaining_human_decisions",
             content=sections["remaining_human_decisions"],
         ),
@@ -944,6 +1065,9 @@ def render_pr_body_skeleton(state: dict[str, object]) -> str:
         "full_document_reconcile": render_full_document_reconcile_template(
             state=state,
         ),
+        "pr_test_evidence": render_pr_test_evidence_template(),
+        "upstream_drift_log": render_upstream_drift_log_template(),
+        "agent_execution_evidence": render_agent_execution_evidence_template(),
         "remaining_human_decisions": render_remaining_human_decisions_template(),
     }
     return render_pr_body_from_sections(state=state, sections=sections)
@@ -1273,8 +1397,8 @@ def assert_no_content_outside_sync_sections(
             newly introduced agent sections so the script can insert them.
 
     Expected output:
-        None. Human-authored content must live inside one of the three
-        agent-owned sections so script refreshes cannot silently drop work.
+        None. Human-authored content must live inside a known agent-owned
+        section so script refreshes cannot silently drop work.
     """
     if text.count(SYNC_PR_BODY_MARKER) != 1:
         sys.exit(f"FATAL: expected exactly one marker: {SYNC_PR_BODY_MARKER}")
@@ -1308,9 +1432,8 @@ def assert_no_content_outside_sync_sections(
     if "".join(outside_parts).strip():
         sys.exit(
             "FATAL: PR_BODY.md contains content outside sync sentinel "
-            "sections. Move human-authored text into repo_facts_map, "
-            "full_document_reconcile, or remaining_human_decisions before "
-            "rerunning sync."
+            "sections. Move human-authored text into a sync agent-owned "
+            "section before rerunning sync."
         )
 
 
@@ -1354,9 +1477,79 @@ def render_agent_section_template(
         return render_repo_facts_template()
     if section_name == "full_document_reconcile":
         return render_full_document_reconcile_template(state=state)
+    if section_name == "pr_test_evidence":
+        return render_pr_test_evidence_template()
+    if section_name == "upstream_drift_log":
+        return render_upstream_drift_log_template()
+    if section_name == "agent_execution_evidence":
+        return render_agent_execution_evidence_template()
     if section_name == "remaining_human_decisions":
         return render_remaining_human_decisions_template()
     sys.exit(f"FATAL: unknown agent section: {section_name}")
+
+
+def current_utc_timestamp() -> str:
+    """Return a second-precision UTC timestamp for sync log entries.
+
+    Parameters:
+        None.
+
+    Expected output:
+        ISO-like UTC timestamp ending with `Z`.
+    """
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def upstream_commit_from_auto_section(text: str) -> str | None:
+    """Extract the upstream commit from an existing PR body auto section.
+
+    Parameters:
+        text: Existing sync PR body.
+
+    Expected output:
+        Commit SHA string when the auto section contains one, otherwise None.
+        Missing values are non-fatal because older damaged drafts should still
+        reach the normal sentinel validation path.
+    """
+    if SYNC_AUTO_START not in text or SYNC_AUTO_END not in text:
+        return None
+    auto_text = extract_block(text=text, start=SYNC_AUTO_START, end=SYNC_AUTO_END)
+    prefix = "- upstream_resolved_commit: "
+    for line in auto_text.splitlines():
+        if line.startswith(prefix):
+            return line.removeprefix(prefix).strip()
+    return None
+
+
+def append_upstream_drift_log(
+    section_text: str,
+    previous_upstream: str | None,
+    current_upstream: str,
+) -> str:
+    """Append an upstream drift entry when a refresh crosses commits.
+
+    Parameters:
+        section_text: Current `upstream_drift_log` section content.
+        previous_upstream: Upstream commit recorded in the existing auto block.
+        current_upstream: Upstream commit in current sync state.
+
+    Expected output:
+        Updated section content. No entry is added when commits match or the
+        existing draft has no parseable previous upstream commit.
+    """
+    if previous_upstream is None or previous_upstream == current_upstream:
+        return section_text
+    entry = (
+        f"- {current_utc_timestamp()}: {previous_upstream} -> "
+        f"{current_upstream}; reviewer must re-check agent-owned reconcile "
+        "rows against the current upstream raw URLs."
+    )
+    lines = section_text.rstrip().splitlines()
+    if not lines:
+        lines = render_upstream_drift_log_template().splitlines()
+    lines = [line for line in lines if line.strip() != "- none"]
+    lines.append(entry)
+    return "\n".join(lines)
 
 
 def preserved_agent_sections(
@@ -1419,7 +1612,13 @@ def update_pr_body(repo_root: Path, pr_body_path: Path) -> None:
         text=existing,
         require_all_agent_sections=False,
     )
+    previous_upstream = upstream_commit_from_auto_section(text=existing)
     sections = preserved_agent_sections(text=existing, state=state)
+    sections["upstream_drift_log"] = append_upstream_drift_log(
+        section_text=sections["upstream_drift_log"],
+        previous_upstream=previous_upstream,
+        current_upstream=str(state["upstream_resolved_commit"]),
+    )
     refreshed = render_pr_body_from_sections(
         state=state,
         sections=sections,
@@ -1637,6 +1836,7 @@ def run_full_reconcile() -> int:
     assert_upstream_repo(upstream_dir=upstream_dir)
     assert_no_unmanaged_dirty(repo_root=repo_root)
     ensure_gitignore(repo_root=repo_root)
+    warn_if_pr_body_tracked(repo_root=repo_root)
 
     upstream_sha = git("rev-parse", "HEAD", cwd=upstream_dir).strip()
     project_sha = git_optional("rev-parse", "HEAD", cwd=repo_root)
