@@ -346,6 +346,8 @@ PASS 4 完成后，启动 PR 提交 agent；提交判断以 `PR_BODY.md` 的
 PASS 4 的聊天摘要作为事实源。
 
 ```text
+整体目标：完成本轮 workflow docs sync；用普通 sync 产物和代码证据更新本 pass
+owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 当前任务：只执行 PR 提交 Agent。不要补写 PASS 1/2/3/4 的语义内容。
 
 必须读取：
@@ -354,6 +356,12 @@ PASS 4 的聊天摘要作为事实源。
 3. `.github/pull_request_template.md`
 4. `PR_BODY.md`
 5. `.coding_workflow/diffs/sync_state.json`
+6. `PR_BODY.md` 的 `Full Document Reconcile` 表；如果找不到该 heading，
+   先查 `<!-- sync:agent:full_document_reconcile:start -->` 到
+   `<!-- sync:agent:full_document_reconcile:end -->` agent-owned 区。
+7. `PR_BODY.md` 的 `Remaining Human Decisions` 段；如果找不到该 heading，
+   先查 `<!-- sync:agent:remaining_human_decisions:start -->` 到
+   `<!-- sync:agent:remaining_human_decisions:end -->` agent-owned 区。
 
 提交前核对：
 - 用 `git branch --show-current` 确认当前分支不是 main / master / 默认主干。
@@ -361,7 +369,7 @@ PASS 4 的聊天摘要作为事实源。
 - 用 `git diff --name-only <base>...HEAD` 和 `git diff --name-only` 核对
   `PR_BODY.md` 的变更范围，diff 中有但 PR body 未列的补齐，PR body 中列了但 diff
   不存在的删除。
-- 检查 `Full Document Reconcile` 覆盖本轮核心文档，且没有 `待补充`。
+- 检查 `PR_BODY.md` 的 `Full Document Reconcile` 表覆盖本轮核心文档，且没有 `待补充`。
 - `Remaining Human Decisions` 是语义风险表达，不是 final gate 硬阻断；如有非
   `none` 项，必须保留在 PR body 交给 reviewer 和用户判断。
 - 按 `TESTING.md` 和 `PR_BODY.md` 记录的测试策略运行必要测试，并把结果写入 PR body。
@@ -402,7 +410,7 @@ PASS 4 的聊天摘要作为事实源。
 PR 提交 agent 给出 PR URL 后，启动独立 reviewer：
 
 ```text
-你是 sync PR reviewer。请按 PR body auto 区的 `Sync Review Contract`
+你是PR reviewer，这个pr是负责更新本地文档治理的漂移修复。请按 PR body auto 区的 `Sync Review Contract`
 和 commit-pinned reviewer prompt raw URL 审核 PR <URL>。
 
 必须打开 PR body upstream 段落列出的 raw URL，并对照 PR head 上的核心文档做
