@@ -64,20 +64,24 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   upstream semantic delta、adopted where、not adopted because、evidence、
   downstream impact；没有拒绝项或下游影响时写 `none`，无法判断时写
   `待判断` 留给 reviewer 和用户。
-- 三类漂移定义：
-  - class-1 template/missing：本地缺文档、sync 安装模板、模板残留或仍像 upstream 原样模板，需要项目化。
-  - class-2 upstream：`upstream_full` 有新规则 / 新说明，但本地文档未采纳，或需要写清不采纳证据。
-  - class-3 code/test/behavior drift：当前代码、测试、用户可见行为已经发展，但对应核心文档没有跟上。
 - `Full Document Reconcile` 的 evidence 列必须显式覆盖三类漂移；未发现写 `none`：
   `class-1 template/missing: ...<br>class-2 upstream: ...<br>class-3 code/test/behavior drift: ...`
+- 本 pass owned docs 的漂移触发器：
+  - `architecture.md`
+    - class-1 template/missing：系统目的、模块表、数据流、状态 / 错误 / 外部依赖 / 不变量仍是模板或缺失。
+    - class-2 upstream：upstream architecture 新增或调整架构章节 / 表达要求，本地未采纳也未说明原因。
+    - class-3 code/test/behavior drift：代码新增入口、模块、数据流、状态模型、错误模型、外部依赖、扩展点或架构不变量，而 `architecture.md` 未跟上。
+- 本 pass owned docs 的闭合规则：
+  - class-1：用代码证据去模板化 `architecture.md`；证据不足写 evidence，不补虚假架构。
+  - class-2：适用则 adopt 到 `architecture.md`；不适用写 not adopted because。
+  - class-3：架构事实写回 `architecture.md`；能力、用户行为、测试或治理影响只写 downstream impact，不越权改后续 pass 文件。
 
 必须读取：
 1. `.coding_workflow/diffs/agent_workorder.md`
 2. `.coding_workflow/diffs/upstream_full/architecture.md`
 3. `PR_BODY.md`；如果不存在，先用 `.coding_workflow/diffs/pr_body_skeleton.md`
    初始化；如果 skeleton 缺失，停止并回报普通 sync 未正确生成
-4. `PR_BODY.md` 的 agent-owned sections：`repo_facts_map`、
-   `full_document_reconcile`、`remaining_human_decisions`
+4. `PR_BODY.md` 的 `repo_facts_map` 和 `full_document_reconcile` 中 `architecture.md` 行
 5. 当前仓库的代码入口、模块边界、数据流、状态模型、外部依赖和代码层不变量
 
 只允许修改：
@@ -90,18 +94,11 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - `architecture.md` 中证据足够的代码事实；无代码证据的段落不得凭空写满。
 - `Full Document Reconcile` 的 `architecture.md` 行。
 
-停止条件：
-- `.coding_workflow/diffs/agent_workorder.md` 或需要的 skeleton / upstream 文件缺失。
-- 需要判断能力边界、用户行为、测试门禁或治理规则；不要越权修改，写入不确定项或
-  downstream impact。
-- 证据不足；不要编造架构结论，把缺口写进 `Repo Facts Map` 的不确定项或
-  `Full Document Reconcile` 的 evidence / downstream impact。
-
 完成后：
 1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash`。
 2. 如果普通 sync 失败，停止并回报错误；不要手修 auto 区。
-3. 回报普通 sync 已成功，以及 `Full Document Reconcile` 或
-   `Remaining Human Decisions` 是否留下 `待判断`。
+3. 回报普通 sync 已成功，以及本 pass 负责的 `Full Document Reconcile` 行是否留下
+   `待判断`。
 ```
 
 ### 2.2 PASS 2 - Capability / User Behavior
@@ -127,12 +124,26 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   upstream semantic delta、adopted where、not adopted because、evidence、
   downstream impact；没有拒绝项或下游影响时写 `none`，无法判断时写
   `待判断` 留给 reviewer 和用户。
-- 三类漂移定义：
-  - class-1 template/missing：本地缺文档、sync 安装模板、模板残留或仍像 upstream 原样模板，需要项目化。
-  - class-2 upstream：`upstream_full` 有新规则 / 新说明，但本地文档未采纳，或需要写清不采纳证据。
-  - class-3 code/test/behavior drift：当前代码、测试、用户可见行为已经发展，但对应核心文档没有跟上。
 - `Full Document Reconcile` 的 evidence 列必须显式覆盖三类漂移；未发现写 `none`：
   `class-1 template/missing: ...<br>class-2 upstream: ...<br>class-3 code/test/behavior drift: ...`
+- 本 pass owned docs 的漂移触发器：
+  - `capability_contract.json`
+    - class-1 template/missing：`sample_*` anchor、sample status、样本能力桶或占位能力仍未项目化。
+    - class-2 upstream：upstream schema 新增能力桶、失败模式、行为承诺字段或锚点规则，本地未采纳也未说明原因。
+    - class-3 code/test/behavior drift：代码或测试显示新增能力、拒绝、必须追问、降级或边界行为，但 contract 无对应 anchor。
+  - `interact.md`
+    - class-1 template/missing：用户可观察行为、不变量或验收口径仍是写作骨架或缺失。
+    - class-2 upstream：upstream 用户行为写作规则、颗粒度原则或验收表达更新，本地未采纳也未说明原因。
+    - class-3 code/test/behavior drift：代码新增可见入口、输出结构、错误提示、排序、默认行为或限制，但 `interact.md` 无对应不变量。
+  - `docs/business_user_guide.md`
+    - class-1 template/missing：尖括号占位、样例 case、泛用问法或模板说明仍未项目化。
+    - class-2 upstream：upstream 教学结构、业务解释顺序或风险提示更新，本地未采纳也未说明原因。
+    - class-3 code/test/behavior drift：contract / interact 已确认且业务人员会感知的能力，guide 未解释怎么问、怎么看、何时找人。
+- 本 pass owned docs 的闭合规则：
+  - `capability_contract.json`：class-1/2/3 修成真实能力边界和 stable anchor；证据不足写 downstream impact，不凭空声明能力。
+  - `interact.md`：只闭合用户可观察行为和验收不变量；新增声明必须锚到 contract 或测试证据。
+  - `docs/business_user_guide.md`：只解释 contract / interact 已确认且业务可感知的能力；能力未确认先回到 contract / interact。
+  - class-2 不适用时，各 owned doc 对应写 not adopted because。
 
 必须读取：
 1. `.coding_workflow/diffs/agent_workorder.md`
@@ -141,8 +152,8 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 4. `.coding_workflow/diffs/upstream_full/docs/business_user_guide.md`
 5. `PR_BODY.md`；如果不存在，先用 `.coding_workflow/diffs/pr_body_skeleton.md`
    初始化；如果 skeleton 缺失，停止并回报普通 sync 未正确生成
-6. `PR_BODY.md` 的 agent-owned sections：`repo_facts_map`、
-   `full_document_reconcile`、`remaining_human_decisions`
+6. `PR_BODY.md` 的 `repo_facts_map` 中能力相关事实和 `full_document_reconcile`
+   中本 pass 三个 owned docs 行
 7. `architecture.md`、`capability_contract.json`、`interact.md`、
    `docs/business_user_guide.md`
 
@@ -162,19 +173,11 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - `Full Document Reconcile` 中 `capability_contract.json`、`interact.md`、
   `docs/business_user_guide.md` 三行。
 
-停止条件：
-- `architecture.md` 仍有 marker / TODO 命中。
-- 准备写入的能力边界声明无法建立 `capability_contract.json` 锚点，或用户可观察行为无法建立
-  `interact.md` 锚点。
-- 需要改 `architecture.md` 才能闭合；不要顺手改，写 downstream impact 指回 PASS 1。
-- `docs/business_user_guide.md` 与 contract 或 interact 冲突；修改 business guide，
-  不要扩大能力边界。
-
 完成后：
 1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash`。
 2. 如果普通 sync 失败，停止并回报错误；不要手修 auto 区。
-3. 回报普通 sync 已成功，以及 `Full Document Reconcile` 或
-   `Remaining Human Decisions` 是否留下 `待判断`。
+3. 回报普通 sync 已成功，以及本 pass 负责的 `Full Document Reconcile` 行是否留下
+   `待判断`。
 ```
 
 ### 2.3 PASS 3 - TESTING Independent Review
@@ -201,22 +204,27 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   upstream semantic delta、adopted where、not adopted because、evidence、
   downstream impact；没有拒绝项或下游影响时写 `none`，无法判断时写
   `待判断` 留给 reviewer 和用户。
-- 三类漂移定义：
-  - class-1 template/missing：本地缺文档、sync 安装模板、模板残留或仍像 upstream 原样模板，需要项目化。
-  - class-2 upstream：`upstream_full` 有新规则 / 新说明，但本地文档未采纳，或需要写清不采纳证据。
-  - class-3 code/test/behavior drift：当前代码、测试、用户可见行为已经发展，但对应核心文档没有跟上。
 - `Full Document Reconcile` 的 evidence 列必须显式覆盖三类漂移；未发现写 `none`：
   `class-1 template/missing: ...<br>class-2 upstream: ...<br>class-3 code/test/behavior drift: ...`
+- 本 pass owned docs 的漂移触发器：
+  - `TESTING.md`
+    - class-1 template/missing：测试分层、测试证据、推荐 gate 或 `TESTING_REVIEW_PACKET` 仍是上游骨架或缺失。
+    - class-2 upstream：upstream 新增测试原则、alignment 测试规则、证据记录方式或 gate 口径，本地未采纳也未说明原因。
+    - class-3 code/test/behavior drift：`tests/` 冗长、重复、mock-only、只测实现细节，或没有覆盖新增能力；本 pass 只写 review packet，不改测试代码。
+- 本 pass owned docs 的闭合规则：
+  - `TESTING.md`：class-1/2 更新测试原则、证据记录和 gate；不适用的 upstream 规则写 not adopted because。
+  - class-3 只写 `TESTING_REVIEW_PACKET`，把机械信号和定向证据落入 redundant_tests、missing_high_value_tests、tests_not_worth_adding、mock_only_risks、recommended_gate 和 downstream_requirements_for_PR_Checklist；本 pass 不改 `tests/`。
 
 必须读取：
 1. `.coding_workflow/diffs/agent_workorder.md`
 2. `.coding_workflow/diffs/upstream_full/TESTING.md`
 3. `PR_BODY.md`；如果不存在，先用 `.coding_workflow/diffs/pr_body_skeleton.md`
    初始化；如果 skeleton 缺失，停止并回报普通 sync 未正确生成
-4. `PR_BODY.md` 的 agent-owned sections：`repo_facts_map`、
-   `full_document_reconcile`、`remaining_human_decisions`
-5. `architecture.md`、`capability_contract.json`、`interact.md`、
-   `docs/business_user_guide.md`、`TESTING.md`、`tests/` 和目标项目测试入口
+4. `PR_BODY.md` 的 `repo_facts_map` 中测试现状相关事实和 `full_document_reconcile`
+   中 `TESTING.md` 行
+5. `TESTING.md`、目标项目测试入口、`tests/` 清单和机械信号命令输出；只打开机械信号
+   指向的具体测试片段
+6. PASS 1/2 owned docs 的相关锚点或段落；只在测试策略需要时定向读取，不通读全文
 
 只允许修改：
 - `TESTING.md`
@@ -236,18 +244,11 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   downstream_requirements_for_PR_Checklist。
 - `Full Document Reconcile` 的 `TESTING.md` 行。
 
-停止条件：
-- PASS 1 或 PASS 2 owned docs 仍有 marker / TODO 命中。
-- 需要新增或修改测试代码才能证明测试策略；本 pass 不改 `tests/`，把建议写入
-  `TESTING.md` 或 downstream impact。
-- PASS 1/2 的事实或锚点不足以支撑测试策略；不要顺手改前置 pass 文件，在
-  downstream impact 写清应该回到哪个 pass。
-
 完成后：
 1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash`。
 2. 如果普通 sync 失败，停止并回报错误；不要手修 auto 区。
-3. 回报普通 sync 已成功，以及 `Full Document Reconcile` 或
-   `Remaining Human Decisions` 是否留下 `待判断`。
+3. 回报普通 sync 已成功，以及本 pass 负责的 `Full Document Reconcile` 行是否留下
+   `待判断`。
 ```
 
 ### 2.4 PASS 4 - Governance / Reverse Closure
@@ -272,12 +273,30 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   upstream semantic delta、adopted where、not adopted because、evidence、
   downstream impact；没有拒绝项或下游影响时写 `none`，无法判断时写
   `待判断` 留给 reviewer 和用户。
-- 三类漂移定义：
-  - class-1 template/missing：本地缺文档、sync 安装模板、模板残留或仍像 upstream 原样模板，需要项目化。
-  - class-2 upstream：`upstream_full` 有新规则 / 新说明，但本地文档未采纳，或需要写清不采纳证据。
-  - class-3 code/test/behavior drift：当前代码、测试、用户可见行为已经发展，但对应核心文档没有跟上。
 - `Full Document Reconcile` 的 evidence 列必须显式覆盖三类漂移；未发现写 `none`：
   `class-1 template/missing: ...<br>class-2 upstream: ...<br>class-3 code/test/behavior drift: ...`
+- 本 pass owned docs 的漂移触发器：
+  - `PR_Checklist.md`
+    - class-1 template/missing：提交、PR body、测试证据或文档同步清单仍是骨架或缺失。
+    - class-2 upstream：upstream 新增提交检查项、文档同步规则或 review 记录要求，本地未采纳也未说明原因。
+    - class-3 code/test/behavior drift：PASS 1/2/3 的 downstream impact 需要提交流程约束，但 checklist 未收。
+  - `SOP.md`
+    - class-1 template/missing：只剩 SOP 原则、空段或样例流程，没有项目固定流程入口。
+    - class-2 upstream：upstream SOP 原则或流程入口组织方式更新，本地未采纳也未说明原因。
+    - class-3 code/test/behavior drift：代码或交付方式新增固定流程，如迁移、部署、E2E、live ops，但 SOP 无入口。
+  - `AGENTS.md`
+    - class-1 template/missing：`## 文件简介`、文档关系、测试 / PR 入口或业务知识仍是空段或模板。
+    - class-2 upstream：upstream agent 工作规则、文档关系或文件简介要求更新，本地未采纳也未说明原因。
+    - class-3 code/test/behavior drift：核心模块、业务逻辑、入口脚本或治理文件增删，但 `## 文件简介` 未跟上。
+  - `.github/pull_request_template.md`
+    - class-1 template/missing：文件缺失；这是唯一允许直接继承 upstream 的核心文件。
+    - class-2 upstream：upstream PR template 更新时默认 adopt；本地覆盖才需要写清 not adopted because。
+    - class-3 code/test/behavior drift：项目需要固定 PR 段落但 upstream 无法覆盖，才保留本地覆盖。
+- 本 pass owned docs 的闭合规则：
+  - `PR_Checklist.md`：把 PASS 1/2/3 downstream impact 中需要提交期强制执行的事项收进 checklist。
+  - `SOP.md`：只为项目固定流程新增或更新流程入口；新增 / 修改 SOP 后同步 `AGENTS.md` 的 SOP 清单。
+  - `AGENTS.md`：只按前三个 pass 的证据更新文件简介和治理入口；需要新的项目代码事实时写 downstream impact，不做大范围代码重读。
+  - `.github/pull_request_template.md`：缺失或 upstream 更新默认 inherit / adopt；只有项目固定 PR 段落无法由 upstream 覆盖时，才保留最小本地覆盖并写 not adopted because。
 
 必须读取：
 1. `.coding_workflow/diffs/agent_workorder.md`
@@ -287,11 +306,10 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 5. `.coding_workflow/diffs/upstream_full/.github/pull_request_template.md`
 6. `PR_BODY.md`；如果不存在，先用 `.coding_workflow/diffs/pr_body_skeleton.md`
    初始化；如果 skeleton 缺失，停止并回报普通 sync 未正确生成
-7. `PR_BODY.md` 的 agent-owned sections：`repo_facts_map`、
-   `full_document_reconcile`、`remaining_human_decisions`
-8. `architecture.md`、`capability_contract.json`、`interact.md`、
-   `docs/business_user_guide.md`、`TESTING.md`、`PR_Checklist.md`、`SOP.md`、
-   `AGENTS.md` 和 `.github/pull_request_template.md`
+7. `PR_BODY.md` 的 `full_document_reconcile` 全表和 `remaining_human_decisions`
+8. `PR_Checklist.md`、`SOP.md`、`AGENTS.md` 和 `.github/pull_request_template.md`
+9. PASS 1/2/3 owned docs 仅在验证 downstream impact 闭合时定向读取相关段落；
+   不默认通读前置 pass 全文
 
 只允许修改：
 - `PR_Checklist.md`
@@ -312,14 +330,6 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   并把决定写入 `Full Document Reconcile` 的 adopted where 或 not adopted because。
 - `Remaining Human Decisions`：没有待判断项保留 `none`；否则列出具体待决事项。
 
-停止条件：
-- PASS 1/2/3 任一 owned doc 仍有 marker / TODO 命中。
-- 必须回到前置 pass 才能闭合；不要替上游补语义结论，在 downstream impact 写清回到哪个 pass。
-- 治理决策无法从前三个 pass 证据推出；先当场追问用户，仍拿不到答案才写入
-  `Remaining Human Decisions`。
-- `AGENTS.md ## 文件简介` 内部项目文件条目需要项目代码事实；本 pass 不重写这些条目，
-  只确认 heading 和同步治理规则。
-
 完成后：
 1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash`。
 2. 如果普通 sync 失败，停止并回报错误；不要手修 auto 区。
@@ -336,27 +346,53 @@ PASS 4 完成后，启动 PR 提交 agent；提交判断以 `PR_BODY.md` 的
 PASS 4 的聊天摘要作为事实源。
 
 ```text
-请按本项目 PR_Checklist.md 创建或更新 workflow docs sync PR。
+当前任务：只执行 PR 提交 Agent。不要补写 PASS 1/2/3/4 的语义内容。
 
-前置条件：`Full Document Reconcile` 覆盖本轮核心文档，且
-`Remaining Human Decisions` 已明确写成 `none` 或待判断项。
+必须读取：
+1. `PR_Checklist.md`
+2. `TESTING.md`
+3. `.github/pull_request_template.md`
+4. `PR_BODY.md`
+5. `.coding_workflow/diffs/sync_state.json`
 
-提交前检查工作区：如果混有非 sync 的代码、配置或测试改动，停止并要求用户处理。
-如果 sync 内容又发生变化，停止并要求回到对应 sync pass 重跑普通 sync。
-提交前检查 PR_BODY.md：如果 `Full Document Reconcile` 缺少本轮核心文档行或仍有
-`待补充`，停止并要求回到对应 sync pass。`Remaining Human Decisions` 是语义风险表达，
-不是 final gate 硬阻断；如有非 `none` 项，必须保留在 PR body 交给 reviewer 和用户判断。
+提交前核对：
+- 用 `git branch --show-current` 确认当前分支不是 main / master / 默认主干。
+- 用 `git status --short` 区分本轮 sync 文件、`PR_BODY.md`、测试和无关改动；无关改动不得提交。
+- 用 `git diff --name-only <base>...HEAD` 和 `git diff --name-only` 核对
+  `PR_BODY.md` 的变更范围，diff 中有但 PR body 未列的补齐，PR body 中列了但 diff
+  不存在的删除。
+- 检查 `Full Document Reconcile` 覆盖本轮核心文档，且没有 `待补充`。
+- `Remaining Human Decisions` 是语义风险表达，不是 final gate 硬阻断；如有非
+  `none` 项，必须保留在 PR body 交给 reviewer 和用户判断。
+- 按 `TESTING.md` 和 `PR_BODY.md` 记录的测试策略运行必要测试，并把结果写入 PR body。
+- 提交前必须运行：
+  `curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash -s -- --final`
 
-提交范围：只允许提交本轮核心文档、`.gitignore`、必要测试，以及目标项目规则
-允许提交的 `PR_BODY.md`；不得提交 `.coding_workflow/diffs/` 或临时 clone 目录。
+提交范围：
+- 只允许提交本轮核心文档、`.gitignore`、必要测试，以及目标项目规则允许提交的
+  `PR_BODY.md`。
+- `PR_BODY.md` 默认只用于更新 GitHub PR body，不提交仓库；只有目标项目规则明确允许时才提交。
+- 不得提交 `.coding_workflow/diffs/`、临时 clone 目录、无关代码、无关配置或历史草稿。
 
-提交前必须运行：
+单 commit 发布：
+- 先用 `gh pr list --state open --head <branch>` 判断是更新既有 PR 还是新建 PR。
+- 更新既有 PR：先更新 `PR_BODY.md` 的 Review / 修复记录，再 stage 预期文件，
+  运行 `git commit --amend --no-edit`，用
+  `git push --force-with-lease origin HEAD:<branch>` 推送，最后运行
+  `gh pr edit <number> --body-file PR_BODY.md`。
+- 新建 PR：stage 预期文件，创建一个 commit，运行 `git push -u origin <branch>`，
+  再运行
+  `gh pr create --draft --title <title> --body-file PR_BODY.md --base <base> --head <branch>`。
+- 禁止使用裸 `git push --force`；禁止把 `.github/pull_request_template.md`
+  当作 PR body 直接提交。
+- 如果 final gate 失败，不要手修 PR body auto 区；回到对应 sync pass。
 
-curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash -s -- --final
-
-如果 final gate 失败，不要手修 PR body auto 区；回到对应 sync pass。
-创建或更新 PR 后，回报 PR URL、commit hash、实际提交文件、final gate / 测试证据，
-以及 `PR_BODY.md` 是已提交还是仅用于更新 GitHub PR body。
+完成后回报：
+- PR URL、branch、base、commit hash。
+- `git diff --name-only <base>...HEAD` 的实际提交文件。
+- final gate 和测试命令 / 结果。
+- `PR_BODY.md` 是已提交，还是仅用于更新 GitHub PR body。
+- `Remaining Human Decisions` 是否为 `none`。
 ```
 
 ---
