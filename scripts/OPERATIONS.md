@@ -346,27 +346,59 @@ PASS 4 完成后，启动 PR 提交 agent；提交判断以 `PR_BODY.md` 的
 PASS 4 的聊天摘要作为事实源。
 
 ```text
-请按本项目 PR_Checklist.md 创建或更新 workflow docs sync PR。
+当前任务：只执行 PR 提交 Agent。不要补写 PASS 1/2/3/4 的语义内容。
 
-前置条件：`Full Document Reconcile` 覆盖本轮核心文档，且
-`Remaining Human Decisions` 已明确写成 `none` 或待判断项。
+必须读取：
+1. `PR_Checklist.md`
+2. `TESTING.md`
+3. `.github/pull_request_template.md`
+4. `PR_BODY.md`
+5. `.coding_workflow/diffs/sync_state.json`
+6. `PR_BODY.md` 的 `Full Document Reconcile` 表；如果找不到该 heading，
+   先查 `<!-- sync:agent:full_document_reconcile:start -->` 到
+   `<!-- sync:agent:full_document_reconcile:end -->` agent-owned 区。
+7. `PR_BODY.md` 的 `Remaining Human Decisions` 段；如果找不到该 heading，
+   先查 `<!-- sync:agent:remaining_human_decisions:start -->` 到
+   `<!-- sync:agent:remaining_human_decisions:end -->` agent-owned 区。
 
-提交前检查工作区：如果混有非 sync 的代码、配置或测试改动，停止并要求用户处理。
-如果 sync 内容又发生变化，停止并要求回到对应 sync pass 重跑普通 sync。
-提交前检查 PR_BODY.md：如果 `Full Document Reconcile` 缺少本轮核心文档行或仍有
-`待补充`，停止并要求回到对应 sync pass。`Remaining Human Decisions` 是语义风险表达，
-不是 final gate 硬阻断；如有非 `none` 项，必须保留在 PR body 交给 reviewer 和用户判断。
+提交前核对：
+- 用 `git branch --show-current` 确认当前分支不是 main / master / 默认主干。
+- 用 `git status --short` 区分本轮 sync 文件、`PR_BODY.md`、测试和无关改动；无关改动不得提交。
+- 用 `git diff --name-only <base>...HEAD` 和 `git diff --name-only` 核对
+  `PR_BODY.md` 的变更范围，diff 中有但 PR body 未列的补齐，PR body 中列了但 diff
+  不存在的删除。
+- 检查 `PR_BODY.md` 的 `Full Document Reconcile` 表覆盖本轮核心文档，且没有 `待补充`。
+- `Remaining Human Decisions` 是语义风险表达，不是 final gate 硬阻断；如有非
+  `none` 项，必须保留在 PR body 交给 reviewer 和用户判断。
+- 按 `TESTING.md` 和 `PR_BODY.md` 记录的测试策略运行必要测试，并把结果写入 PR body。
+- 提交前必须运行：
+  `curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash -s -- --final`
 
-提交范围：只允许提交本轮核心文档、`.gitignore`、必要测试，以及目标项目规则
-允许提交的 `PR_BODY.md`；不得提交 `.coding_workflow/diffs/` 或临时 clone 目录。
+提交范围：
+- 只允许提交本轮核心文档、`.gitignore`、必要测试，以及目标项目规则允许提交的
+  `PR_BODY.md`。
+- `PR_BODY.md` 默认只用于更新 GitHub PR body，不提交仓库；只有目标项目规则明确允许时才提交。
+- 不得提交 `.coding_workflow/diffs/`、临时 clone 目录、无关代码、无关配置或历史草稿。
 
-提交前必须运行：
+单 commit 发布：
+- 先用 `gh pr list --state open --head <branch>` 判断是更新既有 PR 还是新建 PR。
+- 更新既有 PR：先更新 `PR_BODY.md` 的 Review / 修复记录，再 stage 预期文件，
+  运行 `git commit --amend --no-edit`，用
+  `git push --force-with-lease origin HEAD:<branch>` 推送，最后运行
+  `gh pr edit <number> --body-file PR_BODY.md`。
+- 新建 PR：stage 预期文件，创建一个 commit，运行 `git push -u origin <branch>`，
+  再运行
+  `gh pr create --draft --title <title> --body-file PR_BODY.md --base <base> --head <branch>`。
+- 禁止使用裸 `git push --force`；禁止把 `.github/pull_request_template.md`
+  当作 PR body 直接提交。
+- 如果 final gate 失败，不要手修 PR body auto 区；回到对应 sync pass。
 
-curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash -s -- --final
-
-如果 final gate 失败，不要手修 PR body auto 区；回到对应 sync pass。
-创建或更新 PR 后，回报 PR URL、commit hash、实际提交文件、final gate / 测试证据，
-以及 `PR_BODY.md` 是已提交还是仅用于更新 GitHub PR body。
+完成后回报：
+- PR URL、branch、base、commit hash。
+- `git diff --name-only <base>...HEAD` 的实际提交文件。
+- final gate 和测试命令 / 结果。
+- `PR_BODY.md` 是已提交，还是仅用于更新 GitHub PR body。
+- `Remaining Human Decisions` 是否为 `none`。
 ```
 
 ---

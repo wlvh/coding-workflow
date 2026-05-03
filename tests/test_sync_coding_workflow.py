@@ -542,6 +542,43 @@ class SyncWorkflowTests(unittest.TestCase):
                     pass_text,
                     msg=f"{title} prompt missing self-contained rule: {literal}",
                 )
+        submit_text = operations_text.split(
+            "## 3. PR 提交 Agent",
+            maxsplit=1,
+        )[1].split("---\n\n## 4. Sync PR Review", maxsplit=1)[0]
+        submit_literals = [
+            "当前任务：只执行 PR 提交 Agent",
+            "`PR_Checklist.md`",
+            "`TESTING.md`",
+            "`.github/pull_request_template.md`",
+            "`.coding_workflow/diffs/sync_state.json`",
+            "`PR_BODY.md` 的 `Full Document Reconcile` 表",
+            "`<!-- sync:agent:full_document_reconcile:start -->` 到",
+            "`PR_BODY.md` 的 `Remaining Human Decisions` 段",
+            "`<!-- sync:agent:remaining_human_decisions:start -->` 到",
+            "`git branch --show-current`",
+            "`git status --short`",
+            "`git diff --name-only <base>...HEAD`",
+            "PR body 中列了但 diff",
+            "`PR_BODY.md` 的 `Full Document Reconcile` 表覆盖本轮核心文档",
+            "`PR_BODY.md` 默认只用于更新 GitHub PR body，不提交仓库",
+            "不得提交 `.coding_workflow/diffs/`",
+            "`gh pr list --state open --head <branch>`",
+            "`git commit --amend --no-edit`",
+            "`git push --force-with-lease origin HEAD:<branch>`",
+            "`gh pr edit <number> --body-file PR_BODY.md`",
+            "`gh pr create --draft --title <title> --body-file PR_BODY.md --base <base> --head <branch>`",
+            "禁止使用裸 `git push --force`",
+            "不要手修 PR body auto 区",
+            "`PR_BODY.md` 是已提交，还是仅用于更新 GitHub PR body",
+            "`Remaining Human Decisions` 是否为 `none`",
+        ]
+        for literal in submit_literals:
+            self.assertIn(
+                literal,
+                submit_text,
+                msg=f"PR submit prompt missing execution detail: {literal}",
+            )
 
     def test_final_mode_rejects_stale_auto_without_refresh(self) -> None:
         """`--final` must not repair stale auto content before checking it."""
