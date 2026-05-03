@@ -441,14 +441,12 @@ class SyncWorkflowTests(unittest.TestCase):
             "`待判断` 留给 reviewer 和用户",
             "文档语义对账表",
             "没有拒绝项或下游影响时写",
-            "三类漂移定义",
-            "class-1 template/missing：本地缺文档",
-            "class-2 upstream：`upstream_full` 有新规则 / 新说明",
-            "class-3 code/test/behavior drift：当前代码、测试、用户可见行为已经发展",
             "evidence 列必须显式覆盖三类漂移",
             "class-1 template/missing",
             "class-2 upstream",
             "class-3 code/test/behavior drift",
+            "本 pass owned docs 的漂移触发器",
+            "本 pass owned docs 的闭合规则",
             (
                 "curl -fsSL https://raw.githubusercontent.com/"
                 "wlvh/coding-workflow/main/scripts/sync.sh | bash"
@@ -482,14 +480,43 @@ class SyncWorkflowTests(unittest.TestCase):
             self.assertNotIn("回报是否写入 downstream impact", pass_text)
             self.assertNotIn("PR body sections", pass_text)
             self.assertNotIn("是否全部 pass ready", pass_text)
+            self.assertNotIn("读取收口", pass_text)
+            self.assertNotIn("停止条件", pass_text)
             pass_specific_literals = []
+            if title != "PASS 4 - Governance / Reverse Closure":
+                self.assertNotIn("remaining_human_decisions", pass_text)
+            if title == "PASS 1 - Code Facts / Architecture":
+                pass_specific_literals.extend((
+                    "系统目的、模块表、数据流",
+                    "upstream architecture 新增或调整架构章节",
+                    "代码新增入口、模块、数据流、状态模型",
+                    "架构事实写回 `architecture.md`",
+                    "能力、用户行为、测试或治理影响只写 downstream impact",
+                    "本 pass 负责的 `Full Document Reconcile` 行",
+                ))
+            if title == "PASS 2 - Capability / User Behavior":
+                pass_specific_literals.extend((
+                    "`sample_*` anchor",
+                    "代码或测试显示新增能力、拒绝、必须追问",
+                    "`capability_contract.json`：class-1/2/3 修成真实能力边界和 stable anchor",
+                    "用户可观察行为、不变量或验收口径",
+                    "新增声明必须锚到 contract 或测试证据",
+                    "怎么问、怎么看、何时找人",
+                    "只解释 contract / interact 已确认且业务可感知的能力",
+                    "本 pass 三个 owned docs 行",
+                ))
             if title == "PASS 3 - TESTING Independent Review":
                 pass_specific_literals.extend((
+                    "`TESTING.md`：class-1/2 更新测试原则、证据记录和 gate",
+                    "class-3 只写 `TESTING_REVIEW_PACKET`",
                     "机械信号收集",
                     "find tests -type f -name 'test_*.py'",
                     "grep -rh",
                     "git log --since='3 months ago'",
                     "按项目等价工具改写并在 evidence 写明实际命令",
+                    "本 pass 只写 review packet，不改测试代码",
+                    "只打开机械信号",
+                    "不通读全文",
                 ))
             if title == "PASS 4 - Governance / Reverse Closure":
                 pass_specific_literals.extend((
@@ -497,6 +524,12 @@ class SyncWorkflowTests(unittest.TestCase):
                     "PASS 1 找到 N 条 class-3 漂移",
                     "PASS 2 ... 闭合于 capability_contract.json",
                     "PASS 3 ... 闭合于 TESTING_REVIEW_PACKET",
+                    "需要提交期强制执行的事项收进 checklist",
+                    "只为项目固定流程新增或更新流程入口",
+                    "需要新的项目代码事实时写 downstream impact",
+                    "缺失或 upstream 更新默认 inherit / adopt",
+                    "唯一允许直接继承 upstream",
+                    "不默认通读前置 pass 全文",
                 ))
             expected_literals = [*common_literals]
             expected_literals.extend(pass_specific_literals)
