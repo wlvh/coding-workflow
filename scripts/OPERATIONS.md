@@ -346,6 +346,8 @@ PASS 4 完成后，启动 PR 提交 agent；提交判断以 `PR_BODY.md` 的
 PASS 4 的聊天摘要作为事实源。
 
 ```text
+整体目标：完成本轮 workflow docs sync；用普通 sync 产物和代码证据更新本 pass
+owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 当前任务：只执行 PR 提交 Agent。不要补写 PASS 1/2/3/4 的语义内容。
 
 必须读取：
@@ -408,7 +410,7 @@ PASS 4 的聊天摘要作为事实源。
 PR 提交 agent 给出 PR URL 后，启动独立 reviewer：
 
 ```text
-你是 sync PR reviewer。请按 PR body auto 区的 `Sync Review Contract`
+你是PR reviewer，这个pr是负责更新本地文档治理的漂移修复。请按 PR body auto 区的 `Sync Review Contract`
 和 commit-pinned reviewer prompt raw URL 审核 PR <URL>。
 
 必须打开 PR body upstream 段落列出的 raw URL，并对照 PR head 上的核心文档做
