@@ -25,6 +25,8 @@ curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/s
   `PR_BODY.md` 和 `.coding_workflow/diffs/` 处于 dirty 状态。
 - 如果已有 `PR_BODY.md` 不是 sync sentinel body，普通 sync 会 fail-fast；
   先移走、删除，或手动迁入 sync PR body 的 agent-owned 区后再运行。
+- 如果脚本警告 `PR_BODY.md` 已被 git 跟踪，不要在 sync 流程里自动修；
+  由目标项目单独 cleanup PR 决定是否执行 `git rm --cached PR_BODY.md`。
 
 普通 sync 输出：
 
@@ -60,12 +62,15 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   任何 sync sentinel、sentinel 外内容。
 - 只修改本 pass 允许的文件和 agent-owned section 内容；本 pass 负责的
   agent-owned 内容不能保留 `待补充`。
+- `pr_test_evidence` 区只由 PR 提交 Agent 填写；PASS 1-4 不得修改、不得为它消去 `待补充`。
+- `agent_execution_evidence` 是执行自报清单，只用于 reviewer 抽查；本 pass 只填写自己的行，不能把它表述为 harness 级读取证明。
 - `Full Document Reconcile` 是 `PR_BODY.md` 的文档语义对账表；必须填写
   upstream semantic delta、adopted where、not adopted because、evidence、
   downstream impact；没有拒绝项或下游影响时写 `none`，无法判断时写
   `待判断` 留给 reviewer 和用户。
 - `Full Document Reconcile` 的 evidence 列必须显式覆盖三类漂移；未发现写 `none`：
   `class-1 template/missing: ...<br>class-2 upstream: ...<br>class-3 code/test/behavior drift: ...`
+- 描述 upstream semantic delta 时，不得字面引用上游模板 marker、sample anchor、尖括号占位符或 TODO sentinel；必须改写为描述性表述，并使用 upstream raw URL 作为证据来源。
 - 本 pass owned docs 的漂移触发器：
   - `architecture.md`
     - class-1 template/missing：系统目的、模块表、数据流、状态 / 错误 / 外部依赖 / 不变量仍是模板或缺失。
@@ -88,11 +93,13 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - `architecture.md`
 - `PR_BODY.md` 的 `repo_facts_map`
 - `PR_BODY.md` 的 `full_document_reconcile` 中 `architecture.md` 行
+- `PR_BODY.md` 的 `agent_execution_evidence` 中 PASS 1 行
 
 必须填写：
 - `Repo Facts Map` 的 10 个固定子项；每项必须有代码路径、文档路径或命令输出证据。
 - `architecture.md` 中证据足够的代码事实；无代码证据的段落不得凭空写满。
 - `Full Document Reconcile` 的 `architecture.md` 行。
+- `Agent Execution Evidence` 的 PASS 1 行：实际读取文件、关键事实摘要、未读文件及原因。
 
 完成后：
 1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash`。
@@ -120,12 +127,15 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   任何 sync sentinel、sentinel 外内容。
 - 只修改本 pass 允许的文件和 agent-owned section 内容；本 pass 负责的
   agent-owned 内容不能保留 `待补充`。
+- `pr_test_evidence` 区只由 PR 提交 Agent 填写；PASS 1-4 不得修改、不得为它消去 `待补充`。
+- `agent_execution_evidence` 是执行自报清单，只用于 reviewer 抽查；本 pass 只填写自己的行，不能把它表述为 harness 级读取证明。
 - `Full Document Reconcile` 是 `PR_BODY.md` 的文档语义对账表；必须填写
   upstream semantic delta、adopted where、not adopted because、evidence、
   downstream impact；没有拒绝项或下游影响时写 `none`，无法判断时写
   `待判断` 留给 reviewer 和用户。
 - `Full Document Reconcile` 的 evidence 列必须显式覆盖三类漂移；未发现写 `none`：
   `class-1 template/missing: ...<br>class-2 upstream: ...<br>class-3 code/test/behavior drift: ...`
+- 描述 upstream semantic delta 时，不得字面引用上游模板 marker、sample anchor、尖括号占位符或 TODO sentinel；必须改写为描述性表述，并使用 upstream raw URL 作为证据来源。
 - 本 pass owned docs 的漂移触发器：
   - `capability_contract.json`
     - class-1 template/missing：`sample_*` anchor、sample status、样本能力桶或占位能力仍未项目化。
@@ -163,6 +173,7 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - `docs/business_user_guide.md`
 - `PR_BODY.md` 的 `repo_facts_map` 中能力相关事实
 - `PR_BODY.md` 的 `full_document_reconcile` 中本 pass 三个 owned docs 行
+- `PR_BODY.md` 的 `agent_execution_evidence` 中 PASS 2 行
 
 必须填写：
 - `capability_contract.json`：能力边界、职责边界和 agent 行为承诺的机器可读契约。
@@ -172,6 +183,7 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   测试只用于证明能力实现存在，不替代 contract / interact，也不为测试设计背书。
 - `Full Document Reconcile` 中 `capability_contract.json`、`interact.md`、
   `docs/business_user_guide.md` 三行。
+- `Agent Execution Evidence` 的 PASS 2 行：实际读取文件、关键事实摘要、未读文件及原因。
 
 完成后：
 1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash`。
@@ -200,12 +212,15 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   任何 sync sentinel、sentinel 外内容。
 - 只修改本 pass 允许的文件和 agent-owned section 内容；本 pass 负责的
   agent-owned 内容不能保留 `待补充`。
+- `pr_test_evidence` 区只由 PR 提交 Agent 填写；PASS 1-4 不得修改、不得为它消去 `待补充`。
+- `agent_execution_evidence` 是执行自报清单，只用于 reviewer 抽查；本 pass 只填写自己的行，不能把它表述为 harness 级读取证明。
 - `Full Document Reconcile` 是 `PR_BODY.md` 的文档语义对账表；必须填写
   upstream semantic delta、adopted where、not adopted because、evidence、
   downstream impact；没有拒绝项或下游影响时写 `none`，无法判断时写
   `待判断` 留给 reviewer 和用户。
 - `Full Document Reconcile` 的 evidence 列必须显式覆盖三类漂移；未发现写 `none`：
   `class-1 template/missing: ...<br>class-2 upstream: ...<br>class-3 code/test/behavior drift: ...`
+- 描述 upstream semantic delta 时，不得字面引用上游模板 marker、sample anchor、尖括号占位符或 TODO sentinel；必须改写为描述性表述，并使用 upstream raw URL 作为证据来源。
 - 本 pass owned docs 的漂移触发器：
   - `TESTING.md`
     - class-1 template/missing：测试分层、测试证据、推荐 gate 或 `TESTING_REVIEW_PACKET` 仍是上游骨架或缺失。
@@ -230,6 +245,7 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - `TESTING.md`
 - `PR_BODY.md` 的 `repo_facts_map` 中测试现状相关事实
 - `PR_BODY.md` 的 `full_document_reconcile` 中 `TESTING.md` 行
+- `PR_BODY.md` 的 `agent_execution_evidence` 中 PASS 3 行
 
 机械信号收集（示例命令，agent 必须按项目等价工具改写并在 evidence 写明实际命令）：
 - `find tests -type f -name 'test_*.py' -exec wc -l {} + | sort -n`
@@ -243,6 +259,7 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   real_failure_modes_covered、mock_only_risks、recommended_gate、
   downstream_requirements_for_PR_Checklist。
 - `Full Document Reconcile` 的 `TESTING.md` 行。
+- `Agent Execution Evidence` 的 PASS 3 行：实际读取文件、关键事实摘要、未读文件及原因。
 
 完成后：
 1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash`。
@@ -269,12 +286,15 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   任何 sync sentinel、sentinel 外内容。
 - 只修改本 pass 允许的文件和 agent-owned section 内容；本 pass 负责的
   agent-owned 内容不能保留 `待补充`。
+- `pr_test_evidence` 区只由 PR 提交 Agent 填写；PASS 1-4 不得修改、不得为它消去 `待补充`。
+- `agent_execution_evidence` 是执行自报清单，只用于 reviewer 抽查；本 pass 只填写自己的行，不能把它表述为 harness 级读取证明。
 - `Full Document Reconcile` 是 `PR_BODY.md` 的文档语义对账表；必须填写
   upstream semantic delta、adopted where、not adopted because、evidence、
   downstream impact；没有拒绝项或下游影响时写 `none`，无法判断时写
   `待判断` 留给 reviewer 和用户。
 - `Full Document Reconcile` 的 evidence 列必须显式覆盖三类漂移；未发现写 `none`：
   `class-1 template/missing: ...<br>class-2 upstream: ...<br>class-3 code/test/behavior drift: ...`
+- 描述 upstream semantic delta 时，不得字面引用上游模板 marker、sample anchor、尖括号占位符或 TODO sentinel；必须改写为描述性表述，并使用 upstream raw URL 作为证据来源。
 - 本 pass owned docs 的漂移触发器：
   - `PR_Checklist.md`
     - class-1 template/missing：提交、PR body、测试证据或文档同步清单仍是骨架或缺失。
@@ -318,6 +338,7 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - `.github/pull_request_template.md`
 - `PR_BODY.md` 的 `full_document_reconcile` 中本 pass 四个 owned docs 行
 - `PR_BODY.md` 的 `remaining_human_decisions`
+- `PR_BODY.md` 的 `agent_execution_evidence` 中 PASS 4 行
 
 必须填写：
 - 前三个 pass 的 downstream impact 是否已被治理文档消费。
@@ -329,6 +350,7 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - PR template override decision：判断目标项目是否继承上游 PR template、是否有本地覆盖，
   并把决定写入 `Full Document Reconcile` 的 adopted where 或 not adopted because。
 - `Remaining Human Decisions`：没有待判断项保留 `none`；否则列出具体待决事项。
+- `Agent Execution Evidence` 的 PASS 4 行：实际读取文件、关键事实摘要、未读文件及原因。
 
 完成后：
 1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash`。
@@ -357,11 +379,14 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 4. `PR_BODY.md`
 5. `.coding_workflow/diffs/sync_state.json`
 6. `PR_BODY.md` 的 `Full Document Reconcile` 表；如果找不到该 heading，
-   先查 `<!-- sync:agent:full_document_reconcile:start -->` 到
-   `<!-- sync:agent:full_document_reconcile:end -->` agent-owned 区。
-7. `PR_BODY.md` 的 `Remaining Human Decisions` 段；如果找不到该 heading，
-   先查 `<!-- sync:agent:remaining_human_decisions:start -->` 到
-   `<!-- sync:agent:remaining_human_decisions:end -->` agent-owned 区。
+   先查 `<!-- sync:agent:start full_document_reconcile -->` 到
+   `<!-- sync:agent:end full_document_reconcile -->` agent-owned 区。
+7. `PR_BODY.md` 的 `PR Test Evidence` 段。
+8. `PR_BODY.md` 的 `Upstream Drift Log` 段。
+9. `PR_BODY.md` 的 `Agent Execution Evidence` 表。
+10. `PR_BODY.md` 的 `Remaining Human Decisions` 段；如果找不到该 heading，
+   先查 `<!-- sync:agent:start remaining_human_decisions -->` 到
+   `<!-- sync:agent:end remaining_human_decisions -->` agent-owned 区。
 
 提交前核对：
 - 用 `git branch --show-current` 确认当前分支不是 main / master / 默认主干。
@@ -370,9 +395,12 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   `PR_BODY.md` 的变更范围，diff 中有但 PR body 未列的补齐，PR body 中列了但 diff
   不存在的删除。
 - 检查 `PR_BODY.md` 的 `Full Document Reconcile` 表覆盖本轮核心文档，且没有 `待补充`。
+- 检查 `Agent Execution Evidence` 四个 PASS 行都已填写；这是 reviewer 抽查入口，不是工具读取证明。
+- 检查 `Upstream Drift Log`；如果不是 `none`，必须在 PR body 或回报中提示 reviewer 重新核对 current upstream raw URL。
 - `Remaining Human Decisions` 是语义风险表达，不是 final gate 硬阻断；如有非
   `none` 项，必须保留在 PR body 交给 reviewer 和用户判断。
-- 按 `TESTING.md` 和 `PR_BODY.md` 记录的测试策略运行必要测试，并把结果写入 PR body。
+- 按 `TESTING.md` 和 `PR_BODY.md` 记录的测试策略运行必要测试，并把结果写入
+  `PR Test Evidence` 区；不得把本 PR 一次性测试证据写入 `Repo Facts Map`。
 - 提交前必须运行：
   `curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash -s -- --final`
 
@@ -399,6 +427,8 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - PR URL、branch、base、commit hash。
 - `git diff --name-only <base>...HEAD` 的实际提交文件。
 - final gate 和测试命令 / 结果。
+- `PR Test Evidence` 是否已记录测试命令、结果和 N/A 原因。
+- `Upstream Drift Log` 是否为 `none`；如非 `none`，说明 reviewer 需要重核的 upstream 漂移。
 - `PR_BODY.md` 是已提交，还是仅用于更新 GitHub PR body。
 - `Remaining Human Decisions` 是否为 `none`。
 ```
@@ -414,7 +444,9 @@ PR 提交 agent 给出 PR URL 后，启动独立 reviewer：
 和 commit-pinned reviewer prompt raw URL 审核 PR <URL>。
 
 必须打开 PR body upstream 段落列出的 raw URL，并对照 PR head 上的核心文档做
-full reconcile cross-check。
+full reconcile cross-check。必须同时检查 `PR Test Evidence`、`Upstream Drift Log`
+和 `Agent Execution Evidence`；其中 `Agent Execution Evidence` 只是 agent 自报，
+不能替代 reviewer 对 PR body 证据路径的抽查。
 ```
 
 处理结果：

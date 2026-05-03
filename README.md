@@ -188,9 +188,10 @@ E. 输出风格约束
 `OPERATIONS.md` 的 commit-pinned URL，不复制四段长 prompt。
 
 - 机械合同：`sync.sh --final`；`PR_BODY.md` auto 区的 `Sync Review Contract` 只保留本轮 reviewer 输入和分工边界
-- 语义交接：`scripts/OPERATIONS.md` 承载 4 个 pass prompt；`PR_BODY.md` agent 区的 `Full Document Reconcile` 记录每个核心文档的 upstream semantic delta、采纳 / 拒绝位置、证据和 downstream impact，`Remaining Human Decisions` 暴露仍需判断的语义事项
+- 语义交接：`scripts/OPERATIONS.md` 承载 4 个 pass prompt；`PR_BODY.md` agent 区的 `Full Document Reconcile` 记录每个核心文档的 upstream semantic delta、采纳 / 拒绝位置、证据和 downstream impact，`PR Test Evidence` 记录 PR 提交阶段的一次性测试证据，`Agent Execution Evidence` 记录 pass agent 的自报读取清单供 reviewer 抽查，`Upstream Drift Log` 暴露 PR body 刷新期间的 upstream commit 漂移，`Remaining Human Decisions` 暴露仍需判断的语义事项
 - 独立 reviewer 是必经语义质量门；final gate 只证明机械一致性，不能替代证据真实性和 upstream 规则吸收审查
 - 如果已有 `PR_BODY.md` 不是 sync sentinel body，普通 sync 会 fail-fast；先移走、删除，或手动迁入 sync PR body 的 agent-owned 区后再运行
+- 如果目标仓库历史上已把 `PR_BODY.md` 提交入库，sync 只打印 warning，不会自动 `git rm --cached`；是否解除跟踪应由目标项目单独 cleanup PR 决定
 - 本轮证据目录：`.coding_workflow/diffs/`
 - 工具实现：`scripts/sync_coding_workflow.py`
 - 一次性启动入口：`scripts/sync.sh`
