@@ -32,17 +32,87 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-CORE_FILES = (
-    "architecture.md",
-    "capability_contract.json",
-    "interact.md",
-    "docs/business_user_guide.md",
-    "TESTING.md",
-    "PR_Checklist.md",
-    "SOP.md",
-    "AGENTS.md",
-    ".github/pull_request_template.md",
+LANGUAGE_ZH = "zh"
+LANGUAGE_EN = "en"
+
+
+def resolve_workflow_language() -> str:
+    """Return the workflow template language selected by the launcher.
+
+    Parameters:
+        None. `CODING_WORKFLOW_LANGUAGE` is set by `scripts/sync.sh`,
+        `zh/scripts/sync.sh`, or `en/scripts/sync.sh`.
+
+    Expected output:
+        `zh` or `en`. Unknown values fail fast so a caller cannot silently sync
+        the wrong template path family.
+    """
+    language = (
+        os.environ["CODING_WORKFLOW_LANGUAGE"]
+        if "CODING_WORKFLOW_LANGUAGE" in os.environ
+        else LANGUAGE_ZH
+    )
+    if language in (LANGUAGE_ZH, LANGUAGE_EN):
+        return language
+    sys.exit(
+        "FATAL: CODING_WORKFLOW_LANGUAGE must be `zh` or `en`; "
+        f"got: {language}"
+    )
+
+
+WORKFLOW_LANGUAGE = resolve_workflow_language()
+
+ZH_CORE_SOURCE_FILES = (
+    "zh/architecture.md",
+    "zh/capability_contract.json",
+    "zh/interact.md",
+    "zh/docs/business_user_guide.md",
+    "zh/TESTING.md",
+    "zh/PR_Checklist.md",
+    "zh/SOP.md",
+    "zh/AGENTS.md",
+    "zh/.github/pull_request_template.md",
 )
+
+EN_CORE_SOURCE_FILES = (
+    "en/architecture.md",
+    "en/capability_contract.json",
+    "en/interact.md",
+    "en/docs/business_user_guide.md",
+    "en/TESTING.md",
+    "en/PR_Checklist.md",
+    "en/SOP.md",
+    "en/AGENTS.md",
+    "en/.github/pull_request_template.md",
+)
+
+
+def strip_language_prefix(path: str) -> str:
+    """Return the target path for a language-scoped upstream template.
+
+    Parameters:
+        path: Upstream source path under `zh/` or `en/`.
+
+    Expected output:
+        Path written to the target project after stripping exactly the leading
+        language directory. Inner directories such as `.github/` are preserved.
+    """
+    for prefix in ("zh/", "en/"):
+        if path.startswith(prefix):
+            return path[len(prefix):]
+    sys.exit(f"FATAL: language template path must start with zh/ or en/: {path}")
+
+
+CORE_SOURCE_FILES_BY_LANGUAGE = {
+    LANGUAGE_ZH: ZH_CORE_SOURCE_FILES,
+    LANGUAGE_EN: EN_CORE_SOURCE_FILES,
+}
+
+ZH_CORE_FILES = tuple(strip_language_prefix(path) for path in ZH_CORE_SOURCE_FILES)
+EN_CORE_FILES = tuple(strip_language_prefix(path) for path in EN_CORE_SOURCE_FILES)
+CORE_SOURCE_FILES = CORE_SOURCE_FILES_BY_LANGUAGE[WORKFLOW_LANGUAGE]
+CORE_FILES = tuple(strip_language_prefix(path) for path in CORE_SOURCE_FILES)
+CORE_SOURCE_BY_TARGET = dict(zip(CORE_FILES, CORE_SOURCE_FILES))
 
 SYNC_PASSES = (
     {
@@ -87,23 +157,36 @@ FULL_RECONCILE_COLUMNS = (
     "downstream impact",
 )
 
-OPERATIONS_PROMPT_FILE = "scripts/OPERATIONS.md"
+OPERATIONS_PROMPT_FILE_BY_LANGUAGE = {
+    LANGUAGE_ZH: "zh/scripts/OPERATIONS.md",
+    LANGUAGE_EN: "en/scripts/OPERATIONS.md",
+}
+REVIEWER_PROMPT_FILE_BY_LANGUAGE = {
+    LANGUAGE_ZH: "zh/scripts/sync_pr_review_system.md",
+    LANGUAGE_EN: "en/scripts/sync_pr_review_system.md",
+}
+
+OPERATIONS_PROMPT_FILE = OPERATIONS_PROMPT_FILE_BY_LANGUAGE[WORKFLOW_LANGUAGE]
 SYNC_PROMPT_FILES = (
     OPERATIONS_PROMPT_FILE,
-    "scripts/sync_pr_review_system.md",
+    REVIEWER_PROMPT_FILE_BY_LANGUAGE[WORKFLOW_LANGUAGE],
 )
 
-PERMITTED_INHERIT_FILES = frozenset({
-    ".github/pull_request_template.md",
-})
+PERMITTED_INHERIT_FILES = frozenset({".github/pull_request_template.md"})
 
 TEMPLATE_MARKERS = (
     "<项目名>",
     "<项目 / agent / app 名称>",
     "<对象>",
     "<指标 / 结果>",
+    "<project name>",
+    "<project / agent / app name>",
+    "<object>",
+    "<metric / result>",
     "Case 1：确认一个对象最近是否异常",
+    "Case 1: Check whether one object is abnormal",
     "待项目负责人补充",
+    "project owner must replace this",
     "sample_supported_question",
     "sample_multi_object_comparison_not_supported",
     "sample_no_final_business_decision",
@@ -695,6 +778,7 @@ def build_sync_state(
     return {
         "schema_version": "0.5.0",
         "sync_mode": "full_reconcile",
+        "workflow_language": WORKFLOW_LANGUAGE,
         "upstream_resolved_commit": upstream_sha,
         "project_head_commit": project_sha,
         "evidence_source": "working_tree",
@@ -1215,15 +1299,16 @@ def stage_full_reconcile_outputs(
 
     core_records: list[dict[str, object]] = []
     for rel_path in CORE_FILES:
+        source_path = CORE_SOURCE_BY_TARGET[rel_path]
         upstream_text = file_at_ref(
             upstream_dir=upstream_dir,
             ref=upstream_sha,
-            path=rel_path,
+            path=source_path,
         )
         if upstream_text is None:
             sys.exit(
                 f"FATAL: upstream is missing required core file at "
-                f"{upstream_sha[:12]}: {rel_path}"
+                f"{upstream_sha[:12]}: {source_path}"
             )
 
         local_path = repo_root / rel_path
@@ -1251,7 +1336,7 @@ def stage_full_reconcile_outputs(
             "marker_hits": marker_hits(text=marker_source_text),
             "upstream_raw_url": upstream_raw_url(
                 upstream_sha=upstream_sha,
-                rel_path=rel_path,
+                rel_path=source_path,
             ),
             "upstream_full_path": upstream_full_rel_path,
         })
@@ -1815,7 +1900,7 @@ def run_full_reconcile() -> int:
 
     Parameters:
         None. Inputs are environment variables set by `sync.sh`:
-        `REPO_ROOT` and `UPSTREAM_DIR`.
+        `REPO_ROOT`, `UPSTREAM_DIR`, and `CODING_WORKFLOW_LANGUAGE`.
 
     Expected output:
         Exit 0 after writing scratch evidence and printing PR-body fields.
