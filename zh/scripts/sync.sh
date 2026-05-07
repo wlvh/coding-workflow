@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
-# Backward-compatible one-shot launcher for Chinese workflow docs sync.
+# One-shot launcher for Chinese workflow docs sync.
 #
 # Usage from a target project:
-#   curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/scripts/sync.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/scripts/sync.sh | bash
 #
-# What this does:
-#   1. Verifies current dir is a git worktree; Python rejects unmanaged dirty paths
-#   2. Shallow-clones wlvh/coding-workflow at the current default-branch HEAD
-#   3. Runs sync_coding_workflow.py with `zh/` template source paths
-#   4. Without --final, refreshes PR_BODY.md when it exists
-#   5. With --final, verifies existing PR_BODY.md against current sync evidence
-#   6. Cleans up the clone on exit
+# This launcher uses the Chinese template source family under `zh/` and installs
+# selected templates into canonical target paths such as `AGENTS.md`,
+# `TESTING.md`, and `.github/pull_request_template.md`.
 
 set -euo pipefail
 

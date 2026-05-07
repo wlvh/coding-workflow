@@ -35,6 +35,13 @@ def load_sync_module() -> object:
         Imported module object exposing the same constants used by sync.
     """
     module_path = REPO_ROOT / "scripts" / "sync_coding_workflow.py"
+    previous_language = (
+        os.environ["CODING_WORKFLOW_LANGUAGE"]
+        if "CODING_WORKFLOW_LANGUAGE" in os.environ
+        else None
+    )
+    if "CODING_WORKFLOW_LANGUAGE" in os.environ:
+        del os.environ["CODING_WORKFLOW_LANGUAGE"]
     spec = importlib.util.spec_from_file_location(
         "sync_coding_workflow_under_test",
         module_path,
@@ -42,7 +49,11 @@ def load_sync_module() -> object:
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot import sync script: {module_path}")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if previous_language is not None:
+            os.environ["CODING_WORKFLOW_LANGUAGE"] = previous_language
     return module
 
 
@@ -250,6 +261,29 @@ def create_upstream_without_prompt(
     )
 
 
+def create_committed_upstream_copy(upstream_root: Path) -> None:
+    """Create an upstream copy whose HEAD includes uncommitted test fixtures.
+
+    Parameters:
+        upstream_root: Destination directory for a committed upstream copy.
+
+    Expected output:
+        A git worktree containing the current checkout files, including new
+        English templates added by the patch under test.
+    """
+    shutil.copytree(
+        src=REPO_ROOT,
+        dst=upstream_root,
+        ignore=shutil.ignore_patterns(
+            ".git",
+            ".coding_workflow",
+            "__pycache__",
+            "*.pyc",
+        ),
+    )
+    commit_initial_repo(repo_root=upstream_root)
+
+
 def fill_agent_placeholders(pr_body_path: Path) -> None:
     """Replace script placeholders with review-safe test content.
 
@@ -391,7 +425,7 @@ class SyncWorkflowTests(unittest.TestCase):
     def test_each_pass_prompt_contains_common_execution_rules(self) -> None:
         """Every copyable pass prompt should carry its own guardrails."""
         operations_text = (
-            REPO_ROOT / "scripts/OPERATIONS.md"
+            REPO_ROOT / "zh/scripts/OPERATIONS.md"
         ).read_text(encoding="utf-8")
         self.assertNotIn("### 2.0 共用执行契约", operations_text)
         self.assertNotIn("ready_for_next_pass", operations_text)
@@ -457,7 +491,7 @@ class SyncWorkflowTests(unittest.TestCase):
             "本 pass owned docs 的闭合规则",
             (
                 "curl -fsSL https://raw.githubusercontent.com/"
-                "wlvh/coding-workflow/main/scripts/sync.sh | bash"
+                "wlvh/coding-workflow/main/zh/scripts/sync.sh | bash"
             ),
             "不要手修 auto 区",
             "回报普通 sync 已成功",
@@ -803,7 +837,7 @@ class SyncWorkflowTests(unittest.TestCase):
                 / ".coding_workflow/diffs/agent_workorder.md"
             )
             workorder = workorder_path.read_text(encoding="utf-8")
-            self.assertIn("scripts/OPERATIONS.md", workorder)
+            self.assertIn("zh/scripts/OPERATIONS.md", workorder)
             self.assertIn("## 文件处理清单", workorder)
             self.assertNotIn("## 入口", workorder)
             self.assertNotIn("## 角色边界", workorder)
@@ -837,6 +871,95 @@ class SyncWorkflowTests(unittest.TestCase):
             self.assertFalse(
                 (target_root / ".coding_workflow/diffs/full_reconcile_report.md").exists()
             )
+
+    def test_english_sync_uses_english_template_paths(self) -> None:
+        """English launcher should sync the English path family."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            upstream_root = root / "upstream"
+            target_root = root / "target"
+            target_root.mkdir()
+            create_committed_upstream_copy(upstream_root=upstream_root)
+            omitted_paths = {
+                "AGENTS.md",
+                "TESTING.md",
+                ".github/pull_request_template.md",
+            }
+            create_target_repo(
+                repo_root=target_root,
+                omitted_paths=omitted_paths,
+            )
+
+            result = run_command(
+                args=["bash", str(upstream_root / "en/scripts/sync.sh")],
+                cwd=target_root,
+                env=sync_env(upstream_dir=upstream_root),
+                check=True,
+            )
+
+            self.assertIn("en/scripts/OPERATIONS.md", result.stdout)
+            self.assertTrue((target_root / "AGENTS.md").exists())
+            self.assertTrue((target_root / "TESTING.md").exists())
+            self.assertTrue(
+                (target_root / ".github/pull_request_template.md").exists()
+            )
+            self.assertEqual(
+                (upstream_root / "en/AGENTS.md").read_text(encoding="utf-8"),
+                (target_root / "AGENTS.md").read_text(encoding="utf-8"),
+            )
+            state_path = (
+                target_root / ".coding_workflow/diffs/sync_state.json"
+            )
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            self.assertEqual("en", state["workflow_language"])
+            core_paths = [record["path"] for record in state["core_files"]]
+            prompt_paths = [
+                record["path"] for record in state["sync_prompt_files"]
+            ]
+            self.assertIn("AGENTS.md", core_paths)
+            self.assertIn("capability_contract.json", core_paths)
+            self.assertIn("en/scripts/OPERATIONS.md", prompt_paths)
+            self.assertIn("en/scripts/sync_pr_review_system.md", prompt_paths)
+            self.assertNotIn("en/AGENTS.md", core_paths)
+
+    def test_language_core_files_pair_one_to_one(self) -> None:
+        """Language source files should install to the same target paths."""
+        self.assertEqual(
+            len(SYNC_MODULE.ZH_CORE_SOURCE_FILES),
+            len(SYNC_MODULE.EN_CORE_SOURCE_FILES),
+        )
+        for zh_path, en_path, zh_target, en_target in zip(
+            SYNC_MODULE.ZH_CORE_SOURCE_FILES,
+            SYNC_MODULE.EN_CORE_SOURCE_FILES,
+            SYNC_MODULE.ZH_CORE_FILES,
+            SYNC_MODULE.EN_CORE_FILES,
+        ):
+            self.assertTrue(zh_path.startswith("zh/"))
+            self.assertTrue(en_path.startswith("en/"))
+            self.assertEqual(zh_target, en_target)
+            self.assertEqual(
+                zh_target,
+                SYNC_MODULE.strip_language_prefix(path=zh_path),
+            )
+            self.assertEqual(
+                en_target,
+                SYNC_MODULE.strip_language_prefix(path=en_path),
+            )
+
+    def test_language_prefix_strip_preserves_inner_github_path(self) -> None:
+        """Only the leading language prefix is stripped from install paths."""
+        self.assertEqual(
+            ".github/pull_request_template.md",
+            SYNC_MODULE.strip_language_prefix(
+                path="zh/.github/pull_request_template.md",
+            ),
+        )
+        self.assertEqual(
+            ".github/pull_request_template.md",
+            SYNC_MODULE.strip_language_prefix(
+                path="en/.github/pull_request_template.md",
+            ),
+        )
 
     def test_final_mode_delegates_semantic_table_to_review(self) -> None:
         """Final gate should not deep-parse reviewer-owned evidence table."""
@@ -889,8 +1012,8 @@ class SyncWorkflowTests(unittest.TestCase):
             self.assertIn("Final gate owns sentinels", contract)
             self.assertIn("Reviewer must cross-check", contract)
             self.assertIn("architecture.md", contract)
-            self.assertIn("scripts/OPERATIONS.md", contract)
-            self.assertIn("scripts/sync_pr_review_system.md", contract)
+            self.assertIn("zh/scripts/OPERATIONS.md", contract)
+            self.assertIn("zh/scripts/sync_pr_review_system.md", contract)
             self.assertNotIn("Required sync sentinels", contract)
             self.assertNotIn("pass_id | pass | status | evidence", contract)
             self.assertNotIn("Full Document Reconcile columns", contract)
@@ -898,7 +1021,7 @@ class SyncWorkflowTests(unittest.TestCase):
 
     def test_reviewer_prompt_does_not_copy_contract_literals(self) -> None:
         """Thin reviewer prompt must not become a second mechanical contract."""
-        prompt_path = REPO_ROOT / "scripts" / "sync_pr_review_system.md"
+        prompt_path = REPO_ROOT / "zh/scripts/sync_pr_review_system.md"
         prompt_text = prompt_path.read_text(encoding="utf-8")
         sentinel_literals = [
             SYNC_MODULE.SYNC_PR_BODY_MARKER,
@@ -948,7 +1071,7 @@ class SyncWorkflowTests(unittest.TestCase):
             target_root.mkdir()
             create_upstream_without_prompt(
                 upstream_root=upstream_root,
-                missing_prompt_path="scripts/sync_pr_review_system.md",
+                missing_prompt_path="zh/scripts/sync_pr_review_system.md",
             )
             create_target_repo(repo_root=target_root, omitted_paths=set())
 
