@@ -75,17 +75,19 @@
    实习生的发现：《》
    ```
 
-   执行顺序：先让 Codex 和 Opus 分别判断，再把 Opus 的意见发给 Codex 要求出综合分析版本。
-   处理分歧：如果双方分歧仍然很大，再把 GPT 5.4 对 Opus 的反驳发给 Opus，让 Opus 重新分析后按自己的方案执行。
-   修复后：继续复用“既有 PR 提交短 prompt”。
-   备注：同一个 PR 的 patch 不需要每次重新完整粘贴给 GPT，可以在原对话里覆盖最新 patch，避免上下文过时。
+   * 执行顺序：先让 Codex 和 Opus 分别判断，再把 Opus 的意见发给 Codex 要求出综合分析版本。
+   * 处理分歧：如果双方分歧仍然很大，再把 GPT 5.4 对 Opus 的反驳发给 Opus，让 Opus 重新分析后按自己的方案执行。
+   * 在验证阶段codex和cc经常会有不同意见，在这里交互意见最多三次，然后以codex的意见为准，在codex验证的对话里直接输入‘按照你的观点进行修复‘
+   * 修复后：继续复用“PR 提交短 prompt”。然后新开codex对话进行pr审核，一直到没有P0和P1问题为止。P2问题可以接受。
+   * 备注：同一个 PR 的 patch 不需要每次重新完整粘贴给 GPT，可以在原对话里覆盖最新 patch，避免上下文过时。
+   * 完整顺序：在具体操作中，先让codex 负责PR的代码审核，如果review 有问题，用第8节的prompt分别交给codex（新对话）和claude code验证，这里实习生的发现就是codex审核pr给出的发现。在验证阶段codex和cc经常会有不同意见，在这里交互意见最多三次，然后以codex的意见为准，在codex验证的对话里直接输入‘按照你的观点进行修复‘，然后在这个对话继续‘重新以 PR 审核的态度审核你的新增代码，如有问题先验证是否真实存在，再决定是否修复’这个pr提交环节。然后新开codex对话进行pr审核，一直到没有P0和P1问题为止。P2问题可以接受。
 
-10. **如果 review 没有问题（定义为没有P0/P1级别发现），在 PR 评论区输入 `/claude-merge-check`**（这个环节暂时放弃，反复的PR审查已经足够）
+11. **如果 review 没有问题（定义为没有P0/P1级别发现），在 PR 评论区输入 `/claude-merge-check`**（这个环节暂时放弃，反复的PR审查已经足够）
    自动化文件：[.github/workflows/claude-merge-readiness.yml](../../../.github/workflows/claude-merge-readiness.yml)
    作用：做 merge-readiness 检查，而不是重复做 code review。
    通过规则：无问题则在 PR 评论区输入 `/claude-merge-check`，通过后再合入主干。
 
-11. **PR 合并后，用网页端 GPT 的 apps 功能做 tech lead 总结**
+12. **PR 合并后，用网页端 GPT 的 apps 功能做 tech lead 总结**
    总结短 prompt：
 
    ```text
