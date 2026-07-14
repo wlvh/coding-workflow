@@ -42,34 +42,17 @@
    审核完成的后的追问：按照PR审核指南，面向不熟悉本项目底层代码的程序员详细介绍你的发现。
    
 
-   既有 PR 提交短 prompt：
+   PR 提交短 prompt：
 
    ```text
    重新以 PR 审核的态度审核你的新增代码，如有问题先验证是否真实存在，再决定是否修复。
-
-   然后在既有分支的既有 PR 上提交本地全部代码，要求：
+   先判断本地是主干还是分支，如果是主干则先创建分支并。然后在既有分支的既有 PR 上提交本地全部代码，
+   要求：
    1. 遵守 PR_Checklist.md。
    2. PR 对外保持 1 个 commit。
    3. 每轮 review / 修复都必须更新 PR_BODY.md 的“Review / 修复记录”。
-   4. PR_BODY.md 必须根据 `.github/pull_request_template.md` 填写，并覆盖已有 PR 和本地全部修改内容。
+   4. PR_BODY.md 必须根据 `.github/pull_request_template.md` 填写，并覆盖已有 PR （如果本次对话才创建分支可以跳过）和本地全部修改内容。
    5. 测试策略与测试证据记录方式以 TESTING.md 为准。
-
-   备注：
-   - PR_BODY.md 是本地临时产物，不提交仓库。
-   - PR_BODY.md 是重要的代码审核材料之一。
-   - PR 审核指南：《》
-   ```
-
-   新 PR 提交短 prompt：
-
-   ```text
-   重新以 PR 审核的态度审核你的新增代码，如有问题先验证是否真实存在，再决定是否修复。
-
-   然后遵守 PR_Checklist.md 创建 PR，要求：
-   1. 根据 `.github/pull_request_template.md` 生成并填写本地临时文件 PR_BODY.md。
-   2. PR 对外保持 1 个 commit。
-   3. PR_BODY.md 必须覆盖本地全部修改内容。
-   4. 测试策略与测试证据记录方式以 TESTING.md 为准。
 
    备注：
    - PR_BODY.md 是本地临时产物，不提交仓库。
