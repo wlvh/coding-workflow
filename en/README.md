@@ -54,3 +54,5 @@ special-case path rewriting.
 Chinese remains the source of truth. English is derived from the Chinese
 workflow. When English coverage is pending, mark `en-pending` in the PR body and
 avoid exposing untranslated flows as English-ready.
+
+<!-- en-pending: zh/skills/workflow-docs-sync, zh/skills/workflow-docs-sync-review, zh/scripts/install_skills.py, zh/scripts/OPERATIONS.md, zh/scripts/sync_pr_review_system.md, zh/docs/development_workflow/README.md, zh/docs/development_workflow/decisions.md -->

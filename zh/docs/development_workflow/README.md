@@ -81,6 +81,7 @@
    * 修复后：继续复用“PR 提交短 prompt”。然后新开codex对话进行pr审核，一直到没有P0和P1问题为止。P2问题可以接受。
    * 备注：同一个 PR 的 patch 不需要每次重新完整粘贴给 GPT，可以在原对话里覆盖最新 patch，避免上下文过时。
    * 完整顺序：在具体操作中，先让codex 负责PR的代码审核，如果review 有问题，用第8节的prompt分别交给codex（新对话）和claude code验证，这里实习生的发现就是codex审核pr给出的发现。在验证阶段codex和cc经常会有不同意见，在这里交互意见最多三次，然后以codex的意见为准，在codex验证的对话里直接输入‘按照你的观点进行修复‘，然后在这个对话继续‘重新以 PR 审核的态度审核你的新增代码，如有问题先验证是否真实存在，再决定是否修复’这个pr提交环节。然后新开codex对话进行pr审核，一直到没有P0和P1问题为止。P2问题可以接受。
+   * Finding 并集销号：跨 reviewer 或跨会话接力前，必须把历史 Finding Ledger、全部 GitHub review thread 和本轮新增 finding 做并集。每个来源 ID 都必须保留，并明确标记为 `confirmed`、`rejected`、`merged_as_duplicate:<ID>`、`downgraded:<新严重度>` 或 `needs_human`；已修复项另记关闭证据。任何 finding 从后续清单静默消失都视为流程错误，在并集未逐项销号前不得声明“无剩余问题”。
 
 11. **如果 review 没有问题（定义为没有P0/P1级别发现），在 PR 评论区输入 `/claude-merge-check`**（这个环节暂时放弃，反复的PR审查已经足够）
    自动化文件：[.github/workflows/claude-merge-readiness.yml](../../../.github/workflows/claude-merge-readiness.yml)
@@ -176,8 +177,8 @@ E. 输出风格约束
 ## Workflow Docs Sync
 
 完整操作入口见 `zh/scripts/OPERATIONS.md`。该手册说明如何运行 `zh/scripts/sync.sh`、
-用四个专用 prompt / 新对话按 pass 接力执行 sync、由 PR 提交 agent 运行 final gate，并用
-`zh/scripts/sync_pr_review_system.md` 启动独立 review。`agent_workorder.md` 只列本轮机器信号和
+用四个专用 prompt / 新对话按 pass 接力执行 sync、由 PR 提交 agent 先完成证据并在
+commit 前 seal，再用 `zh/scripts/sync_pr_review_system.md` 启动独立 review。`agent_workorder.md` 只列本轮机器信号和
 `OPERATIONS.md` 的 commit-pinned URL，不复制四段长 prompt。
 
 - 机械合同：`sync.sh --final`；`PR_BODY.md` auto 区的 `Sync Review Contract` 只保留本轮 reviewer 输入和分工边界

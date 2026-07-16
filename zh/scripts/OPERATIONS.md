@@ -11,8 +11,8 @@
 英文模板 sync 请使用 `en/scripts/OPERATIONS.md` 和 `en/scripts/sync.sh`。
 
 流程摘要：普通 sync 生成本轮证据和薄工单；4 个 sync pass 在新对话中按
-本文档的专用 prompt 接力补核心文档和 PR body agent-owned 区；PR 提交
-agent 运行 final gate 并创建或更新 PR；独立 reviewer 做语义审查。
+本文档的专用 prompt 接力补核心文档和 PR body agent-owned 区；PR 提交 agent
+先完成测试证据，再由 final gate seal 内容，seal 后才发布；独立 reviewer 做语义审查。
 
 ---
 
@@ -27,8 +27,10 @@ curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/script
 运行前要求：
 
 - 不要混入非 sync 的代码、配置或测试 dirty 改动；脚本会 fail-fast 并列出路径。
-- 根据本轮工单重跑普通 sync 时，只允许本轮核心文档、`.gitignore`、
-  `PR_BODY.md` 和 `.coding_workflow/diffs/` 处于 dirty 状态。
+- 根据本轮工单重跑普通 sync 时，只允许累计核心文档、`.gitignore`、
+  `PR_BODY.md`、`.coding_workflow/diffs/`、`.coding_workflow/skill_results/`
+  和 `.coding_workflow/skill_runtime/` 处于 dirty 状态；后两类是 ignored
+  Skill 本地状态，不能提交。
 - 如果已有 `PR_BODY.md` 不是 sync sentinel body，普通 sync 会 fail-fast；
   先移走、删除，或手动迁入 sync PR body 的 agent-owned 区后再运行。
 - 如果脚本警告 `PR_BODY.md` 已被 git 跟踪，不要在 sync 流程里自动修；
@@ -45,6 +47,32 @@ curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/script
 `.coding_workflow/diffs/agent_workorder.md` 是给执行 agent 的本轮工单和机器信号；
 用户不阅读也不影响启动下一步，执行 agent 会按 prompt 读取它。
 
+### 1.1 Skill 执行方式
+
+本手册的可执行孪生体位于 `zh/skills/`。
+人工复制 code block 的方式继续有效，并且仍是语义真相源。
+两种执行方式的一致性由 ownership 双向对账、prompt 反复制和 transport alignment
+测试保证。
+
+Studio / 自动编排直接从 clean pinned upstream 加载 canonical skill，不写目标仓库。
+个人安装默认写用户级目录；团队安装必须显式使用 `install_skills.py --scope repo`
+并先通过独立安装 PR 提交产物。Codex 使用 `$workflow-docs-sync`，Claude Code
+使用 `/workflow-docs-sync`；两个平台都禁止模型自动调用。安装产物只用
+`.source.json` 记录 upstream SHA、canonical 相对路径和平台，切换 SHA 前重新安装。
+
+Skill 模式由调用方运行单一 `harness.py`：
+
+- `prepare`：校验仓库和 clean pinned upstream，运行普通 sync 并初始化 run。
+- `start-pass`：校验 mode 间没有新编辑，保存本 PASS baseline，输出 prompt 位置。
+- `finish-pass`：检查 owned 文件和 PR body section，运行 pinned 普通 sync并推进 mode。
+- `prepare-submit`：建立 active、unsealed SUBMIT baseline，不运行 final gate。
+- `seal-submit`：限制本阶段只能填写提交测试证据，运行 pinned final gate并封存内容。
+- `finish-submit`：把 sealed snapshot/body/path set 与 commit、工作区和远端 PR 绑定。
+- `status`：输出 completed modes、active mode 和结果路径。
+
+该 harness 防善意执行者漏步骤和顺手越权，不试图抵御与它拥有相同 shell、Git 和
+工作区写权限的主动恶意执行者。
+
 ---
 
 ## 2. Sync Agent Pass
@@ -57,6 +85,11 @@ curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/script
 整体目标：完成本轮 workflow docs sync；用普通 sync 产物和代码证据更新本 pass
 owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 当前任务：只执行 PASS 1 - Code Facts / Architecture。不要执行其他 PASS。
+
+执行模式：
+- 人工 code-block 模式：执行本 block 的语义任务，并在完成后运行末尾普通 sync curl。
+- Skill 模式：只执行语义读取、判断和改写；不要执行本 block 末尾的 curl，也不要自行
+  运行 harness。调用方会在本 mode 前后运行 `start-pass` / `finish-pass`。
 
 前置条件：
 - 当前仓库必须已经运行过普通 sync。
@@ -108,10 +141,12 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - `Agent Execution Evidence` 的 PASS 1 行：实际读取文件、关键事实摘要、未读文件及原因。
 
 完成后：
-1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/scripts/sync.sh | bash`。
-2. 如果普通 sync 失败，停止并回报错误；不要手修 auto 区。
-3. 回报普通 sync 已成功，以及本 pass 负责的 `Full Document Reconcile` 行是否留下
-   `待判断`。
+1. 人工 code-block 模式运行并确认普通 sync 成功：
+   `curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/scripts/sync.sh | bash`。
+2. Skill 模式不要执行本 block 末尾的 curl；直接回报语义任务完成，调用方随后运行
+   pinned `finish-pass`。
+3. 任一模式的普通 sync / finish-pass 失败时停止；不要手修 auto 区。
+4. 回报本 pass 负责的 `Full Document Reconcile` 行是否留下 `待判断`。
 ```
 
 ### 2.2 PASS 2 - Capability / User Behavior
@@ -120,6 +155,11 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 整体目标：完成本轮 workflow docs sync；用普通 sync 产物和代码证据更新本 pass
 owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 当前任务：只执行 PASS 2 - Capability / User Behavior。不要执行其他 PASS。
+
+执行模式：
+- 人工 code-block 模式：执行本 block 的语义任务，并在完成后运行末尾普通 sync curl。
+- Skill 模式：只执行语义读取、判断和改写；不要执行本 block 末尾的 curl，也不要自行
+  运行 harness。调用方会在本 mode 前后运行 `start-pass` / `finish-pass`。
 
 前置条件：
 - `.coding_workflow/diffs/agent_workorder.md` 的 `## 文件处理清单` 中
@@ -192,10 +232,12 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - `Agent Execution Evidence` 的 PASS 2 行：实际读取文件、关键事实摘要、未读文件及原因。
 
 完成后：
-1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/scripts/sync.sh | bash`。
-2. 如果普通 sync 失败，停止并回报错误；不要手修 auto 区。
-3. 回报普通 sync 已成功，以及本 pass 负责的 `Full Document Reconcile` 行是否留下
-   `待判断`。
+1. 人工 code-block 模式运行并确认普通 sync 成功：
+   `curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/scripts/sync.sh | bash`。
+2. Skill 模式不要执行本 block 末尾的 curl；直接回报语义任务完成，调用方随后运行
+   pinned `finish-pass`。
+3. 任一模式的普通 sync / finish-pass 失败时停止；不要手修 auto 区。
+4. 回报本 pass 负责的 `Full Document Reconcile` 行是否留下 `待判断`。
 ```
 
 ### 2.3 PASS 3 - TESTING Independent Review
@@ -204,6 +246,11 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 整体目标：完成本轮 workflow docs sync；用普通 sync 产物和代码证据更新本 pass
 owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 当前任务：只执行 PASS 3 - TESTING Independent Review。不要执行其他 PASS。
+
+执行模式：
+- 人工 code-block 模式：执行本 block 的语义任务，并在完成后运行末尾普通 sync curl。
+- Skill 模式：只执行语义读取、判断和改写；不要执行本 block 末尾的 curl，也不要自行
+  运行 harness。调用方会在本 mode 前后运行 `start-pass` / `finish-pass`。
 
 前置条件：
 - `.coding_workflow/diffs/agent_workorder.md` 的 `## 文件处理清单` 中
@@ -268,10 +315,12 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - `Agent Execution Evidence` 的 PASS 3 行：实际读取文件、关键事实摘要、未读文件及原因。
 
 完成后：
-1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/scripts/sync.sh | bash`。
-2. 如果普通 sync 失败，停止并回报错误；不要手修 auto 区。
-3. 回报普通 sync 已成功，以及本 pass 负责的 `Full Document Reconcile` 行是否留下
-   `待判断`。
+1. 人工 code-block 模式运行并确认普通 sync 成功：
+   `curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/scripts/sync.sh | bash`。
+2. Skill 模式不要执行本 block 末尾的 curl；直接回报语义任务完成，调用方随后运行
+   pinned `finish-pass`。
+3. 任一模式的普通 sync / finish-pass 失败时停止；不要手修 auto 区。
+4. 回报本 pass 负责的 `Full Document Reconcile` 行是否留下 `待判断`。
 ```
 
 ### 2.4 PASS 4 - Governance / Reverse Closure
@@ -280,6 +329,11 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 整体目标：完成本轮 workflow docs sync；用普通 sync 产物和代码证据更新本 pass
 owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 当前任务：只执行 PASS 4 - Governance / Reverse Closure。不要执行其他 PASS。
+
+执行模式：
+- 人工 code-block 模式：执行本 block 的语义任务，并在完成后运行末尾普通 sync curl。
+- Skill 模式：只执行语义读取、判断和改写；不要执行本 block 末尾的 curl，也不要自行
+  运行 harness。调用方会在本 mode 前后运行 `start-pass` / `finish-pass`。
 
 前置条件：
 - `.coding_workflow/diffs/agent_workorder.md` 的 `## 文件处理清单` 中 PASS 1/2/3
@@ -359,10 +413,13 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 - `Agent Execution Evidence` 的 PASS 4 行：实际读取文件、关键事实摘要、未读文件及原因。
 
 完成后：
-1. 运行并确认普通 sync 成功：`curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/scripts/sync.sh | bash`。
-2. 如果普通 sync 失败，停止并回报错误；不要手修 auto 区。
-3. 回报普通 sync 已成功，以及 `Full Document Reconcile` 或
-   `Remaining Human Decisions` 是否留下 `待判断`。
+1. 人工 code-block 模式运行并确认普通 sync 成功：
+   `curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/scripts/sync.sh | bash`。
+2. Skill 模式不要执行本 block 末尾的 curl；直接回报语义任务完成，调用方随后运行
+   pinned `finish-pass`。
+3. 任一模式的普通 sync / finish-pass 失败时停止；不要手修 auto 区。
+4. 回报 `Full Document Reconcile` 或 `Remaining Human Decisions` 是否留下
+   `待判断`。
 ```
 
 ---
@@ -377,6 +434,13 @@ PASS 4 的聊天摘要作为事实源。
 整体目标：完成本轮 workflow docs sync；用普通 sync 产物和代码证据更新本 pass
 owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
 当前任务：只执行 PR 提交 Agent。不要补写 PASS 1/2/3/4 的语义内容。
+
+执行模式：
+- 人工 code-block 模式：按本 block 运行 final gate、提交、push 和更新 PR body。
+- Skill 模式 evidence 阶段：调用方只运行了 `prepare-submit`；此时 active 但尚未
+  seal。运行测试并只填写 `PR Test Evidence`，不要 commit、push 或更新远端 body。
+- Skill 模式发布阶段：调用方成功运行 `seal-submit` 后，严格提交 sealed allowed
+  paths，push 并更新远端 body；最后由调用方运行 `finish-submit`。
 
 必须读取：
 1. `PR_Checklist.md`
@@ -407,14 +471,19 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   `none` 项，必须保留在 PR body 交给 reviewer 和用户判断。
 - 按 `TESTING.md` 和 `PR_BODY.md` 记录的测试策略运行必要测试，并把结果写入
   `PR Test Evidence` 区；不得把本 PR 一次性测试证据写入 `Repo Facts Map`。
-- 提交前必须运行：
+- 人工 code-block 模式提交前必须运行：
   `curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/zh/scripts/sync.sh | bash -s -- --final`
+- Skill 模式不得重跑该 curl；填写证据后停止，由调用方执行 `seal-submit`。seal
+  成功前不得进入下面的单 commit 发布步骤。
 
 提交范围：
-- 只允许提交本轮核心文档、`.gitignore`、必要测试，以及目标项目规则允许提交的
-  `PR_BODY.md`。
-- `PR_BODY.md` 默认只用于更新 GitHub PR body，不提交仓库；只有目标项目规则明确允许时才提交。
-- 不得提交 `.coding_workflow/diffs/`、临时 clone 目录、无关代码、无关配置或历史草稿。
+- Skill 模式只允许提交 `seal-submit` 返回的精确 `allowed_commit_paths`；该集合来自
+  PASS ownership 与 `.gitignore`，不得自行加入测试或其他路径。
+- `PR_BODY.md` 默认只用于更新 GitHub PR body，不提交仓库；在 Skill 模式这是硬约束，
+  始终不在 sealed commit set 内。即使目标仓库历史上 tracked，也保留为本地未提交
+  body，不得加入本轮 commit。
+- 不得提交 `.coding_workflow/diffs/`、`.coding_workflow/skill_results/`、
+  `.coding_workflow/skill_runtime/`、临时 clone 目录、无关代码、无关配置或历史草稿。
 
 单 commit 发布：
 - 先用 `gh pr list --state open --head <branch>` 判断是更新既有 PR 还是新建 PR。
@@ -427,7 +496,17 @@ owned docs，并把结论写入 `PR_BODY.md` 的 agent-owned 区。
   `gh pr create --draft --title <title> --body-file PR_BODY.md --base <base> --head <branch>`。
 - 禁止使用裸 `git push --force`；禁止把 `.github/pull_request_template.md`
   当作 PR body 直接提交。
-- 如果 final gate 失败，不要手修 PR body auto 区；回到对应 sync pass。
+- 如果 seal 只报告 `PR Test Evidence` 占位或 submission evidence 问题，保持当前
+  active、unsealed runtime，修正该 section 后重跑 `seal-submit`；不 commit、不删除
+  runtime，也不要手修 PR body auto 区。
+- 如果 seal 报告 PASS-owned 核心文档问题或 final reconcile 改写这类内容，保留
+  当前失败 runtime；从失败仓库做不依赖已发布 branch 的本地 clone，把原 head 分支
+  指向失败 SUBMIT baseline 的 `start_head`，恢复真实 GitHub `origin` 并精确校验。在
+  新 clone 依次执行 PREPARE、PASS_1–4 和新的 SUBMIT。不得删除旧 runtime、吸收
+  当前内容为新 baseline 或创建中间 commit。精确命令见 Skill 的
+  `references/modes.md`。
+- Skill 模式的 `finish-submit` 会读取远端 body；如果没有成功执行 `gh pr edit
+  --body-file PR_BODY.md`，SUBMIT 必须失败。
 
 完成后回报：
 - PR URL、branch、base、commit hash。

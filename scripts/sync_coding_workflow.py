@@ -210,9 +210,13 @@ SYNC_MANAGED_DIRTY_PATHS = frozenset(CORE_FILES) | frozenset({
 GITIGNORE_LINES = (
     "PR_BODY.md",
     ".coding_workflow/diffs/",
+    ".coding_workflow/skill_results/",
+    ".coding_workflow/skill_runtime/",
 )
 
 DIFFS_DIR = ".coding_workflow/diffs"
+SKILL_RESULTS_DIR = ".coding_workflow/skill_results"
+SKILL_RUNTIME_DIR = ".coding_workflow/skill_runtime"
 STATE_FILE = "sync_state.json"
 WORKORDER_FILE = "agent_workorder.md"
 PR_BODY_SKELETON_FILE = "pr_body_skeleton.md"
@@ -431,11 +435,13 @@ def is_sync_managed_dirty_path(path: str) -> bool:
         path: Repository-relative path parsed from `git status --porcelain`.
 
     Expected output:
-        True for sync scratch diffs, core workflow docs, `.gitignore`, and
+        True for sync/skill runtime、core workflow docs、`.gitignore` and
         local `PR_BODY.md`; False for project code/config/test changes.
     """
     return (
         path.startswith(".coding_workflow/diffs/")
+        or path.startswith(f"{SKILL_RESULTS_DIR}/")
+        or path.startswith(f"{SKILL_RUNTIME_DIR}/")
         or path in SYNC_MANAGED_DIRTY_PATHS
     )
 
@@ -532,7 +538,7 @@ def ensure_gitignore(repo_root: Path) -> None:
         repo_root: Target project path.
 
     Expected output:
-        `.gitignore` contains `PR_BODY.md` and `.coding_workflow/diffs/`.
+        `.gitignore` contains every local sync/skill runtime path.
         The change is deliberately made after the dirty check so a refused run
         does not leave surprise edits behind.
     """

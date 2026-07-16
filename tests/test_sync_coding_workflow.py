@@ -494,7 +494,10 @@ class SyncWorkflowTests(unittest.TestCase):
                 "wlvh/coding-workflow/main/zh/scripts/sync.sh | bash"
             ),
             "不要手修 auto 区",
-            "回报普通 sync 已成功",
+            "人工 code-block 模式",
+            "Skill 模式",
+            "不要执行本 block 末尾的 curl",
+            "pinned `finish-pass`",
         ]
         common_literals.extend(str(column) for column in reconcile_agent_columns)
         sync_passes = list(SYNC_MODULE.SYNC_PASSES)
