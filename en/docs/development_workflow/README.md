@@ -19,8 +19,15 @@ only exposes the English path and the current English coverage boundary.
    capability or business-user docs.
 6. Review the PR with business context first, then implementation quality,
    test realism, and maintainability.
-7. When reviewer findings appear, verify whether each finding is real before
-   deciding whether the fix is worth the added complexity.
+7. When reviewer findings appear, do not change code first. Verify each finding
+   through code reading, a minimal reproduction, targeted tests, or a path close
+   to real use. If a finding is real, report the analysis before fixing it:
+   check the PR description for similar prior fixes and, if any exist, define
+   an end-to-end acceptance plan that prevents repeated rework; assess affected
+   upstream inputs, the current module, downstream callers, equivalent entry
+   points, and adjacent scenarios; and determine whether test notes, user docs,
+   architecture or workflow docs, the PR description, or the Review / Fix
+   Record must be updated, stating why if no update is needed.
 8. Keep PRs as one external commit when updating an existing PR, and keep
    `PR_BODY.md` as local PR-body scratch unless the target project explicitly
    tracks it.
