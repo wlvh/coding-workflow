@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "工作流文档同步独立审查结果",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "verdict",
+    "findings",
+    "pr",
+    "head_sha",
+    "upstream_sha",
+    "review_sections",
+    "evidence_index"
+  ],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "WARN",
+        "BLOCKER"
+      ]
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "level",
+          "claim",
+          "evidence"
+        ],
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "WARN",
+              "BLOCKER"
+            ]
+          },
+          "claim": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "pr": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "head_sha": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 40,
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "upstream_sha": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 40,
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "review_sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_compliance",
+        "evidence_quality",
+        "full_reconcile_closure",
+        "per_pass_evidence_and_propagation",
+        "test_drift_and_execution_evidence",
+        "upstream_cross_check",
+        "operability"
+      ],
+      "properties": {
+        "contract_compliance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "verdict",
+            "evidence"
+          ],
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "WARN",
+                "BLOCKER"
+              ]
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "evidence_quality": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "verdict",
+            "evidence"
+          ],
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "WARN",
+                "BLOCKER"
+              ]
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "full_reconcile_closure": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "verdict",
+            "evidence"
+          ],
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "WARN",
+                "BLOCKER"
+              ]
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "per_pass_evidence_and_propagation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "verdict",
+            "evidence"
+          ],
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "WARN",
+                "BLOCKER"
+              ]
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "test_drift_and_execution_evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "verdict",
+            "evidence"
+          ],
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "WARN",
+                "BLOCKER"
+              ]
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "upstream_cross_check": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "verdict",
+            "evidence"
+          ],
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "WARN",
+                "BLOCKER"
+              ]
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "operability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "verdict",
+            "evidence"
+          ],
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "WARN",
+                "BLOCKER"
+              ]
+            },
+            "evidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "evidence_index": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

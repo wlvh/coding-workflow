@@ -85,6 +85,11 @@ PASS/WARN/BLOCKER + 证据
 列出实际读取过的 PR body 段、核心文档、raw URL 和验证命令
 ```
 
+使用 reviewer skill 输出 JSON 时，1–7 节分别保存为
+`review_sections.<section> = {"verdict": "PASS|WARN|BLOCKER", "evidence": "..."}`
+的结构化对象，Top Issues 保存为 `findings`，第 9 节保存为非空
+`evidence_index`；顶层 verdict 必须等于全部 section verdict 与 finding level 的最高等级。
+
 ---
 
 ## 判定原则
