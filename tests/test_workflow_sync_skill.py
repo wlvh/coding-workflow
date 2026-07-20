@@ -60,21 +60,21 @@ AGENT_SECTIONS = (
 )
 
 
-def load_sync_module() -> Any:
-    """加载 sync 实现，返回机械 PASS ownership 真相源。"""
-    module_path = REPO_ROOT / "scripts/sync_coding_workflow.py"
-    spec = importlib.util.spec_from_file_location(
-        "sync_coding_workflow_skill_test",
-        module_path,
-    )
+def load_module(*, module_path: Path, module_name: str) -> Any:
+    """加载指定 Python 文件，返回测试所需的真实生产模块。"""
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:
-        raise AssertionError("无法加载 sync_coding_workflow.py")
+        raise AssertionError(f"无法加载 {module_path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-SYNC_MODULE = load_sync_module()
+SYNC_MODULE = load_module(
+    module_path=REPO_ROOT / "scripts/sync_coding_workflow.py",
+    module_name="sync_test",
+)
+HARNESS_MODULE = load_module(module_path=HARNESS, module_name="harness_test")
 
 
 def run_command(
@@ -196,6 +196,9 @@ def create_upstream(
             "printf 'workorder\\n' > "
             ".coding_workflow/diffs/agent_workorder.md\n"
             "printf '{}\\n' > .coding_workflow/diffs/sync_state.json\n"
+            "[ ! -f PR_BODY.md ] || "
+            "[ -f .coding_workflow/diffs/pr_body_skeleton.md ] || "
+            "cp PR_BODY.md .coding_workflow/diffs/pr_body_skeleton.md\n"
             "if [ \"$#\" -eq 1 ] && [ \"$1\" = \"--final\" ]; then\n"
             f"{final_lines}"
             "fi\n"
@@ -207,19 +210,46 @@ def create_upstream(
 
 
 def pr_body_text() -> str:
-    """返回包含全部 stable sentinel 的最小测试 PR body。"""
-    sections: list[str] = ["<!-- sync:pr-body version=1 -->"]
-    for section_name in AGENT_SECTIONS:
-        sections.extend(
-            (
-                f"<!-- sync:agent:start {section_name} -->",
-                f"## {section_name}",
-                "",
-                f"{section_name} baseline",
-                f"<!-- sync:agent:end {section_name} -->",
+    """返回保留真实 heading、表头和全部逐 PASS 行的 sentinel body。"""
+    reconcile = [
+        "## Full Document Reconcile",
+        "",
+        "| " + " | ".join(SYNC_MODULE.FULL_RECONCILE_COLUMNS) + " |",
+        "| "
+        + " | ".join("---" for _ in SYNC_MODULE.FULL_RECONCILE_COLUMNS)
+        + " |",
+    ]
+    for sync_pass in SYNC_MODULE.SYNC_PASSES:
+        for relative_path in sync_pass["files"]:
+            reconcile.append(
+                f"| {sync_pass['title']} | `{relative_path}` | `fixture` | "
+                "待补充 | 待补充 | 待补充 | 待补充 | 待补充 |"
             )
+    contents = (
+        SYNC_MODULE.render_repo_facts_template(),
+        "\n".join(reconcile),
+        SYNC_MODULE.render_pr_test_evidence_template(),
+        SYNC_MODULE.render_upstream_drift_log_template(),
+        SYNC_MODULE.render_agent_execution_evidence_template(),
+        SYNC_MODULE.render_remaining_human_decisions_template().replace(
+            "- none", "- 待判断: fixture\n- concrete fixture decision"),
+    )
+    body = [
+        SYNC_MODULE.SYNC_PR_BODY_MARKER,
+        SYNC_MODULE.wrap_agent_section(
+            section_name="repo_facts_map",
+            content=contents[0],
+        ),
+        "<!-- sync:auto:start -->\nfixture\n<!-- sync:auto:end -->",
+    ]
+    body.extend(
+        SYNC_MODULE.wrap_agent_section(
+            section_name=section_name,
+            content=content,
         )
-    return "\n".join(sections) + "\n"
+        for section_name, content in zip(AGENT_SECTIONS[1:], contents[1:])
+    )
+    return "\n\n".join(body) + "\n"
 
 
 def initialize_core_target(
@@ -361,6 +391,17 @@ def run_harness(
     )
 
 
+def finish_one(*, target: Path, upstream: Path, sha: str) -> Any:
+    """运行 PASS_1 finish，返回可供连续失败重试断言的结果。"""
+    return run_harness(
+        command="finish-pass",
+        target=target,
+        upstream=upstream,
+        upstream_sha=sha,
+        mode="PASS_1",
+    )
+
+
 def append_text(*, path: Path, text: str) -> None:
     """向 UTF-8 文件末尾追加测试内容。"""
     path.write_text(
@@ -391,6 +432,77 @@ def replace_section(
     )
 
 
+def section_text(*, path: Path, section_name: str) -> str:
+    """读取指定 sentinel section，返回不含边界标记的原始文本。"""
+    content = path.read_text(encoding="utf-8")
+    start = f"<!-- sync:agent:start {section_name} -->"
+    end = f"<!-- sync:agent:end {section_name} -->"
+    return content[content.index(start) + len(start):content.index(end)]
+
+
+def complete_pass_body(*, path: Path, mode: str) -> None:
+    """只完成当前 PASS 的既有 heading/owned rows/evidence row。"""
+    ownership = json.loads(OWNERSHIP.read_text(encoding="utf-8"))
+    entry = ownership[mode]
+    if mode == "PASS_1":
+        repo_facts = section_text(
+            path=path,
+            section_name="repo_facts_map",
+        )
+        replace_section(
+            path=path,
+            section_name="repo_facts_map",
+            text=repo_facts.replace("证据: 待补充", "证据: fixture evidence"),
+        )
+
+    # 逐行替换能保留表头、未来 PASS 行和完整 handoff 结构。
+    reconcile = section_text(
+        path=path,
+        section_name="full_document_reconcile",
+    ).splitlines()
+    for relative_path in entry["owned"]:
+        matches = [
+            index
+            for index, line in enumerate(reconcile)
+            if f"`{relative_path}`" in line
+        ]
+        if len(matches) != 1:
+            raise AssertionError(f"reconcile row mismatch: {relative_path}")
+        values = (
+            "## Full Document Reconcile", "none", "待判断", r"literal \| pipe",
+            "none",
+        )
+        for value in values:
+            reconcile[matches[0]] = reconcile[matches[0]].replace(
+                "待补充", value, 1,
+            )
+    replace_section(
+        path=path,
+        section_name="full_document_reconcile",
+        text="\n".join(reconcile),
+    )
+    title = entry["title"].split(maxsplit=1)[1]
+    evidence = section_text(
+        path=path,
+        section_name="agent_execution_evidence",
+    ).splitlines()
+    matches = [
+        index for index, line in enumerate(evidence)
+        if f"| {title} |" in line
+    ]
+    if len(matches) != 1:
+        raise AssertionError(f"execution row mismatch: {mode}")
+    for value in ("## Agent Execution Evidence", "none", r"x \| y"):
+        evidence[matches[0]] = evidence[matches[0]].replace(
+            "待补充", value, 1,
+        )
+    replace_section(
+        path=path,
+        section_name="agent_execution_evidence",
+        text="\n".join(evidence),
+    )
+
+
 def complete_prepare(
     *,
     target: Path,
@@ -414,9 +526,9 @@ def complete_pass(
     upstream: Path,
     upstream_sha: str,
     mode: str,
-    relative_path: str,
+    relative_paths: list[str],
 ) -> None:
-    """按 start/semantic edit/finish 顺序完成一个 PASS。"""
+    """按 start、逐行 body/owned docs 修改、finish 完成一个 PASS。"""
     start = run_harness(
         command="start-pass",
         target=target,
@@ -426,10 +538,12 @@ def complete_pass(
     )
     if start.returncode != 0:
         raise AssertionError(start.stdout + start.stderr)
-    append_text(
-        path=target / relative_path,
-        text=f"\n{mode} semantic edit\n",
-    )
+    complete_pass_body(path=target / "PR_BODY.md", mode=mode)
+    for relative_path in relative_paths:
+        append_text(
+            path=target / relative_path,
+            text=f"\n{mode} semantic edit\n",
+        )
     finish = run_harness(
         command="finish-pass",
         target=target,
@@ -454,18 +568,22 @@ def complete_prepare_and_passes(
         upstream_sha=upstream_sha,
     )
     edits = {
-        "PASS_1": "architecture.md",
-        "PASS_2": "interact.md",
-        "PASS_3": "TESTING.md",
-        "PASS_4": "AGENTS.md",
+        "PASS_1": ["architecture.md"],
+        "PASS_2": [
+            "capability_contract.json",
+            "interact.md",
+            "docs/business_user_guide.md",
+        ],
+        "PASS_3": ["TESTING.md"],
+        "PASS_4": ["PR_Checklist.md", "SOP.md", "AGENTS.md"],
     }
-    for mode, relative_path in edits.items():
+    for mode, relative_paths in edits.items():
         complete_pass(
             target=target,
             upstream=upstream,
             upstream_sha=upstream_sha,
             mode=mode,
-            relative_path=relative_path,
+            relative_paths=relative_paths,
         )
 
 
@@ -475,56 +593,24 @@ def complete_real_prepare_and_passes(
     upstream: Path,
     upstream_sha: str,
 ) -> None:
-    """用真实 skeleton/sync 完成 PREPARE 和四个 ownership PASS。"""
+    """用正式 body 保留全表结构并逐 PASS 完成已有责任行。"""
     complete_prepare(
         target=target,
         upstream=upstream,
         upstream_sha=upstream_sha,
     )
-    start = run_harness(
-        command="start-pass",
-        target=target,
-        upstream=upstream,
-        upstream_sha=upstream_sha,
-        mode="PASS_1",
-    )
-    if start.returncode != 0:
-        raise AssertionError(start.stdout + start.stderr)
-    shutil.copy2(
-        target / ".coding_workflow/diffs/pr_body_skeleton.md",
-        target / "PR_BODY.md",
-    )
-    for section_name in (
-        "repo_facts_map",
-        "full_document_reconcile",
-        "agent_execution_evidence",
-    ):
-        replace_section(
-            path=target / "PR_BODY.md",
-            section_name=section_name,
-            text=f"## {section_name}\n\nreal PASS evidence",
-        )
-    append_text(path=target / "architecture.md", text="\nPASS_1 edit\n")
-    finish = run_harness(
-        command="finish-pass",
-        target=target,
-        upstream=upstream,
-        upstream_sha=upstream_sha,
-        mode="PASS_1",
-    )
-    if finish.returncode != 0:
-        raise AssertionError(finish.stdout + finish.stderr)
-    for mode, relative_path in {
-        "PASS_2": "interact.md",
-        "PASS_3": "TESTING.md",
-        "PASS_4": "AGENTS.md",
+    for mode, relative_paths in {
+        "PASS_1": ["architecture.md"],
+        "PASS_2": ["interact.md"],
+        "PASS_3": ["TESTING.md"],
+        "PASS_4": ["AGENTS.md"],
     }.items():
         complete_pass(
             target=target,
             upstream=upstream,
             upstream_sha=upstream_sha,
             mode=mode,
-            relative_path=relative_path,
+            relative_paths=relative_paths,
         )
 
 
@@ -653,6 +739,10 @@ class WorkflowSyncSkillTests(unittest.TestCase):
             )
         }
         self.assertEqual(set(ownership), set(expected))
+        self.assertEqual(
+            HARNESS_MODULE.PERMITTED_INHERIT_PATHS,
+            set(SYNC_MODULE.PERMITTED_INHERIT_FILES),
+        )
         operations = OPERATIONS.read_text(encoding="utf-8")
         for mode in PASS_MODES:
             self.assertEqual(ownership[mode]["title"], expected[mode]["title"])
@@ -745,16 +835,13 @@ class WorkflowSyncSkillTests(unittest.TestCase):
             )
             self.assertNotEqual(dirty_upstream.returncode, 0)
 
-    def test_prepare_installs_missing_templates(self) -> None:
-        """真实 sync 安装模板，PASS 可从 skeleton 初始化 PR body。"""
+    def test_prepare_creates_body_and_pass_one_retries_in_place(self) -> None:
+        """Case A 各失败点保留 active PASS，补全责任项后原地成功。"""
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             upstream = root / "upstream"
             target = root / "target"
-            sha = create_upstream(
-                repo_root=upstream,
-                fake_sync=False,
-            )
+            sha = create_upstream(repo_root=upstream, fake_sync=False)
             initialize_repo(repo_root=target)
             result = run_harness(
                 command="prepare",
@@ -771,6 +858,18 @@ class WorkflowSyncSkillTests(unittest.TestCase):
                     / ".coding_workflow/skill_results/PREPARE.json"
                 ).is_file()
             )
+            body_path = target / "PR_BODY.md"
+            skeleton = target / ".coding_workflow/diffs/pr_body_skeleton.md"
+            self.assertTrue(body_path.is_file())
+            self.assertEqual(
+                body_path.read_text(encoding="utf-8"),
+                skeleton.read_text(encoding="utf-8"),
+            )
+            body = body_path.read_text(encoding="utf-8")
+            self.assertTrue(all(
+                body.count(f"<!-- sync:agent:start {name} -->") == 1
+                for name in AGENT_SECTIONS
+            ))
             start = run_harness(
                 command="start-pass",
                 target=target,
@@ -779,27 +878,274 @@ class WorkflowSyncSkillTests(unittest.TestCase):
                 mode="PASS_1",
             )
             self.assertEqual(start.returncode, 0, msg=start.stdout)
-            shutil.copy2(
-                target / ".coding_workflow/diffs/pr_body_skeleton.md",
-                target / "PR_BODY.md",
-            )
-            replace_section(
-                path=target / "PR_BODY.md",
-                section_name="repo_facts_map",
-                text="PASS_1 smoke",
-            )
             append_text(
                 path=target / "architecture.md",
                 text="\nPASS_1 semantic edit\n",
             )
-            finish = run_harness(
-                command="finish-pass",
-                target=target,
-                upstream=upstream,
-                upstream_sha=sha,
-                mode="PASS_1",
+            incomplete = finish_one(target=target, upstream=upstream, sha=sha)
+            self.assertNotEqual(incomplete.returncode, 0)
+            self.assertEqual(
+                parse_json(result=incomplete)["error"],
+                "PASS PR_BODY 未完成",
             )
+            run_path = target / ".coding_workflow/skill_runtime/run.json"
+            state = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(state["active_mode"], "PASS_1")
+            body_path.unlink()
+            deleted = finish_one(target=target, upstream=upstream, sha=sha)
+            self.assertNotEqual(deleted.returncode, 0)
+            self.assertEqual(
+                parse_json(result=deleted)["error"],
+                "PR_BODY scope 无法校验",
+            )
+            baseline = json.loads(
+                (
+                    target
+                    / ".coding_workflow/skill_runtime/baselines/PASS_1.json"
+                ).read_text(encoding="utf-8")
+            )
+            body_path.write_text(baseline["pr_body_text"], encoding="utf-8")
+            pending_execution = section_text(
+                path=body_path,
+                section_name="agent_execution_evidence",
+            )
+            complete_pass_body(path=body_path, mode="PASS_1")
+            replace_section(
+                path=body_path,
+                section_name="agent_execution_evidence",
+                text=pending_execution,
+            )
+            pending = finish_one(target=target, upstream=upstream, sha=sha)
+            self.assertNotEqual(pending.returncode, 0)
+            self.assertIn("PASS 1", parse_json(result=pending)["detail"])
+            current_state = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(current_state["active_mode"], "PASS_1")
+            self.assertFalse(
+                (
+                    target / ".coding_workflow/skill_results/PASS_1.json"
+                ).exists()
+            )
+
+            complete_pass_body(path=body_path, mode="PASS_1")
+            done = body_path.read_text(encoding="utf-8")
+            fact_evidence = "证据: fixture evidence"
+            reconcile_values = (
+                r"## Full Document Reconcile | none | 待判断 | "
+                r"literal \| pipe | none"
+            )
+            execution_values = r"## Agent Execution Evidence | none | x \| y"
+            execution_header = (
+                "| pass | required files read | key facts observed | "
+                "skipped files / reason |"
+            )
+            invalid_bodies = {
+                "repo_empty": done.replace(f"{fact_evidence}\n", "", 1),
+                "evidence_empty": done.replace(fact_evidence, "证据:", 1),
+                "reconcile_empty": done.replace(
+                    reconcile_values, " |  |  |  | ", 1,
+                ),
+                "execution_empty": done.replace(
+                    execution_values, " |  | ", 1,
+                ),
+                "literal_pipe": done.replace(
+                    r"literal \| pipe", "literal | pipe", 1,
+                ),
+                "execution_header": done.replace(
+                    execution_header, "| bad | bad | bad | bad | bad |", 1,
+                ),
+            }
+            for scenario, invalid_body in invalid_bodies.items():
+                with self.subTest(completion=scenario):
+                    body_path.write_text(invalid_body, encoding="utf-8")
+                    invalid = finish_one(
+                        target=target, upstream=upstream, sha=sha,
+                    )
+                    self.assertNotEqual(invalid.returncode, 0)
+                    payload = parse_json(result=invalid)
+                    self.assertEqual(payload["error"], "PASS PR_BODY 未完成")
+                    if scenario == "literal_pipe":
+                        self.assertIn(
+                            "表格 cell 中的字面 | 必须写为 \\| 或改用 <br>",
+                            payload["detail"],
+                        )
+            with self.assertRaises(HARNESS_MODULE.HarnessError):
+                HARNESS_MODULE.assert_remaining_decisions_complete(
+                    section_text="## Remaining Human Decisions\n",
+                )
+            body_path.write_text(done, encoding="utf-8")
+            upstream_architecture = (
+                upstream / "zh/architecture.md"
+            ).read_text(encoding="utf-8")
+            (target / "architecture.md").write_bytes(
+                upstream_architecture.replace("\n", "\r\n").encode("utf-8")
+            )
+            template_copy = finish_one(
+                target=target, upstream=upstream, sha=sha
+            )
+            self.assertNotEqual(template_copy.returncode, 0)
+            self.assertEqual(
+                parse_json(result=template_copy)["error"],
+                "PASS owned 文档未项目化",
+            )
+            self.assertIn(
+                "architecture.md",
+                parse_json(result=template_copy)["detail"],
+            )
+            append_text(
+                path=target / "architecture.md",
+                text="\nproject architecture evidence\n",
+            )
+            self.assertIn(
+                "| PASS 2 - Capability / User Behavior | "
+                "`capability_contract.json` | `installed_template` | 待补充",
+                body_path.read_text(encoding="utf-8"),
+            )
+            finish = finish_one(target=target, upstream=upstream, sha=sha)
             self.assertEqual(finish.returncode, 0, msg=finish.stdout)
+            state = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(state["completed_modes"], ["PREPARE", "PASS_1"])
+            self.assertIsNone(state["active_mode"])
+            pass_result = json.loads(
+                (
+                    target / ".coding_workflow/skill_results/PASS_1.json"
+                ).read_text(encoding="utf-8")
+            )
+            self.assertEqual(pass_result["status"], "passed")
+            self.assertEqual(
+                pass_result["changed_paths"],
+                ["PR_BODY.md", "architecture.md"],
+            )
+
+    def test_prepare_preserves_valid_body_and_rejects_damage(self) -> None:
+        """PREPARE 迁移合法旧 schema，并在 sync 前拒绝损坏 body。"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            upstream = root / "upstream"
+            sha = create_upstream(repo_root=upstream, fake_sync=False)
+            valid = pr_body_text().replace(
+                "证据: 待补充", "证据: legacy retained", 1,
+            )
+            sections = SYNC_MODULE.preserved_agent_sections(
+                text=valid, state={},
+            )
+            blocks = {
+                name: SYNC_MODULE.wrap_agent_section(
+                    section_name=name, content=sections[name],
+                )
+                for name in AGENT_SECTIONS
+            }
+            reordered = valid.replace(
+                blocks["repo_facts_map"], "<swap>", 1,
+            ).replace(
+                blocks["full_document_reconcile"],
+                blocks["repo_facts_map"], 1,
+            ).replace("<swap>", blocks["full_document_reconcile"], 1)
+            last_heading = SYNC_MODULE.REPO_FACTS_HEADINGS[-1]
+            old_repo = valid.replace(
+                f"{last_heading}\n证据: 待补充", "", 1,
+            )
+            successes = {
+                "valid": valid,
+                "missing_one": old_repo.replace(
+                    blocks["pr_test_evidence"], "",
+                ),
+                "missing_two": valid.replace(
+                    blocks["pr_test_evidence"], "",
+                ).replace(blocks["upstream_drift_log"], ""),
+                "reordered": reordered,
+            }
+            for scenario, old_body in successes.items():
+                with self.subTest(migration=scenario):
+                    target = root / scenario
+                    initialize_core_target(target=target, upstream=upstream)
+                    body_path = target / "PR_BODY.md"
+                    body_path.write_text(old_body, encoding="utf-8")
+                    result = run_harness(
+                        command="prepare", target=target,
+                        upstream=upstream, upstream_sha=sha,
+                    )
+                    self.assertEqual(result.returncode, 0, msg=result.stdout)
+                    actual = body_path.read_text(encoding="utf-8")
+                    HARNESS_MODULE.parse_agent_sections(text=actual)
+                    preserve = SYNC_MODULE.preserved_agent_sections
+                    self.assertEqual(
+                        preserve(text=old_body, state={}),
+                        preserve(text=actual, state={}),
+                    )
+
+            heading_target = root / "missing_one"
+            body_path = heading_target / "PR_BODY.md"
+            heading_body = body_path.read_text(encoding="utf-8")
+            self.assertNotIn(last_heading, heading_body)
+            started = run_harness(
+                command="start-pass", target=heading_target,
+                upstream=upstream, upstream_sha=sha, mode="PASS_1",
+            )
+            self.assertEqual(started.returncode, 0, msg=started.stdout)
+            diffs = heading_target / ".coding_workflow/diffs"
+            schema = section_text(
+                path=diffs / "pr_body_skeleton.md",
+                section_name="repo_facts_map",
+            )
+            repo_facts = section_text(
+                path=body_path, section_name="repo_facts_map",
+            )
+            addition = schema[schema.index(last_heading):]
+            replace_section(
+                path=body_path, section_name="repo_facts_map",
+                text=f"{repo_facts.rstrip()}\n\n{addition}",
+            )
+            complete_pass_body(path=body_path, mode="PASS_1")
+            append_text(
+                path=heading_target / "architecture.md",
+                text="\nproject architecture evidence\n",
+            )
+            finished = finish_one(
+                target=heading_target, upstream=upstream, sha=sha,
+            )
+            self.assertEqual(finished.returncode, 0, msg=finished.stdout)
+            repo_start = "<!-- sync:agent:start repo_facts_map -->"
+            repo_end = "<!-- sync:agent:end repo_facts_map -->"
+            full_start = "<!-- sync:agent:start full_document_reconcile -->"
+            full_end = "<!-- sync:agent:end full_document_reconcile -->"
+            missing = valid.replace(blocks["pr_test_evidence"], "", 1)
+            marker = SYNC_MODULE.SYNC_PR_BODY_MARKER
+            auto_end = SYNC_MODULE.SYNC_AUTO_END
+            damage = {
+                "non_sentinel": "legacy PR body\n",
+                "marker_duplicate": valid.replace(marker, marker * 2, 1),
+                "auto_partial": valid.replace(auto_end, "", 1),
+                "only_start": valid.replace(repo_end, "", 1),
+                "only_end": valid.replace(repo_start, "", 1),
+                "missing_duplicate": missing.replace(
+                    blocks["full_document_reconcile"],
+                    blocks["full_document_reconcile"] * 2, 1,
+                ),
+                "missing_partial": missing.replace(full_end, "", 1),
+                "overlap": valid.replace(repo_end, "", 1).replace(
+                    full_start, f"{full_start}\n{repo_end}", 1,
+                ),
+                "outside": f"outside\n{valid}",
+            }
+            for scenario, damaged_body in damage.items():
+                with self.subTest(damage=scenario):
+                    target = root / f"damage_{scenario}"
+                    initialize_core_target(target=target, upstream=upstream)
+                    body_path = target / "PR_BODY.md"
+                    body_path.write_text(damaged_body, encoding="utf-8")
+                    result = run_harness(
+                        command="prepare", target=target,
+                        upstream=upstream, upstream_sha=sha,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(
+                        parse_json(result=result)["error"], "已有 PR_BODY.md 无效",
+                    )
+                    self.assertEqual(
+                        body_path.read_text(encoding="utf-8"), damaged_body,
+                    )
+                    run_path = target / HARNESS_MODULE.RUN_PATH
+                    self.assertFalse(run_path.exists())
 
     def test_complete_mode_sequence_handoff(self) -> None:
         """PREPARE 至 SUBMIT 起点必须允许合法累计 dirty handoff。"""
@@ -824,7 +1170,11 @@ class WorkflowSyncSkillTests(unittest.TestCase):
             payload = parse_json(result=submit)
             self.assertEqual(
                 payload["allowed_commit_paths"],
-                ["AGENTS.md", "TESTING.md", "architecture.md", "interact.md"],
+                [
+                    "AGENTS.md", "PR_Checklist.md", "SOP.md", "TESTING.md",
+                    "architecture.md", "capability_contract.json",
+                    "docs/business_user_guide.md", "interact.md",
+                ],
             )
 
     def test_start_pass_rejects_inter_mode_edit(self) -> None:

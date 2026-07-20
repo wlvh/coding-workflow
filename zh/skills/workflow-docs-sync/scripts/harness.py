@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -33,6 +34,12 @@ OWNERSHIP_PATH = (
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_METADATA_PATH = SKILL_ROOT / ".source.json"
 WORKFLOW_EXTRA_PATHS = {".gitignore", "PR_BODY.md"}
+PERMITTED_INHERIT_PATHS = {".github/pull_request_template.md"}
+SYNC_PR_BODY_MARKER = "<!-- sync:pr-body version=1 -->"
+SYNC_AUTO_START = "<!-- sync:auto:start -->"
+SYNC_AUTO_END = "<!-- sync:auto:end -->"
+UNFILLED_PLACEHOLDER = "待补充"
+LITERAL_PIPE_GUIDANCE = "表格 cell 中的字面 | 必须写为 \\| 或改用 <br>"
 AGENT_SECTIONS = (
     "repo_facts_map",
     "full_document_reconcile",
@@ -663,32 +670,100 @@ def require_boundary_unchanged(
         )
 
 
+def validated_sentinel_spans(
+    *, text: str, require_all: bool, canonical_order: bool
+) -> dict[str, tuple[int, int]]:
+    """参数为 body 与 schema 强度；预期返回合法且不重叠的 sentinel spans。"""
+    count = text.count(SYNC_PR_BODY_MARKER)
+    if count != 1:
+        raise HarnessError(
+            error="PR_BODY sync sentinel 无效",
+            detail=f"{SYNC_PR_BODY_MARKER} 匹配次数：{count}",
+        )
+    marker_start = text.index(SYNC_PR_BODY_MARKER)
+    spans = {
+        "marker": (marker_start, marker_start + len(SYNC_PR_BODY_MARKER))
+    }
+    sentinels = [("auto", SYNC_AUTO_START, SYNC_AUTO_END, True)]
+    sentinels.extend(
+        (
+            name,
+            f"<!-- sync:agent:start {name} -->",
+            f"<!-- sync:agent:end {name} -->",
+            require_all,
+        )
+        for name in AGENT_SECTIONS
+    )
+    for name, start, end, required in sentinels:
+        start_count, end_count = text.count(start), text.count(end)
+        if start_count == 0 and end_count == 0 and not required:
+            continue
+        if start_count != 1 or end_count != 1:
+            raise HarnessError(
+                error="PR_BODY sentinel 无效",
+                detail=f"{name}: start={start_count}, end={end_count}",
+            )
+        start_index, end_index = text.index(start), text.index(end)
+        if end_index < start_index:
+            raise HarnessError(
+                error="PR_BODY sentinel 未闭合",
+                detail=name,
+            )
+        spans[name] = (start_index, end_index + len(end))
+
+    # 旧 schema 可改变 section 顺序，但任何 span 都不能覆盖另一 span。
+    ordered = sorted(spans.items(), key=lambda item: item[1])
+    cursor = 0
+    outside_parts: list[str] = []
+    for name, (start_index, end_index) in ordered:
+        if start_index < cursor:
+            raise HarnessError(
+                error="PR_BODY sentinel 重叠",
+                detail=name,
+            )
+        outside_parts.append(text[cursor:start_index])
+        cursor = end_index
+    outside_parts.append(text[cursor:])
+    if "".join(outside_parts).strip():
+        raise HarnessError(
+            error="PR_BODY sentinel 外存在内容",
+            detail="请把人工内容迁移到对应 agent-owned section",
+        )
+    expected = ["marker", "repo_facts_map", "auto", *AGENT_SECTIONS[1:]]
+    if canonical_order and [name for name, _ in ordered] != expected:
+        raise HarnessError(
+            error="PR_BODY sentinel 顺序非法",
+            detail="必须使用当前 skeleton canonical 顺序",
+        )
+    return spans
+
+
+def validate_refreshable_pr_body(*, text: str) -> None:
+    """参数为 sync 前 body；预期允许完整缺失的旧 agent section。"""
+    validated_sentinel_spans(
+        text=text, require_all=False, canonical_order=False,
+    )
+
+
 def parse_agent_sections(*, text: str) -> tuple[str, dict[str, str]]:
-    """参数为 PR body；预期返回占位骨架和 agent section 内容。"""
+    """参数为 current body；预期严格校验并返回骨架和 section。"""
+    spans = validated_sentinel_spans(
+        text=text, require_all=True, canonical_order=True,
+    )
     cursor = 0
     skeleton_parts: list[str] = []
     sections: dict[str, str] = {}
-    for section_name in AGENT_SECTIONS:
-        start_marker = f"<!-- sync:agent:start {section_name} -->"
-        end_marker = f"<!-- sync:agent:end {section_name} -->"
-        start_index = text.find(start_marker, cursor)
-        if start_index < 0:
-            raise HarnessError(
-                error="PR_BODY agent section 缺失",
-                detail=section_name,
-            )
-        body_start = start_index + len(start_marker)
-        end_index = text.find(end_marker, body_start)
-        if end_index < 0:
-            raise HarnessError(
-                error="PR_BODY agent section 未闭合",
-                detail=section_name,
-            )
-        skeleton_parts.append(text[cursor:body_start])
-        skeleton_parts.append(f"<SECTION:{section_name}>")
-        skeleton_parts.append(end_marker)
-        sections[section_name] = text[body_start:end_index]
-        cursor = end_index + len(end_marker)
+    for name in AGENT_SECTIONS:
+        start = f"<!-- sync:agent:start {name} -->"
+        end = f"<!-- sync:agent:end {name} -->"
+        start_index, span_end = spans[name]
+        body_start = start_index + len(start)
+        body_end = span_end - len(end)
+        skeleton_parts.extend((
+            text[cursor:body_start], f"<SECTION:{name}>", end,
+        ))
+        sections[name] = text[body_start:body_end]
+        cursor = span_end
     skeleton_parts.append(text[cursor:])
     return "".join(skeleton_parts), sections
 
@@ -698,8 +773,8 @@ def assert_pr_body_scope(
     baseline_text: str | None,
     current_text: str | None,
     allowed_sections: set[str],
-) -> None:
-    """参数为起止 body 和允许 section；预期其他区域完全不变。"""
+) -> tuple[dict[str, str], dict[str, str]]:
+    """参数为起止 body 和允许 section；预期返回已校验的 section。"""
     if baseline_text is None or current_text is None:
         raise HarnessError(
             error="PR_BODY scope 无法校验",
@@ -728,6 +803,261 @@ def assert_pr_body_scope(
             detail=", ".join(unauthorized),
             extra={"unauthorized_sections": unauthorized},
         )
+    return baseline_sections, current_sections
+
+
+def ensure_prepared_pr_body(*, repo_root: Path, refreshable: bool) -> None:
+    """参数为目标仓库；预期保留合法 body 或从 sync skeleton 复制。"""
+    body_path = repo_root / "PR_BODY.md"
+    skeleton_path = repo_root / ".coding_workflow/diffs/pr_body_skeleton.md"
+    if body_path.is_file():
+        try:
+            validator = (
+                validate_refreshable_pr_body if refreshable
+                else parse_agent_sections
+            )
+            validator(text=body_path.read_text(encoding="utf-8"))
+        except HarnessError as exc:
+            raise HarnessError(
+                error="已有 PR_BODY.md 无效",
+                detail=(
+                    f"{exc.error}: {exc.detail}；请移开现有文件，或人工迁移"
+                    "旧内容到完整 sentinel body；原文件未覆盖"
+                ),
+            ) from exc
+        return
+    if body_path.exists():
+        raise HarnessError(
+            error="已有 PR_BODY.md 无效",
+            detail="路径不是普通文件；请移开后重试，原路径未覆盖",
+        )
+    if not skeleton_path.is_file():
+        raise HarnessError(
+            error="PREPARE PR body skeleton 缺失",
+            detail=str(skeleton_path),
+        )
+    skeleton_text = skeleton_path.read_text(encoding="utf-8")
+    parse_agent_sections(text=skeleton_text)
+    shutil.copy2(src=skeleton_path, dst=body_path)
+
+
+def matching_table_rows(
+    *, text: str, key: str, prefer_code: bool
+) -> list[str]:
+    """参数为 section、稳定行键和代码格式偏好；预期返回候选表格行。"""
+    table_lines = [line for line in text.splitlines() if line.startswith("|")]
+    if prefer_code:
+        code_rows = [line for line in table_lines if f"| `{key}` |" in line]
+        if code_rows:
+            return code_rows
+    return [line for line in table_lines if f"| {key} |" in line]
+
+
+def split_table_row(*, row: str) -> list[str]:
+    """参数为 Markdown 表格行；预期仅按未转义竖线拆分 cells。"""
+    if not row.startswith("|") or not row.endswith("|") or row.endswith("\\|"):
+        return []
+    cells: list[str] = []
+    cell_start = 1
+    for index, character in enumerate(row[1:-1], start=1):
+        if character == "|" and row[index - 1] != "\\":
+            cells.append(row[cell_start:index])
+            cell_start = index + 1
+    cells.append(row[cell_start:-1])
+    return cells
+
+
+def fail_completion(*, detail: str) -> None:
+    """参数为机械 completion 失败证据；预期抛出稳定 harness 错误。"""
+    raise HarnessError(error="PASS PR_BODY 未完成", detail=detail)
+
+
+def require_current_table(
+    *, schema_text: str, current_text: str, heading: str, label: str
+) -> int:
+    """参数为 pinned/current section；预期 current 表头保持 canonical。"""
+    schema_lines = schema_text.splitlines()
+    current_lines = current_text.splitlines()
+    schema_rows = [line for line in schema_lines if line.startswith("|")]
+    if schema_lines.count(heading) != 1 or not schema_rows:
+        fail_completion(detail=f"pinned {label} heading 或表头缺失")
+    header = schema_rows[0]
+    if current_lines.count(heading) != 1 or current_lines.count(header) != 1:
+        fail_completion(detail=f"{label} 表头不符；{LITERAL_PIPE_GUIDANCE}")
+    return len(split_table_row(row=header))
+
+
+def require_completed_row(
+    *, section_text: str, key: str, label: str, prefer_code: bool,
+    expected_cells: int, owned_cells: int
+) -> None:
+    """参数为稳定行键与 schema 宽度；预期责任 cells 非空且已填写。"""
+    matches = matching_table_rows(
+        text=section_text,
+        key=key,
+        prefer_code=prefer_code,
+    )
+    if len(matches) != 1:
+        fail_completion(
+            detail=f"{label} 匹配行数必须为 1，实际 {len(matches)}",
+        )
+    cells = split_table_row(row=matches[0])
+    if len(cells) != expected_cells:
+        fail_completion(
+            detail=(
+                f"{label} cell 数应为 {expected_cells}，实际 {len(cells)}；"
+                f"{LITERAL_PIPE_GUIDANCE}"
+            ),
+        )
+    if any(not cell.strip() for cell in cells[-owned_cells:]):
+        fail_completion(detail=f"{label} 责任 cell 不得为空")
+    if UNFILLED_PLACEHOLDER in matches[0]:
+        fail_completion(detail=f"{label} 仍含 {UNFILLED_PLACEHOLDER}")
+
+
+def assert_repo_facts_complete(
+    *, schema_text: str, current_text: str
+) -> None:
+    """参数为 current skeleton 与 body；预期固定事实 block 证据非空。"""
+    headings = [
+        line for line in schema_text.splitlines() if line.startswith("### ")
+    ]
+    if len(headings) != 10 or len(set(headings)) != 10:
+        fail_completion(
+            detail=f"current Repo Facts heading 数应为 10，实际 {len(headings)}",
+        )
+    current_lines = current_text.splitlines()
+    if current_lines.count("## Repo Facts Map") != 1:
+        fail_completion(detail="Repo Facts Map heading 匹配次数必须为 1")
+    for heading in headings:
+        matches = [
+            index
+            for index, line in enumerate(current_lines)
+            if line == heading
+        ]
+        if len(matches) != 1:
+            fail_completion(
+                detail=f"{heading} 匹配次数必须为 1，实际 {len(matches)}",
+            )
+        block_end = next((
+            index for index in range(matches[0] + 1, len(current_lines))
+            if current_lines[index].startswith("### ")
+        ), len(current_lines))
+        block = current_lines[matches[0] + 1:block_end]
+        evidence = [line for line in block if line.startswith("证据:")]
+        if len(evidence) != 1:
+            fail_completion(
+                detail=f"{heading} 的 证据: 行必须恰好一行",
+            )
+        if not evidence[0].partition(":")[2].strip():
+            fail_completion(detail=f"{heading} 的 证据: 值不得为空")
+        if UNFILLED_PLACEHOLDER in "\n".join(block):
+            fail_completion(detail=f"{heading} block 仍含 待补充")
+
+
+def assert_remaining_decisions_complete(*, section_text: str) -> None:
+    """参数为 Remaining Human Decisions；预期 heading 后有非空 payload。"""
+    heading = "## Remaining Human Decisions"
+    lines = [line.strip() for line in section_text.splitlines()]
+    payload = [line for line in lines if line and line != heading]
+    if lines.count(heading) != 1 or not payload:
+        fail_completion(detail="Remaining Human Decisions 缺少非空 payload")
+    if UNFILLED_PLACEHOLDER in "\n".join(payload):
+        fail_completion(detail="Remaining Human Decisions 仍含 待补充")
+
+
+def assert_pass_body_completion(
+    *,
+    mode: str,
+    ownership_entry: dict[str, Any],
+    schema_sections: dict[str, str],
+    current_sections: dict[str, str],
+) -> None:
+    """参数为 PASS ownership 与 body sections；预期当前责任项机械完成。"""
+    if mode == "PASS_1":
+        assert_repo_facts_complete(
+            schema_text=schema_sections["repo_facts_map"],
+            current_text=current_sections["repo_facts_map"],
+        )
+    reconcile_width = require_current_table(
+        schema_text=schema_sections["full_document_reconcile"],
+        current_text=current_sections["full_document_reconcile"],
+        heading="## Full Document Reconcile",
+        label="Full Document Reconcile",
+    )
+    for relative_path in ownership_entry["owned"]:
+        require_completed_row(
+            section_text=current_sections["full_document_reconcile"],
+            key=relative_path,
+            label=f"{mode} reconcile `{relative_path}`",
+            prefer_code=True,
+            expected_cells=reconcile_width,
+            owned_cells=5,
+        )
+    execution_title = re.sub(
+        pattern=r"^\d+\.\d+\s+",
+        repl="",
+        string=ownership_entry["title"],
+    )
+    execution_width = require_current_table(
+        schema_text=schema_sections["agent_execution_evidence"],
+        current_text=current_sections["agent_execution_evidence"],
+        heading="## Agent Execution Evidence",
+        label="Agent Execution Evidence",
+    )
+    require_completed_row(
+        section_text=current_sections["agent_execution_evidence"],
+        key=execution_title,
+        label=f"{execution_title} execution evidence",
+        prefer_code=False,
+        expected_cells=execution_width,
+        owned_cells=3,
+    )
+    if mode == "PASS_4":
+        assert_remaining_decisions_complete(
+            section_text=current_sections["remaining_human_decisions"],
+        )
+
+
+def assert_owned_docs_ready(
+    *,
+    mode: str,
+    target_repo: Path,
+    upstream_dir: Path,
+    ownership_entry: dict[str, Any],
+) -> None:
+    """参数为 PASS 与 pinned upstream；预期 owned 文档存在且已项目化。"""
+    for relative_path in ownership_entry["owned"]:
+        target_path = target_repo / relative_path
+        if not target_path.is_file():
+            raise HarnessError(
+                error="PASS owned 文档缺失",
+                detail=relative_path,
+                extra={"owned_path": relative_path},
+            )
+        if relative_path in PERMITTED_INHERIT_PATHS:
+            continue
+        upstream_path = upstream_dir / "zh" / relative_path
+        if not upstream_path.is_file():
+            raise HarnessError(
+                error="pinned owned 模板缺失",
+                detail=relative_path,
+                extra={"owned_path": relative_path},
+            )
+        current_text = target_path.read_text(encoding="utf-8")
+        upstream_text = upstream_path.read_text(encoding="utf-8")
+        normalized_current = current_text.replace("\r\n", "\n").replace(
+            "\r", "\n"
+        )
+        normalized_upstream = upstream_text.replace("\r\n", "\n").replace(
+            "\r", "\n"
+        )
+        if normalized_current == normalized_upstream:
+            raise HarnessError(
+                error="PASS owned 文档未项目化",
+                detail=f"{mode}: {relative_path} 仍与 pinned zh 模板完全相同",
+                extra={"owned_path": relative_path},
+            )
 
 
 def git_paths_between(
@@ -853,6 +1183,10 @@ def prepare(*, args: Any) -> dict[str, Any]:
                 detail="先完成当前 run，或显式删除 ignored runtime 后重启",
             )
 
+    # sync 允许旧 schema migration；先只读拒绝损坏 body，避免它被自动补写。
+    if (target_repo / "PR_BODY.md").exists():
+        ensure_prepared_pr_body(repo_root=target_repo, refreshable=True)
+
     # PREPARE 之前不接受混入的业务或核心文档改动。
     before_dirty = assert_dirty_allowed(
         repo_root=target_repo,
@@ -868,6 +1202,9 @@ def prepare(*, args: Any) -> dict[str, Any]:
         upstream_dir=upstream_dir,
         final=False,
     )
+
+    # 正式 handoff body 必须在状态快照前落盘，后续 PASS 不再依赖 skeleton fallback。
+    ensure_prepared_pr_body(repo_root=target_repo, refreshable=False)
 
     # pinned sync 只能产生 workflow 管理路径。
     after_dirty = assert_dirty_allowed(
@@ -1055,21 +1392,34 @@ def finish_pass(*, args: Any) -> dict[str, Any]:
             detail=", ".join(unauthorized),
             extra={"unauthorized_paths": unauthorized},
         )
-    if "PR_BODY.md" in changed:
-        assert_pr_body_scope(
-            baseline_text=(
-                baseline["pr_body_text"]
-                or (
-                    target_repo / ".coding_workflow/diffs/pr_body_skeleton.md"
-                ).read_text(encoding="utf-8")
-            ),
-            current_text=read_pr_body(repo_root=target_repo),
-            allowed_sections=set(
-                ownership[args.mode]["pr_body_sections"]
-            ),
+    _, current_sections = assert_pr_body_scope(
+        baseline_text=baseline["pr_body_text"],
+        current_text=read_pr_body(repo_root=target_repo),
+        allowed_sections=set(ownership[args.mode]["pr_body_sections"]),
+    )
+    schema_path = target_repo / ".coding_workflow/diffs/pr_body_skeleton.md"
+    if not schema_path.is_file():
+        raise HarnessError(
+            error="current PR body skeleton 缺失",
+            detail=str(schema_path),
         )
+    _, schema_sections = parse_agent_sections(
+        text=schema_path.read_text(encoding="utf-8"),
+    )
+    assert_pass_body_completion(
+        mode=args.mode,
+        ownership_entry=ownership[args.mode],
+        schema_sections=schema_sections,
+        current_sections=current_sections,
+    )
+    assert_owned_docs_ready(
+        mode=args.mode,
+        target_repo=target_repo,
+        upstream_dir=upstream_dir,
+        ownership_entry=ownership[args.mode],
+    )
 
-    # ownership 通过后才运行 pinned sync，防止 sync 掩盖 Agent 越权。
+    # ownership 与 completion 全通过后才 sync，失败不会污染 auto 区或推进状态。
     sync = run_pinned_sync(
         target_repo=target_repo,
         upstream_dir=upstream_dir,

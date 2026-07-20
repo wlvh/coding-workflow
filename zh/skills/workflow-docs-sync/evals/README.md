@@ -32,6 +32,12 @@
 选择已有可运行代码、但缺少一个或多个核心 workflow 文档的仓库。验证两条轨道能否用
 代码证据补齐缺失文档，同时避免把模板占位、无证据能力或无关治理文件写入结果。
 
+Shadow Case A 的 Skill 轨道还必须证明：PREPARE 后根 `PR_BODY.md` 已作为正式交接
+产物存在；每个 PASS 的成功结果同时对应正式 body 中当前 PASS 的 sentinel、heading、
+表格宽度、非空责任 cell 和 owned 文档 readiness。删除 `待补充` 但留下空 block / cell
+必须失败；表格字面 `|` 必须转义为 `\|` 或改用 `<br>`。这些机械条件不裁定证据真实性，
+独立 reviewer 仍负责语义 verdict。仅有 skeleton 不算正式交接或 PASS success。
+
 ## Case B：存在 class-2 上游漂移
 
 选择核心文档已项目化、但未吸收当前 upstream 语义更新的仓库。验证两条轨道是否都能

@@ -53,6 +53,7 @@ Common rules for every pass:
 
 - Use `.coding_workflow/diffs/pr_body_skeleton.md` or current `PR_BODY.md` as the PR body structure authority.
 - Do not modify sync sentinels or content outside sentinel sections.
+- A literal `|` inside a table cell must be written as `\|` or replaced with `<br>`; only an unescaped `|` separates cells.
 - Do not fill `pr_test_evidence`; only the PR submission agent owns it.
 - `agent_execution_evidence` is self-reported read coverage for reviewer spot checks only.
 - `Full Document Reconcile` must include upstream semantic delta, adopted where, not adopted because, evidence, and downstream impact.
@@ -74,8 +75,9 @@ sections. Current task: execute only PASS 1 - Code Facts / Architecture.
 Must read:
 1. `.coding_workflow/diffs/agent_workorder.md`
 2. `.coding_workflow/diffs/upstream_full/architecture.md`
-3. `PR_BODY.md`; initialize it from `.coding_workflow/diffs/pr_body_skeleton.md`
-   if missing; stop if the skeleton is missing.
+3. `PR_BODY.md` must be supplied as the formal handoff artifact before this
+   PASS starts; if it is missing, stop and report a workflow-preparation
+   artifact failure. Do not create it from the skeleton during the PASS.
 4. `PR_BODY.md` repo_facts_map and the `architecture.md` row in
    full_document_reconcile.
 5. Current repo entrypoints, module boundaries, data flow, state model,
