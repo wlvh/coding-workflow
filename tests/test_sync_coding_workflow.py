@@ -472,7 +472,9 @@ class SyncWorkflowTests(unittest.TestCase):
             ".coding_workflow/diffs/agent_workorder.md",
             ".coding_workflow/diffs/pr_body_skeleton.md",
             "PR_BODY.md",
-            "初始化；如果 skeleton 缺失",
+            "应由 PREPARE 机械创建",
+            "不得自行复制 skeleton",
+            "表格 cell 中的字面 `|` 必须写为 `\\|`",
             SYNC_MODULE.SYNC_AUTO_START,
             SYNC_MODULE.SYNC_AUTO_END,
             "任何 sync sentinel、sentinel 外内容",
@@ -517,10 +519,11 @@ class SyncWorkflowTests(unittest.TestCase):
             )[0]
             self.assertNotIn("本文档", pass_text)
             self.assertEqual(
-                pass_text.count("如果不存在，先用"),
+                pass_text.count("应由 PREPARE 机械创建"),
                 1,
-                msg=f"{title} prompt should define PR_BODY init once",
+                msg=f"{title} prompt should bind PR_BODY to PREPARE once",
             )
+            self.assertNotIn("如果不存在，先用", pass_text)
             self.assertNotIn("回报修改了哪些文件", pass_text)
             self.assertNotIn("回报是否写入 downstream impact", pass_text)
             self.assertNotIn("PR body sections", pass_text)
