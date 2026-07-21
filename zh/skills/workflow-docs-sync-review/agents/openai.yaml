@@ -1,7 +1,0 @@
-interface:
-  display_name: "工作流文档同步审查"
-  short_description: "在独立新会话审查 workflow-docs PR，不修改 tracked 项目文件"
-  default_prompt: "使用 $workflow-docs-sync-review 审查指定 PR。"
-
-policy:
-  allow_implicit_invocation: false

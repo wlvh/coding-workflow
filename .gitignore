@@ -1,7 +1,4 @@
 PR_BODY.md
-.coding_workflow/diffs/
-.coding_workflow/skill_results/
-.coding_workflow/skill_runtime/
 
 .DS_Store
 __pycache__/
