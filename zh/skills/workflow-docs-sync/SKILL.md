@@ -1,65 +1,64 @@
 ---
 name: workflow-docs-sync
-description: 当需要把工作流文档同步（workflow docs sync）的 PASS 流程项目化为独立会话、分 mode 执行时使用。
+description: 在一个会话内把 wlvh/coding-workflow 的九份核心工作流文档同步并项目化到目标 Git 仓库。用户要求同步 workflow docs、补齐或核对 architecture/capability/interact/business guide/testing/governance 文档时使用；只接受目标仓库、可选 zh/en 语言和可选结束后创建 draft PR。
 ---
 
-## 调用协议
+# Workflow Docs Sync
 
-- 只接受 `PREPARE`、`PASS_1`、`PASS_2`、`PASS_3`、`PASS_4`、`SUBMIT` 六种 mode。
-- 每个 mode 必须在独立新会话中调用；本 skill 不创建隔离上下文，也不声称替调用方完成跨平台上下文隔离。
-- 每次调用必须显式提供目标仓库、clean pinned upstream 路径、完整 SHA 和 mode；命令见 `references/modes.md`。
-- Studio 直接加载 canonical Skill；已安装副本通过 `.source.json` 记录来源 SHA，切换 SHA 后必须重新安装。
-- mode 顺序、边界快照和 SUBMIT 起点保存在 ignored `.coding_workflow/skill_runtime/`；确定性结果保存在 ignored `.coding_workflow/skill_results/`。
-- AI 负责 PASS 语义判断和文档改写；调用方按 `references/modes.md` 解析当前 Skill
-  根目录的绝对路径，再运行其中 `scripts/harness.py` 的机械命令。
+在一个会话内完成编排。始终由主 Agent 独占目标工作区写入；领域分析和审计只读。
 
-## 通用执行规则
+## 用户输入
 
-1. 只通过文件和 JSON 传递状态，不依赖前一会话聊天摘要。
-2. PASS 语义真相源始终是 pinned upstream 的 `zh/scripts/OPERATIONS.md`；Skill 不复制或扩写 PASS prompt。
-3. `start-pass` 返回当前标题、owned 文件、允许的 PR body section 和 prompt 行号；只执行 code block 中标记为“Skill 模式”的语义部分。
-4. 不运行 code block 的人工 curl；pinned 普通 sync 由调用方在 `finish-pass` 中执行。
-5. 不修改 sync auto 区、其他 PASS 文件或未授权 PR body section。
-6. harness 非零退出时立即停止，不跨 mode 补做或静默降级。
+- 要求目标仓库路径。
+- 语言仅允许 `zh` 或 `en`，未提供时使用 `zh`。
+- 未明确要求时不创建 draft PR。
+- 不要求或接受用户提供上游 SHA、上游 checkout、内部命令或分析分工。
 
-## 各 mode 语义
+## 上游解析
 
-### PREPARE
+1. 先判断当前 Skill 是否位于 canonical `wlvh/coding-workflow` checkout：其 Git 根目录
+   必须同时包含当前 Skill 和所选语言的九份模板。满足时直接复用该 checkout。
+2. 无法定位 canonical checkout 时，在仓库外创建临时目录并 shallow clone
+   `https://github.com/wlvh/coding-workflow.git`。网络失败时停止并报告，不回退到缓存模板。
+3. 调用 `scripts/sync_docs.py prepare --target-repo <target> --upstream-dir <upstream>
+   --language <zh|en>`，只消费其单行 JSON。
+4. 保存返回的 `target_head` 与 `upstream_sha` 于当前会话；整轮使用同一 SHA。
+5. 会话结束时清理本轮临时 clone；canonical checkout 不清理。
 
-调用方运行 `harness.py prepare`。它校验仓库和 pinned upstream、运行普通 sync、
-初始化 run state 并写 PREPARE result。AI 不做项目语义改写。
+## 执行流程
 
-### PASS_1 至 PASS_4
+1. 主 Agent 读取目标仓库规则、入口、代码、测试和现有文档，建立带路径证据的代码地图。
+2. 完整读取 [references/sections.md](references/sections.md)，启动四个相互隔离的只读分析：
+   Architecture、Capability / User Behavior、Testing、Governance。明确禁止它们编辑、
+   stage、commit 或运行会产生项目 artifact 的命令；发现只在当前会话返回。
+3. 平台不支持 subagent 时，主 Agent 按 reference 中四个章节的顺序逐章分析，保持相同
+   输出结构和最终用户体验。
+4. 主 Agent 合并四份发现，只修改九份核心文档；`.gitignore` 仅在目标项目确有忽略
+   需求时修改。不要创建运行记录、模板镜像或工单；整个同步流程不读取、创建、改写或删除
+   仓库内 `PR_BODY.md`。
+5. 完整读取 [references/audit.md](references/audit.md)，启动一个独立只读对抗性审计。
+6. 主 Agent 修复全部 BLOCKER 和所有可行动 WARN，再要求审计者只读轻量复审修复点
+   及其跨文档影响。无法闭合的产品判断保留为未解决决策，不得编造事实。
+7. 主 Agent 依据目标 `TESTING.md` 和真实代码路径运行必要测试。记录原样命令、结果和
+   未运行原因；测试输出不是检查器 receipt。
+8. 调用：
 
-1. 调用方先运行 `harness.py start-pass --mode <PASS>`。
-2. 按返回的 pinned prompt 位置执行 Skill 模式语义部分。
-3. 只修改返回的 owned 文件和 PR body sections。
-4. 调用方运行 `harness.py finish-pass --mode <PASS>`；它检查本 mode delta、运行 pinned sync、写结果并推进顺序。
+   ```bash
+   python3 <skill-root>/scripts/sync_docs.py check \
+     --target-repo <target> \
+     --upstream-dir <upstream> \
+     --upstream-sha <prepare 返回的 upstream_sha> \
+     --expected-target-head <prepare 返回的 target_head> \
+     --language <zh|en>
+   ```
 
-### SUBMIT
+9. 检查失败时修复真实问题并重跑相关测试和检查；不得放宽断言、跳过必要测试或引入兼容实现。
 
-1. 调用方运行 `harness.py prepare-submit`，建立 active、unsealed 基线；此时
-   `submit_ready=false`，且尚未执行 final gate。
-2. AI 按 OPERATIONS.md 的 evidence 阶段运行测试，只填写 `PR Test Evidence`，不得
-   commit、push 或更新远端 PR。
-3. 调用方运行 `harness.py seal-submit`。它要求 HEAD 未变化、基线后只有提交阶段
-   owned section 被编辑，再运行真实 pinned final gate；成功后封存 workflow 内容、
-   本地 PR body 和精确提交路径，并设置 `submit_ready=true`。
-4. AI 进入 seal 后发布阶段，按封存路径 commit、push 并更新远端 body。调用方最后
-   运行 `harness.py finish-submit`，把 sealed 内容绑定实际 commit 和远端 PR。
+## 最终报告
 
-`seal-submit` 失败不会退出 active SUBMIT，也不会要求删除 runtime。若只是提交证据
-不完整，修正 `PR Test Evidence` 后原地重试。若错误暴露 PASS-owned 文档问题，保留
-当前失败 runtime 作为证据，从失败仓库本地 clone 同一 `start_head`，在独立 checkout
-恢复原 head 分支和真实发布 remote，再从 PREPARE 到 PASS_4 完整重跑；不得把当前
-内容设成新 baseline，也不需要中间 commit。
+一次性报告：修改文件、代码与测试证据路径、每条测试命令及结果、未解决决策、审计发现
+及处置、内部固定的上游 SHA。明确说明机械检查只验证最终仓库状态，不证明分析、审计或
+测试的执行历史。
 
-## 停止条件
-
-- mode 顺序错误、mode 间出现新编辑或项目 HEAD 提前变化。
-- 当前 PASS 修改非 owned 路径或未授权 PR body section。
-- upstream 缺失、dirty 或 SHA 不匹配。
-- pinned sync 失败，或 seal 的 final gate 尚未通过。
-- seal 后 workflow 内容 / executable bit / PR body 变化，新增 commit 数不是 1，或实际
-  提交路径不精确等于 sealed allowed set。
-- 远端 PR number、base、head 或 body 与本地事实不一致。
+用户要求 draft PR 时，在上述流程成功后使用仓库外临时 Markdown body，把 commit、push
+和 draft PR 创建交给通用 GitHub 发布能力。同步脚本不参与发布。

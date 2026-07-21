@@ -23,6 +23,8 @@
   pinned final gate 和真实 GitHub PR；不使用执行过程中的链式自证。
 - 独立 reviewer：在执行 Skill 之外复核语义，并由 validator 派生 verdict。
 - 用户边界：Gate W0 始终由用户负责，不移入 Skill。
+- 后续：`workflow-docs-sync` 范围内的上述实现已由 DEC-005 替代；语义与
+  机械事实的责任边界仍保留。
 - 英文状态：`en-pending`。
 
 ## DEC-004：SUBMIT 使用 evidence / seal / publish 三阶段
@@ -38,4 +40,27 @@
   与四个 PASS；不要求中间 commit，也不把当前 worktree rebaseline。
 - 排除项：不增加 receipt、hash chain、generic rebaseline、rollback framework 或
   Threat Model B 的 index / whole-tree 对抗机制。
+- 后续：`workflow-docs-sync` 范围内的三阶段实现已由 DEC-005 替代。
+- 英文状态：`en-pending`。
+
+## DEC-005：Workflow Docs Sync 采用单会话内建编排
+
+- 状态：accepted
+- 日期：2026-07-20 UTC
+- 决策：用户每轮只调用一次 `$workflow-docs-sync`。主 Agent 是目标工作区的唯一
+  写入者；Architecture、Capability / User Behavior、Testing、Governance 四个领域
+  Agent 只读分析，内部对抗性审计 Agent 也只读。平台不支持 subagent 时，由主 Agent
+  在同一会话按四个隔离章节顺序完成同样的语义检查。
+- 数据边界：子 Agent 发现只通过当前会话返回，不写运行状态、result receipt、工单、
+  模板镜像或 PR body。上游 checkout 和 SHA 由 Skill 内部解析并在同一轮固定复用；
+  用户只提供目标仓库、可选语言和可选 draft PR 意图。
+- 机械边界：`prepare` 只解析 Git 根目录与 SHA、在任何写入前检查 dirty allowlist，
+  并补齐缺失模板；`check` 只读验证最终仓库状态。检查器不证明 Agent、审计或测试曾经
+  执行，测试由主 Agent 实际运行并在最终报告记录。
+- 发布边界：PR body、commit、push、远端绑定和 draft PR 创建不属于同步器。用户要求
+  draft PR 时，由通用 GitHub 发布能力使用仓库外临时 Markdown body 完成。
+- 替代关系：本决策在 `workflow-docs-sync` 范围内 supersede DEC-003 和 DEC-004 的旧
+  实现；不保留旧 launcher、mode、harness、缓存模板或控制面兼容 fallback，Git 历史
+  承担回滚。无 subagent 时的顺序执行是当前正式路径，不是旧实现 fallback。仍保留
+  DEC-003 的原则：AI 负责项目语义与文档改写，机械层只判断可确定事实。
 - 英文状态：`en-pending`。

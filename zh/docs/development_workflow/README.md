@@ -158,11 +158,16 @@ E. 输出风格约束
 - `PR_BODY.md`：本地临时 PR body 草稿，由 `.github/pull_request_template.md` 生成，不提交仓库；是 review 的重要输入材料。
 - `Merge Readiness Report`：判断当前 PR 是否具备合并条件。
 - `FSD 完备性验收报告`：Issue 关闭前的最后一道契约核查。
-- `Workflow Docs Sync`：用 `zh/scripts/sync.sh` 生成 full reconcile 证据、薄工单和带紧凑 `Sync Review Contract` 的 sync PR body 骨架，4 个 pass prompt 由 `zh/scripts/OPERATIONS.md` 承载，最终由独立 reviewer 守语义质量门。
+- `Workflow Docs Sync`：用户一次调用完成代码地图、四领域只读分析、主 Agent 统一改写、
+  内部只读审计、测试和最终仓库检查。
 
 ## 代码项目核心文档
 
-本仓库中的这些文件是给目标项目继承和项目化的 upstream 模板 / 样本文档。开发 sync 工具时，不因为工具实现细节去改写 `AGENTS.md`、`TESTING.md`、`PR_Checklist.md`、`architecture.md` 这类模板；sync 工具自身的操作说明、实现文件清单和回归测试说明落在 `zh/README.md` 和 `scripts/` 下。例外是 `.github/pull_request_template.md`：它是长期 PR body 模板，可以直接继承 upstream。
+本仓库中的这些文件是给目标项目继承和项目化的 upstream 模板 / 样本文档。开发 sync
+工具时，不因为工具实现细节去改写 `AGENTS.md`、`TESTING.md`、`PR_Checklist.md`、
+`architecture.md` 这类模板；sync 工具自身说明和实现放在
+`zh/skills/workflow-docs-sync/`。例外是 `.github/pull_request_template.md`：它是长期
+PR body 模板，可以直接继承 upstream。
 
 - `AGENTS.md`：agent 工作入口、文件简介、代码规范与文档关系。
 - `architecture.md`：系统架构、模块边界、数据流、架构不变量与扩展点。
@@ -176,39 +181,32 @@ E. 输出风格约束
 
 ## Workflow Docs Sync
 
-完整操作入口见 `zh/scripts/OPERATIONS.md`。该手册说明如何运行 `zh/scripts/sync.sh`、
-用四个专用 prompt / 新对话按 pass 接力执行 sync、由 PR 提交 agent 先完成证据并在
-commit 前 seal，再用 `zh/scripts/sync_pr_review_system.md` 启动独立 review。`agent_workorder.md` 只列本轮机器信号和
-`OPERATIONS.md` 的 commit-pinned URL，不复制四段长 prompt。
+用户只调用一次 `$workflow-docs-sync`，只提供目标仓库、可选 `zh` / `en` 和可选 draft
+PR 意图。Skill 内部解析 canonical upstream checkout；无法定位时使用仓库外临时 shallow
+clone，并在整轮固定同一上游提交。
 
-- 机械合同：`sync.sh --final`；`PR_BODY.md` auto 区的 `Sync Review Contract` 只保留本轮 reviewer 输入和分工边界
-- 语义交接：`zh/scripts/OPERATIONS.md` 承载 4 个 pass prompt；`PR_BODY.md` agent 区的 `Full Document Reconcile` 记录每个核心文档的 upstream semantic delta、采纳 / 拒绝位置、证据和 downstream impact，`PR Test Evidence` 记录 PR 提交阶段的一次性测试证据，`Agent Execution Evidence` 记录 pass agent 的自报读取清单供 reviewer 抽查，`Upstream Drift Log` 暴露 PR body 刷新期间的 upstream commit 漂移，`Remaining Human Decisions` 暴露仍需判断的语义事项
-- 独立 reviewer 是必经语义质量门；final gate 只证明机械一致性，不能替代证据真实性和 upstream 规则吸收审查
-- 如果已有 `PR_BODY.md` 不是 sync sentinel body，普通 sync 会 fail-fast；先移走、删除，或手动迁入 sync PR body 的 agent-owned 区后再运行
-- 如果目标仓库历史上已把 `PR_BODY.md` 提交入库，sync 只打印 warning，不会自动 `git rm --cached`；是否解除跟踪应由目标项目单独 cleanup PR 决定
-- 本轮证据目录：`.coding_workflow/diffs/`
-- 工具实现：`scripts/sync_coding_workflow.py`
-- 一次性启动入口：`zh/scripts/sync.sh`
-- 操作手册：`zh/scripts/OPERATIONS.md`
-- reviewer 启动 prompt：`zh/scripts/sync_pr_review_system.md`
-- 回归测试：`tests/test_sync_coding_workflow.py`
+- 主 Agent 是目标工作区唯一写入者，先建立真实代码地图。
+- Architecture、Capability / User Behavior、Testing、Governance 四领域分析只读并只在
+  当前会话返回发现；无 subagent 平台由主 Agent 按四个隔离章节顺序执行。
+- 主 Agent 统一修改九份核心文档，再由内部只读对抗性审计检查事实、跨文档闭合和验证
+  层级；BLOCKER 与可行动 WARN 修复后进行轻量复审。
+- 主 Agent 实际运行目标项目必要测试并记录命令与结果。
+- `sync_docs.py prepare` 只补齐缺失模板；`check` 只读验证最终 HEAD、dirty 范围、九份
+  文件、编码、JSON、标题、模板残留、固定上游差异和 whitespace。
+- 同步过程不读取、创建、改写或删除仓库内 `PR_BODY.md`，也不创建工单、模板镜像或运行状态。
+  commit、push 和 draft PR 创建由通用 GitHub 发布能力在检查成功后完成。
+- 最终机械检查只证明最终仓库状态，不证明四领域分析、审计或测试曾运行。
 
-开发 sync 工具时，若改动工单、PR body、final gate、reviewer prompt 或 pass 交接合同，必须同步检查：
+维护入口：
 
-- `scripts/sync_coding_workflow.py`
-- `zh/scripts/OPERATIONS.md`
-- `en/scripts/OPERATIONS.md`
-- `zh/scripts/sync_pr_review_system.md`
-- `en/scripts/sync_pr_review_system.md`
-- `zh/scripts/sync.sh`
-- `en/scripts/sync.sh`
-- `zh/README.md`
-- `en/README.md`
-- `tests/test_sync_coding_workflow.py`
+- `zh/skills/workflow-docs-sync/SKILL.md`
+- `zh/skills/workflow-docs-sync/references/sections.md`
+- `zh/skills/workflow-docs-sync/references/audit.md`
+- `zh/skills/workflow-docs-sync/scripts/sync_docs.py`
+- `zh/scripts/install_skills.py`
+- `tests/test_workflow_docs_sync.py`
 
-这些要求属于本仓库 sync 工具维护规则，不写入下游项目会继承的 `AGENTS.md` / `TESTING.md` / `PR_Checklist.md` 模板。
-
-当前 sync 工具的 `TESTING.md` 独立 pass 是生成工单和 PR body 的合同，不是 `TESTING.md` 模板正文。该 pass 要求 sync agent 单独检查测试冗余、必要性、真实失败覆盖、mock-only 风险、E2E/scenario 价值和不值得新增的测试。
+这些规则属于上游 sync 工具，不写入下游项目继承的核心模板。
 
 ## 上游双语语义等价审核 SOP
 
@@ -217,13 +215,16 @@ commit 前 seal，再用 `zh/scripts/sync_pr_review_system.md` 启动独立 revi
 目标是定期确认中文锚点文档的语义变化已经被英文派生路径吸收，或已经显式记录
 `en-pending` follow-up。
 
-触发节奏：每月最后一个工作日执行一次；如果本月修改过任意中文锚点核心文档、`zh/README.md`、`zh/scripts/OPERATIONS.md` 或 `zh/scripts/sync_pr_review_system.md`，则必须在下一次主线 PR 合并前执行。
+触发节奏：每月最后一个工作日执行一次；如果本月修改过任意中文锚点核心文档、
+`zh/README.md` 或 `zh/skills/workflow-docs-sync/`，则必须在下一次主线 PR 合并前执行。
 
 ### Step 1：确认审核范围
 
 - 做什么：列出本轮要审核的中英配对文件，只覆盖本仓库声明的双语入口、模板和 sync 工具文档。
-- 去哪看：`zh/README.md` 的“目录地图”、`scripts/sync_coding_workflow.py` 的 `ZH_CORE_SOURCE_FILES` / `EN_CORE_SOURCE_FILES` / prompt file mapping、`zh/scripts/OPERATIONS.md` 和 `en/scripts/OPERATIONS.md` 的 pass 路径。
-- 做完如何验收：每一项必须是 `zh/路径 -> en/同名路径`，共享实现例外为 `scripts/sync_coding_workflow.py`；不得出现 `.en.md`、`.en.json`、`.en.sh` 文件路径。
+- 去哪看：`zh/README.md` 的“目录地图”、`sync_docs.py` 的 `CORE_FILES` 和中英模板目录。
+- 做完如何验收：每一项必须是 `zh/路径 -> en/同名路径`；Skill 实现只在 canonical
+  `zh/skills/workflow-docs-sync/` 维护，不创建英文实现副本，也不得出现 `.en.md`、
+  `.en.json`、`.en.sh` 文件路径。
 
 ### Step 2：收集中英文变更证据
 
@@ -234,7 +235,8 @@ commit 前 seal，再用 `zh/scripts/sync_pr_review_system.md` 启动独立 revi
 ### Step 3：逐项判断语义等价
 
 - 做什么：以中文 diff 为锚，判断英文是否覆盖同一流程、能力边界、验收不变量、路径和拒绝 / 追问规则；`both` 状态重点判断英文是否是中文语义派生，而不是独立创作。
-- 去哪看：中文文件当前内容、英文文件当前内容、`zh/README.md` 的中文锚点规则、`zh/scripts/OPERATIONS.md` 和 `en/scripts/OPERATIONS.md` 的对应 pass 规则。
+- 去哪看：中文文件当前内容、英文文件当前内容、`zh/README.md` 的中文锚点规则和
+  `zh/skills/workflow-docs-sync/references/` 的领域语义。
 - 做完如何验收：每个配对文件得到一个结论：`ok`、`missing translation`、`stale en`、`contradiction`、`intentionally pending`；除 `ok` 外都必须记录具体文件、段落和建议处理方式。
 
 ### Step 4：生成审核结论
@@ -249,6 +251,11 @@ commit 前 seal，再用 `zh/scripts/sync_pr_review_system.md` 启动独立 revi
 - 去哪看：本轮审核结论、相关 PR body 或 issue。
 - 做完如何验收：所有非 `ok` 项都有明确 follow-up；如果本轮完成修复，重新执行 Step 2 和 Step 3，直到结论为 `ok` 或 `intentionally pending`。
 
-反向规则：任何对 `AGENTS.md`、`TESTING.md`、`PR_Checklist.md`、`SOP.md`、`architecture.md`、`interact.md`、`capability_contract.json` 或 `docs/business_user_guide.md` 的修改，如果只对本仓库 sync 工具特殊场景有用、对下游继承项目无意义，必须迁移到 `zh/README.md`、`zh/docs/development_workflow/` 或 `zh/scripts/` 后再合入。
+反向规则：任何对 `AGENTS.md`、`TESTING.md`、`PR_Checklist.md`、`SOP.md`、
+`architecture.md`、`interact.md`、`capability_contract.json` 或
+`docs/business_user_guide.md` 的修改，如果只对本仓库 sync 工具特殊场景有用、对下游
+继承项目无意义，必须迁移到 `zh/README.md`、`zh/docs/development_workflow/` 或
+`zh/skills/workflow-docs-sync/` 后再合入。
 
-配套边界：`en-pending` 只属于维护 `wlvh/coding-workflow` 上游仓库时的双语治理语境，不得作为通用 sync PR reviewer BLOCKER 写入 `zh/scripts/sync_pr_review_system.md`，避免下游中文或英文单一路径项目被误拦截。
+配套边界：`en-pending` 只属于维护 `wlvh/coding-workflow` 上游仓库时的双语治理语境，
+不得作为通用目标仓库审计 BLOCKER，避免中文或英文单一路径项目被误拦截。

@@ -2,59 +2,35 @@
 
 [中文](zh/README.md) | English
 
-This repository root is the English public entrypoint for workflow templates,
-user-facing docs, and operations runbooks. After choosing English, stay inside
-the `en/` tree except for the shared implementation at
-`scripts/sync_coding_workflow.py` and repository-level tests.
+This repository publishes bilingual workflow-document templates and the
+`workflow-docs-sync` Skill that specializes them against a real target repository.
 
 ## Quick Start
 
-Run English workflow docs sync from the target repository root:
+Invoke the Skill once. Provide only the target repository, optional language
+(`zh` or `en`), and whether to create a draft PR after successful validation.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/wlvh/coding-workflow/main/en/scripts/sync.sh | bash
+```text
+Use $workflow-docs-sync for /absolute/path/to/repository in English.
+Do not create a draft PR.
 ```
 
-Then follow PASS 1 through PASS 4 in
-[en/scripts/OPERATIONS.md](en/scripts/OPERATIONS.md). English sync uses source
-templates under `en/`, but installs them into the target repository's canonical
-root paths.
+The main agent is the only workspace writer. Four domain analyses and the
+adversarial audit are read-only; the final checker validates repository state,
+not execution history. Upstream checkout and commit resolution are internal.
 
 ## Directory Map
 
-- [en/AGENTS.md](en/AGENTS.md): agent entrypoint, file map, coding rules, and document relationships.
-- [en/architecture.md](en/architecture.md): architecture, module boundaries, data flow, and invariants.
-- [en/capability_contract.json](en/capability_contract.json): machine-readable capability and behavior contract.
-- [en/interact.md](en/interact.md): user-visible behavior and acceptance invariants.
-- [en/TESTING.md](en/TESTING.md): testing strategy and evidence rules.
-- [en/PR_Checklist.md](en/PR_Checklist.md): PR submission, commit, push, and PR body rules.
-- [en/SOP.md](en/SOP.md): standard process entrypoints.
-- [en/.github/pull_request_template.md](en/.github/pull_request_template.md): English downstream PR body template.
-- [en/docs/business_user_guide.md](en/docs/business_user_guide.md): business-user guide.
-- [en/docs/development_workflow/README.md](en/docs/development_workflow/README.md): English workflow overview.
-- [en/prompts/](en/prompts/): English prompt catalog status.
-- [en/scripts/OPERATIONS.md](en/scripts/OPERATIONS.md): English workflow docs sync runbook.
-- [en/scripts/sync.sh](en/scripts/sync.sh): English template sync launcher.
-- [en/scripts/sync_pr_review_system.md](en/scripts/sync_pr_review_system.md): English independent reviewer prompt.
+- [en/](en/): English templates and workflow documentation.
+- [zh/](zh/): Chinese source templates, prompts, decisions, and Skill implementation.
+- [zh/skills/workflow-docs-sync/](zh/skills/workflow-docs-sync/): single-session orchestration, read-only analysis references, and the deterministic checker.
+- [tests/test_workflow_docs_sync.py](tests/test_workflow_docs_sync.py): sync and installer regression tests.
 
 ## Install Path Rule
 
-`en/` is an upstream source prefix; it is not installed into the target project.
-Sync strips only the leading `en/` and writes the remaining path as-is:
+The `zh/` and `en/` directories are upstream source prefixes. The Skill strips
+only the selected leading language directory and installs the remaining paths at
+the target repository root. Inner paths such as `.github/` remain unchanged.
 
-- `en/AGENTS.md` -> `<target>/AGENTS.md`
-- `en/docs/business_user_guide.md` -> `<target>/docs/business_user_guide.md`
-- `en/.github/pull_request_template.md` -> `<target>/.github/pull_request_template.md`
-
-The inner `.github` layout is preserved. The rule is prefix stripping only, not
-special-case path rewriting.
-
-## Language Policy
-
-Chinese remains the source of truth. English is derived from the Chinese
-workflow. When English coverage is pending, mark `en-pending` in the PR body and
-avoid exposing untranslated flows as English-ready.
-
-Root `README.md` intentionally mirrors the English entrypoint with
-root-relative links, so the repository homepage stays useful without depending
-on symlink rendering behavior.
+Chinese remains the source-of-truth workflow. English is its derived language
+path; unfinished English coverage must be identified explicitly as `en-pending`.
