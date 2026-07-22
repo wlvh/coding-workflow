@@ -11,40 +11,6 @@
 如果项目存在 capability_contract.json，也必须读取并作为能力边界真相源。
 我敲定了一份 FSD（功能规范说明书），因为 FSD 是在没有实际接触代码的情况下完成的。所以你需要基于《FSD + 当前仓库代码 + 仓库权威文档》来完成 FSD 和实际代码之间 Target State Bridge 的分析。
 
-## 多Agent 执行协议
-
-本阶段采用“并行取证、主 Agent 单一收敛”结构。
-
-1. 主 Agent 首先：
-   - 从 FSD 提取全部 Spec Unit、验收条件、非目标和未确认假设；
-   - 建立 SU -> 候选代码入口 -> 测试区域 -> 文档区域的浅层调查地图。
-
-2. 只有存在至少两个边界清晰、能够独立完成的证据域时，
-   才启动只读 subagents。不得为了使用多Agent强行拆分高度耦合任务。
-
-3. 可委派的证据域包括：
-   - Runtime Path：入口、调用链、数据流、状态变化、错误与恢复路径；
-   - Test Evidence：测试、fixture、CI、Stage 和验证缺口；
-   - Contract Alignment：FSD 与仓库权威文档、能力边界、用户行为的冲突；
-   - Compatibility / Risk：兼容入口、迁移、相邻场景和下游调用方。
-
-4. 每个 subagent：
-   - 只负责一个证据域；
-   - 默认只读，不修改代码、文档或 FSD；
-   - 可以提出 candidate impact，但不能决定最终 Must / Likely / Maybe；
-   - 只返回：
-     Scope
-     Facts + 文件/符号/运行证据
-     Inferences + 依据 + 置信度
-     Unknowns
-     Candidate impacts
-
-5. 主 Agent 必须等待本轮要求的全部 subagents 返回，然后：
-   - 自行复核关键调用链；
-   - 解决证据冲突；
-   - 独立写出唯一的 Repo Impact Forecast 和 Target State Bridge；
-   - 不得把“多个 subagent 一致”本身作为事实证据。
-
 ## A. Repo Impact Forecast
 目标：
 - FSD 的哪些假设仍未确认
