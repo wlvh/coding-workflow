@@ -19,7 +19,7 @@
    * TESTING.md
 
 4. **Target State Bridge Agent（codex） 根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`**
-  * 如果GPT 5.4 Pro模型可以在不接触本地代码和GitHub的情况下产出也能由它代为产出
+  * 如果GPT 5.4 Pro模型可以接触本地代码或GitHub的情况下产出也能由它代为产出
   * 使用长 prompt：[prompts/target_state_bridge.md](../../prompts/target_state_bridge.md)
 
 5. **Issue Agent （codex）写 issue**
