@@ -53,7 +53,7 @@
   在同一会话按四个隔离章节顺序完成同样的语义检查。
 - 数据边界：子 Agent 发现只通过当前会话返回，不写运行状态、result receipt、工单、
   模板镜像或 PR body。上游 checkout 和 SHA 由 Skill 内部解析并在同一轮固定复用；
-  用户只提供目标仓库、可选语言和可选 draft PR 意图。
+  用户只提供目标仓库、必选的 `zh` / `en`，以及成功后是否创建 draft PR。
 - 机械边界：`prepare` 只解析 Git 根目录与 SHA、在任何写入前检查 dirty allowlist，
   并补齐缺失模板；`check` 只读验证最终仓库状态。检查器不证明 Agent、审计或测试曾经
   执行，测试由主 Agent 实际运行并在最终报告记录。
@@ -63,4 +63,73 @@
   实现；不保留旧 launcher、mode、harness、缓存模板或控制面兼容 fallback，Git 历史
   承担回滚。无 subagent 时的顺序执行是当前正式路径，不是旧实现 fallback。仍保留
   DEC-003 的原则：AI 负责项目语义与文档改写，机械层只判断可确定事实。
+- 后续：DEC-006 partial supersede 本决策中的固定四个领域 Agent、固定内部对抗性审计 Agent，
+  以及无 subagent 时固定四章节执行顺序；其余边界继续有效。
 - 英文状态：`en-pending`。
+
+## DEC-006：Workflow Docs Sync 以直接风险覆盖取代代理约束
+
+- 状态：accepted
+- 日期：2026-08-01 UTC
+- 原则：更少不是目标；只有在风险已由更直接机制覆盖，或被明确接受时，才删除原机制。
+  行数下降、测试变少或文件减少都不能单独构成删除理由。
+- 产品边界：保留 one-call UX、固定目标 HEAD 与上游 SHA、从固定 Git object 分发模板、dirty
+  allowlist、写入前完整预检、只创建缺失文件、single writer、全量事实重建、最小必要改写、
+  fresh-context review、最终 `check` 和显式授权发布。Architecture、Capability / User Behavior、
+  Testing、Governance 是覆盖维度，不是固定 Agent 拓扑、写入顺序或完成进度协议。
+- 与 DEC-005 的关系：本决策 partial supersede 其中的固定四个领域 Agent、固定内部对抗性审计
+  Agent，以及无 subagent 时固定四章节执行顺序。DEC-005 的 one-call、single writer、不写
+  repository run state / receipt、`prepare` / `check` 机械责任边界，以及发布必须显式授权且不由
+  `sync_docs.py` 执行继续有效。
+
+### 删除的机械机制与风险转移
+
+- 删除 Markdown heading / fence parser。它只能证明有限语法形状，不能证明章节语义、文案
+  质量或项目事实；模板语义完整性改由四维 review、Case G 和 SEC_metrics Case A 真实 eval
+  发现。接受的剩余风险是：纯机械 `check` 不再单独发现空标题或 fence 失配。
+- 删除模板 equality，包括 CRLF 归一化和 PR template 特例。每份非 PR 上游模板必须至少含
+  一个 active project-fill marker；逐字复制模板必然保留 marker，最终 `check` 因 marker 失败，
+  因此 equality 不再提供独立保护。`prepare` 与 `check` 共用 source-template validator，从调用方
+  指定 object 与 language 读取全部九份 UTF-8 模板，并对八份非 PR source fail closed；若未来
+  放宽 active-marker source contract，必须重新评估是否恢复 equality。
+- 合并 tracked working-tree、index 与 final-file whitespace 分支，只扫描九份最终文件及存在的
+  `.gitignore`。覆盖成立有三个附加前提：editable path 不得存在 index/worktree 分叉；Git CLI
+  在临时非 Git 目录以固定 `core.whitespace=blank-at-eol,blank-at-eof,space-before-tab` 运行，不
+  继承目标 repository attributes、用户 global attributes 或 system attributes；存在的
+  `.gitignore` 仍必须是普通 UTF-8 文件。任一前提不满足时 `check` fail closed。
+- 删除旧版 22 项 `TEMPLATE_TOKENS` 和独立的 broad“待补充”扫描，并新引入两个 active
+  project-fill marker 作为唯一机器未完成状态。历史 upstream 模板确实包含旧 token，但当前
+  登记的真实下游 SEC_metrics 未命中，本仓库也未登记其他下游依赖，因此不逐项保留 target-side
+  legacy blacklist；旧 upstream 由 source active-marker invariant fail closed。“待补充”仍可
+  表达人工明确暂缓。未来只有具体下游仓库与文件的真实命中证据才能恢复最小 compatibility。
+- 删除 `references/sections.md` 和 `references/audit.md`。旧 `SKILL.md` 强制完整读取两者，实际
+  没有渐进式披露收益；四维覆盖、独立复核、严重度和 finding 收口规则合并到 `SKILL.md`，
+  由单一权威避免重复漂移。
+- 删除 Working Brief 产品机制及其生命周期。Reviewer 的自足规则是：blind-first 初始阶段
+  不得读取主 Agent 的任何中间产物。
+- 跨项目模板撤回 Workflow Docs Sync 特有的 clone / pin、reviewer isolation 和 publishing
+  实现，同时保留并通用化主执行者负责、委派结果需审阅、共识不等于证据、审查默认只读和
+  不固定 Agent 数量或顺序等协作原则。主防线是 `SKILL.md` 的语义检查；分发合同只扫描本次
+  真实误植过的精确语境 token，作为已知回归兜底，不扩展成自然语言黑名单。
+
+### 删除的代理测试与新信任基础
+
+- 删除全部函数级单元测试、parser 分支测试、实现细节 status-code 测试、模板 equality / CRLF
+  测试、标题/fence 测试、广泛自然语言 residue 扫描，以及行数、行宽、测试数量预算。
+- 这些 proxy invariant 已产生真实问题：普通散文中的 `baseline` 被误伤；为守行数预算产生
+  难审查的超长行；equality 与 active marker 同时保护模板项目化，形成重叠并在合法 PR
+  template 上需要特例。
+- 新信任基础是少量公共 CLI 场景、真实模板分发合同、fresh-context review，以及在同一最终
+  SHA 上连续两轮完整 SEC_metrics Case A。第二轮必须重新调查、选择测试、review 并运行最终
+  `check`；连续 prepare/check no-op 只证明机械幂等，不能替代第二轮 eval。场景覆盖成功主路径、
+  prepare 原子前置失败、check 无效终态、user/repo 与 Codex/Claude 完整安装、以及仓库分发
+  结构；测试不 import `sync_docs.py` helper。
+- 旧 eval 风险并未静默删除：部分过时旧文档、共同虚构能力和验证层级膨胀成为 Case A 的
+  强制检查项；机械 no-op 与第二轮完整 Case A 分别承担不同风险；review-mode 身份风险由公共
+  场景和 `SKILL.md` 规则承担。
+
+Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”的检查是现实抽样，不是注入已知
+缺陷的阳性对照；若所选目标初始状态不含相应缺陷，只能报告“本次未观察到”，不得写成
+“已验证不存在”或“检测能力已验证”。
+
+- 英文状态：本决策对应的对外说明已同步到英文 README 与 development workflow。

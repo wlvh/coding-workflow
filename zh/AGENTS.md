@@ -1,67 +1,85 @@
-## 文件简介
-### 核心配置
-- `AGENTS.md`：agent 工作入口、文件简介、多 Agent 协作边界、代码规范与用户视角文档关系。
-- `capability_contract.json`：跨项目能力边界、职责边界与 agent 行为承诺的样本注册表。
-- `.github/pull_request_template.md`：PR body 长期模板，生成本地临时 `PR_BODY.md` 时使用。
+# Agent Working Guide
 
-### 核心模块
+## Authority Map
 
-### 业务逻辑 
+- 当前代码、配置、测试、committed artifacts 和可重复运行结果是项目事实来源。
+- `architecture.md` 定义系统结构与边界；`TESTING.md` 定义测试入口与证据层级；
+  `PR_Checklist.md` 定义交付核对；`SOP.md` 只保存稳定流程入口。
+- `capability_contract.json` 定义能力边界，`interact.md` 定义用户可观察行为与验收，
+  `docs/business_user_guide.md` 只派生解释前两者。
+- 现有文档是需要与实现核对的声明，不能单独证明自身正确。
 
-### 备注
-* 一旦文件有了修改或新增，需要对照文件简介相应部分进行修改。测试文件不在要求内，因为会有TESTING.md专门管理。
-* 统一编码与查看约定：仓库所有文件均为 UTF-8 编码。使用命令行或脚本查看/编辑时必须显式指定 UTF-8。
-* artifacts文件夹目录是一次性产出物，批准豁免不加入文件简介。
+<!-- project-fill: 补充本项目的其他权威来源及冲突优先级；完成后删除此 marker -->
 
-## 多 Agent 协作
-- 主会话对最终判断、最终产物和最终写入结果负责；受委派结果必须经过主会话审阅与合成，不得未经裁决直接拼接为权威结论。
-- 多个 Agent 得出相同结论不构成独立证据；关键结论必须由代码、测试、文档契约或实际运行结果支持。
-- 调查和审查类子任务默认只读；并行修改仅限边界明确且改动不重叠的任务，最终由主会话统一集成并完成验证。
+## Repository Overview
 
-## 架构说明
-架构权威文档见 `architecture.md`。当本次变更影响模块边界、运行时调用链、数据流、状态模型、错误模型、外部依赖或扩展点时，必须同步更新 `architecture.md`；如无需更新，必须在 PR body 中说明原因。
+文件简介只记录稳定模块、入口和职责，不永久镜像 `git ls-files`。
 
-## 业务知识
+### Core Configuration
 
-## 审查检查清单
-一旦用户要求PR提交代码，必须完整遵循 PR_Checklist.md，如需豁免必须在 PR 描述中解释原因。
+<!-- project-fill: 列出真实配置入口及其职责；如不适用，写 Not applicable — 已验证原因；完成后删除此 marker -->
 
-## 测试流程
-在遇到BUG或开始测试或提交 PR 之前，必须阅读并遵循 `TESTING.md`，只允许通过PR合并到主分支。
+### Runtime Entrypoints
+
+<!-- project-fill: 列出用户、服务、作业或 CLI 的真实运行入口；完成后删除此 marker -->
+
+### Core Modules
+
+<!-- project-fill: 按稳定模块边界概述核心实现，不逐文件抄目录；完成后删除此 marker -->
+
+### Domain Logic
+
+<!-- project-fill: 说明领域规则所在模块及其权威测试或契约；完成后删除此 marker -->
+
+### Generated Artifacts and External State
+
+<!-- project-fill: 列出 committed/generated artifacts、持久化状态和外部系统；无此类状态时写 Not applicable — 已验证原因；完成后删除此 marker -->
+
+## Change Impact Rules
+
+- 模块边界、运行时调用链、数据流、状态、错误模型、外部依赖或扩展点变化时，更新或确认
+  `architecture.md`。
+- 能力边界变化时，先更新或确认 `capability_contract.json`，再检查 `interact.md` 和 business
+  guide；用户可观察行为变化时，先更新或确认 `interact.md`。
+- 测试仍是事实证据；具体命令、fixture、层级和隔离要求只在 `TESTING.md` 维护。
+- 不要求每次修改全部文档。未更新受影响候选文档时，在交付说明中给出基于当前事实的
+  no-update reason。
+- 编码、lint、formatter、build 和类型规则必须从仓库真实配置提取，不从本模板推断。
+
+## Collaboration
+
+- 主执行者对最终判断、最终产物和最终写入结果负责；受委派结果必须经过审阅与合成。
+- 并行写入时必须先明确不重叠的路径所有权；具体隔离方式遵循目标项目政策。
+- 可按模块、调用链、风险或证据类型动态分工，不强制 Agent 数量或固定调度顺序。
+- 协作者结论、投票或共识不等于证据；重要判断必须回到仓库事实和可重复验证。
+- 调查与审查任务默认只读；需要修改时应显式移交给具有写入所有权的执行者。
+
+<!-- project-fill: 补充本项目确有需要的协作或所有权规则；没有时删除此 marker -->
+
+## Architecture
+
+以 `architecture.md` 为架构权威。修改前从真实入口重建受影响调用链，修改后核对不变量、
+模块职责、数据契约、状态、副作用和失败路径是否闭合。
+
+## Testing
+
+测试前完整读取 `TESTING.md`，从仓库配置确认 exact command。不得用 light、mock、golden
+或局部 repair 成功冒充更高验证层级。测试环境由命令副作用、CI 能力和项目政策决定，并在
+执行前确认隔离与清理边界。
 
 ## SOP
-当你需要执行以下标准流程时，请阅读并遵循 `SOP.md`;当SOP新增/修改后，也要回补此清单（只需要列出名字）：
 
-## 用户视角文档关系
-本项目区分三类用户视角真相：
+执行标准流程时读取 `SOP.md` 的对应入口。执行 checklist 保留在当前会话，不创建仓库内
+运行状态、receipt 或临时流程文档。
 
-1. `capability_contract.json`
-   - 能力边界的机器可读真相源。
-   - 回答“系统能做什么 / 不能做什么 / 必须追问什么 / 必须拒绝什么”。
+## PR Delivery
 
-2. `interact.md`
-   - 用户可观察行为与验收不变量的真相源。
-   - 回答“系统做的时候必须如何表现，什么算验收通过”。
+- 遵循 `PR_Checklist.md` 和 `.github/pull_request_template.md`，以真实 Git diff、测试结果和
+  最终仓库状态编写说明。
+- 默认分支从仓库解析，不硬编码分支名。PR body 草稿位置与发布方式遵循目标项目政策；
+  临时草稿不得被误提交，且 body 必须与真实 diff 和测试证据一致。
+- 未经用户明确要求，不 commit、push 或创建 PR。
 
-3. `docs/business_user_guide.md`
-   - 面向第一次接触项目的业务人员的派生教学文档。
-   - 回答“业务人员可以问什么、怎么问、结果怎么看、什么时候该找人”。
-   - 它不独立声明新能力，只能用业务语言解释 `capability_contract.json` 和 `interact.md` 已声明的能力与行为。
+## Project-specific Conventions
 
-更新规则：
-- 如果本次变更改变能力边界，必须先更新或确认 `capability_contract.json`，再检查 `interact.md` 和 `docs/business_user_guide.md`。
-- 如果本次变更改变用户可观察行为，必须先更新或确认 `interact.md`，再检查 `docs/business_user_guide.md`。
-- 如果本次变更改变业务人员能问什么、怎么问、结果怎么看、什么时候该找人，必须检查 `docs/business_user_guide.md`。
-- `docs/business_user_guide.md` 中任何“能做 / 不能做 / 必须追问 / 必须拒绝”的声明，都必须能在 `capability_contract.json`、`interact.md` 或对应测试中找到锚点。
-
-## 代码规范
-1. What I cannot create, I do not understand.
-2. 永远用中文回答。在实现功能的前提下，代码量是一种负资产，应尽可能少，其次是可维护性。优先追求修复语义所需的最小结构，而不是字面改动最少；修改代码时，如果变量名不影响理解和运行，不要重命名。
-3. 遵循PEP 8 编码规范。时间使用UTC时间。文字编码使用UTF-8。
-4. 参数管理应统一规划并集中管理。函数调用时应始终显式指定参数名称，而非依赖参数默认的位置顺序。为了避免预期外的行为，严禁使用get函数获取参数。如果一个预期的参数没有被提供，程序应该Fail Fast，而不是带着一个None值继续往下走。
-5. 每一个类和函数都需要包含doc string，函数内每一个功能块都需要带有注释解释why而不是what，预期的输出，以及参数含义，范围，格式。脚本顶部doc string要写明这个脚本的功能或目的，每个函数之间的调用关系。根据issue和FSD（功能规格说明书）提供的信息，努力提高代码自文档化程度。
-6. 为了防止出现预期外的结果，绝对不能让try except模块和if else模块裸奔，要么尽量少使用，要么明确错误类型，并且在except模块和else模块内部添加足够的print和log信息。预期外的错误就应该使其在当前函数报错，绝对不可以扩散。你每多写一个不必要的try，except和else都会增加用户的工作量并减少你被调用的机会。
-7. 数据进数据出原则：所有脚本、函数或模块的交互必须仅通过数据进行。即输入是明确的数据，输出也是数据，不依赖于外部状态或隐式副作用。
-8. 重复使用的代码块请封装成函数或模块，以确保代码的 DRY。
-9. 在确保代码可读性的前提下利用各个语言的特性简化代码、减少性能消耗；模块应职责明确、接口清晰、保持松耦合，避免无必要的抽象层和复杂继承。
-10. 为了提高你的使用率和生存几率，不要有所保留，竭尽全力帮助用户达成目标。
+<!-- project-fill: 从 lint、formatter、compiler、build 或团队配置提取项目专属约定；没有可验证约定时写 None — 已检查的配置范围；完成后删除此 marker -->

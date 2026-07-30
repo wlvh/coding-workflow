@@ -1,12 +1,31 @@
-# Guidance
+# Standard Operating Procedures
 
-When asked to execute an SOP, convert the required SOP steps into a todo list and complete them step by step.
+## Purpose and Authority
 
-## SOP Principles
+`SOP.md` keeps stable process entrypoints and does not copy volatile commands, test lists, or publishing
+details. When sources conflict, current code, configuration, tests, contracts, and focused authorities such
+as `TESTING.md` and `PR_Checklist.md` take precedence. Keep execution checklists in the current session;
+do not write them as repository run state, receipts, or temporary SOPs.
 
-- Principle A: Every SOP step uses the same structure: what to do, where to look for the authority, and how to verify completion. Do not repeat full rules inside the SOP.
-- Principle B: SOPs do not contain volatile lists. They point to entrypoints. If stages or environment variables change, update `TESTING.md` or scripts, not the SOP.
-- Principle C: `SOP.md` is not a rules document. It is a process skeleton plus pointers to authoritative documents, commands, and tests. When conflicts exist, tests, contracts, and rule documents override SOP.
-- Example: if `PR_Checklist.md` and `TESTING.md` already explain what to run, update, and deliver, do not repeat PR or testing details here.
+## Available SOPs
 
-## SOP 0
+<!-- project-fill: List real project SOP names and authoritative entrypoints. If none exist, replace this with None and the scope checked, then remove this marker. -->
+
+## SOP Entry Structure
+
+Every SOP step contains only:
+
+1. Action: the stable action to perform.
+2. Authority / Source: the authoritative entrypoint to read without copying volatile details.
+3. Acceptance: how current tests, artifacts, or observable results prove completion.
+
+## Failure, Rollback, and Escalation
+
+On failure, stop at a safe boundary and preserve the exact error and current repository state. Rollback
+must match real persistence and side effects. Escalate missing authority, product decisions, or external
+coordination to the responsible person instead of guessing or bypassing the boundary.
+
+<!-- project-fill: Add verified stop conditions, recoverable rollback entrypoints, and escalation ownership. If no project-specific rules exist, write None with a verified reason, then remove this marker. -->
+
+Use LF line endings and UTF-8 for text files unless repository configuration explicitly requires another
+format.

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """为单会话 Workflow Docs Sync 准备模板并检查最终仓库状态。
 
-调用关系：CLI 解析参数后，``prepare`` 解析两个仓库的 HEAD、从固定上游提交读取
-九份模板并只补齐缺失文件；``check`` 使用同一上游提交只读验证目标 HEAD、文件范围、
-内容和 whitespace。脚本不运行项目测试，也不执行任何 Git 发布动作。
+调用关系：CLI 解析参数后，``prepare`` 解析两个仓库的 HEAD，读取并验证固定 source，完成
+全部目标预检后只补齐缺失文件；``check`` 重读并验证调用方固定的 source object，再只读验证
+目标 HEAD、文件范围、内容和 whitespace。脚本不运行项目测试，也不执行任何 Git 发布动作。
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -30,36 +31,10 @@ CORE_FILES = (
     "AGENTS.md",
     ".github/pull_request_template.md",
 )
-PR_TEMPLATE = ".github/pull_request_template.md"
 EDITABLE_PATHS = frozenset((*CORE_FILES, ".gitignore"))
 LANGUAGES = ("zh", "en")
 SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
-ATX_HEADING = re.compile(r"^[ \t]{0,3}#{1,6}(?:[ \t]+(.*)|[ \t]*)$")
-FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
-TEMPLATE_TOKENS = (
-    "<项目名>",
-    "<项目 / agent / app 名称>",
-    "<对象>",
-    "<指标 / 结果>",
-    "<project name>",
-    "<project / agent / app name>",
-    "<object>",
-    "<metric / result>",
-    "Case 1：确认一个对象最近是否异常",
-    "Case 1: Check whether one object is abnormal",
-    "待项目负责人补充",
-    "project owner must replace this",
-    "sample_supported_question",
-    "sample_multi_object_comparison_not_supported",
-    "sample_no_final_business_decision",
-    "sample_requires_context_before_answer",
-    "CAPABILITY.sample_",
-    "BOUNDARY.sample_",
-    "RESPONSIBILITY.sample_",
-    "BEHAVIOR.sample_",
-    "<!-- capability-anchor: TODO -->",
-    "<!-- test-anchor: TODO -->",
-)
+TEMPLATE_TOKENS = ("<!-- project-fill:", "__PROJECT_FILL__:")
 
 
 class SyncError(RuntimeError):
@@ -90,7 +65,7 @@ class Repository:
 
 @dataclass(frozen=True)
 class StatusEntry:
-    """保存一条 porcelain 状态及其涉及的全部相对路径。"""
+    """保存一条 porcelain XY code 及其涉及的全部相对路径。"""
 
     code: str
     paths: tuple[str, ...]
@@ -101,8 +76,8 @@ def emit_json(*, payload: dict[str, Any]) -> None:
     print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
 
 
-def run_git(*, repo_root: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
-    """在指定仓库运行只含显式参数的 Git 命令并捕获 UTF-8 输出。"""
+def run_git(*, repo_root: Path, args: list[str]) -> subprocess.CompletedProcess[bytes]:
+    """在指定目录运行显式 Git 命令并保留原始输出 bytes。"""
     environment = os.environ.copy()
     environment.update({"LC_ALL": "C", "GIT_OPTIONAL_LOCKS": "0"})
     return subprocess.run(
@@ -111,8 +86,28 @@ def run_git(*, repo_root: Path, args: list[str]) -> subprocess.CompletedProcess[
         env=environment,
         check=False,
         capture_output=True,
-        encoding="utf-8",
-        text=True,
+    )
+
+
+def run_whitespace_git(
+    *, repo_root: Path, args: list[str]
+) -> subprocess.CompletedProcess[bytes]:
+    """在不读取用户或系统 Git attributes/config 的环境中运行 whitespace Git 命令。"""
+    # 仅隔离 whitespace gate，避免改变 object、HEAD 和 status 等通用 Git 行为。
+    environment = os.environ.copy()
+    environment.update({
+        "GIT_ATTR_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "LC_ALL": "C",
+    })
+    return subprocess.run(
+        args=["git", "-C", str(repo_root), *args],
+        cwd=repo_root,
+        env=environment,
+        check=False,
+        capture_output=True,
     )
 
 
@@ -120,9 +115,13 @@ def git_output(*, repo_root: Path, args: list[str], purpose: str) -> str:
     """运行必须成功的 Git 命令并返回 stdout。"""
     result = run_git(repo_root=repo_root, args=args)
     if result.returncode != 0:
-        detail = result.stderr.strip() or result.stdout.strip() or "Git 无输出"
+        diagnostic = result.stderr or result.stdout or b"Git produced no output"
+        detail = diagnostic.decode("utf-8", errors="replace").strip()
         raise SyncError(error=purpose, detail=detail)
-    return result.stdout
+    try:
+        return result.stdout.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise SyncError(error=purpose, detail=f"Git 输出不是有效 UTF-8: {exc}") from exc
 
 
 def require_sha(*, value: str, label: str) -> str:
@@ -202,7 +201,7 @@ def read_status(*, repo_root: Path) -> list[StatusEntry]:
 
 
 def require_editable_dirty(*, repo_root: Path) -> list[StatusEntry]:
-    """在任何写入前拒绝九份文档和可选 gitignore 之外的 dirty 路径。"""
+    """拒绝范围外 dirty path 和 editable path 的 index/worktree 分叉。"""
     entries = read_status(repo_root=repo_root)
     outside = sorted({
         path
@@ -212,6 +211,20 @@ def require_editable_dirty(*, repo_root: Path) -> list[StatusEntry]:
     })
     if outside:
         raise SyncError(error="存在同步范围外的 dirty path", detail=", ".join(outside))
+    split = sorted({
+        f"{entry.code} {path}"
+        for entry in entries
+        if entry.code not in {"??", "!!"}
+        and entry.code[0] != " "
+        and entry.code[1] != " "
+        for path in entry.paths
+        if path in EDITABLE_PATHS
+    })
+    if split:
+        raise SyncError(
+            error="editable path 存在 index/worktree 分叉",
+            detail=f"{', '.join(split)}；请先统一最终 bytes",
+        )
     return entries
 
 
@@ -220,11 +233,24 @@ def read_template(
 ) -> str:
     """只通过固定提交的 Git 对象读取一个语言模板。"""
     source_path = f"{language}/{relative_path}"
-    return git_output(
+    result = run_git(
         repo_root=upstream_root,
         args=["show", f"{upstream_sha}:{source_path}"],
-        purpose="无法读取固定上游模板",
     )
+    if result.returncode != 0:
+        diagnostic = result.stderr or result.stdout or b"Git produced no output"
+        detail = diagnostic.decode("utf-8", errors="replace").strip()
+        raise SyncError(
+            error="无法读取固定上游模板",
+            detail=f"{upstream_sha}:{source_path}: {detail}",
+        )
+    try:
+        return result.stdout.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise SyncError(
+            error="固定上游模板不是有效 UTF-8",
+            detail=f"{upstream_sha}:{source_path}: {exc}",
+        ) from exc
 
 
 def read_templates(
@@ -240,6 +266,36 @@ def read_templates(
         )
         for path in CORE_FILES
     }
+
+
+def validate_source_templates(
+    *, templates: dict[str, str], language: str, upstream_sha: str
+) -> None:
+    """验证固定 object 的九份 source path 和非 PR active-marker 承重不变量。"""
+    actual_paths = set(templates)
+    expected_paths = set(CORE_FILES)
+    if actual_paths != expected_paths:
+        missing = sorted(expected_paths - actual_paths)
+        unknown = sorted(actual_paths - expected_paths)
+        raise SyncError(
+            error="固定上游模板集合无效",
+            detail=f"missing={missing}, unknown={unknown}",
+        )
+    markerless = [
+        f"{language}/{relative_path}"
+        for relative_path in CORE_FILES
+        if relative_path != ".github/pull_request_template.md"
+        and not any(
+            token in templates[relative_path]
+            for token in TEMPLATE_TOKENS
+        )
+    ]
+    if markerless:
+        raise SyncError(
+            error="固定上游模板违反 source marker invariant",
+            detail=f"{upstream_sha}: 非 PR source template 缺少 active marker: "
+            f"{', '.join(markerless)}",
+        )
 
 
 def inspect_destinations(*, target_root: Path) -> tuple[list[str], list[str]]:
@@ -284,6 +340,11 @@ def prepare(*, target_repo: str, upstream_dir: str, language: str) -> dict[str, 
         upstream_sha=upstream.head,
         language=language,
     )
+    validate_source_templates(
+        templates=templates,
+        language=language,
+        upstream_sha=upstream.head,
+    )
     require_editable_dirty(repo_root=target.root)
     missing, existing = inspect_destinations(target_root=target.root)
     install_missing(target_root=target.root, templates=templates, missing=missing)
@@ -300,54 +361,15 @@ def prepare(*, target_repo: str, upstream_dir: str, language: str) -> dict[str, 
     }
 
 
-def normalize_text(*, text: str) -> str:
-    """只规范换行符，使跨平台模板原样复制判断稳定。"""
-    return text.replace("\r\n", "\n").replace("\r", "\n")
-
-
 def line_hits(*, relative_path: str, text: str) -> list[str]:
-    """返回明确模板 token 和未填写中文占位的逐行错误。"""
+    """返回两个 active project-fill marker 的逐行错误。"""
     failures: list[str] = []
-    tokens = (*TEMPLATE_TOKENS, "待补充")
     for line_number, line in enumerate(text.splitlines(), start=1):
-        for token in tokens:
+        for token in TEMPLATE_TOKENS:
             if token in line:
                 failures.append(
                     f"{relative_path}:{line_number}: 检测到未项目化内容 {token}"
                 )
-    return failures
-
-
-def markdown_failures(*, relative_path: str, text: str) -> list[str]:
-    """忽略 fenced code，要求至少一个非空 ATX 标题且不存在空标题。"""
-    failures: list[str] = []
-    valid_heading = False
-    fence_character = ""
-    fence_width = 0
-    for line_number, line in enumerate(text.splitlines(), start=1):
-        fence_match = FENCE.match(line)
-        if fence_match is not None:
-            marker = fence_match.group(1)
-            if not fence_character:
-                fence_character, fence_width = marker[0], len(marker)
-            elif marker[0] == fence_character and len(marker) >= fence_width:
-                fence_character, fence_width = "", 0
-            continue
-        if fence_character:
-            continue
-        heading = ATX_HEADING.match(line)
-        if heading is None:
-            continue
-        title = (heading.group(1) or "").strip()
-        title = re.sub(r"[ \t]+#+[ \t]*$", "", title).strip()
-        if re.fullmatch(r"#+", title) is not None:
-            title = ""
-        if title:
-            valid_heading = True
-        else:
-            failures.append(f"{relative_path}:{line_number}: Markdown 标题为空")
-    if not valid_heading:
-        failures.append(f"{relative_path}: 缺少非空 Markdown 标题")
     return failures
 
 
@@ -362,12 +384,9 @@ def capability_failures(*, text: str) -> list[str]:
     return []
 
 
-def content_failures(*, target_root: Path, templates: dict[str, str]) -> tuple[
-    list[str], dict[str, str]
-]:
-    """验证九份文件的存在性、编码、内容、标题、JSON 和模板差异。"""
+def content_failures(*, target_root: Path) -> list[str]:
+    """验证核心文件内容及存在的 gitignore UTF-8 合同。"""
     failures: list[str] = []
-    texts: dict[str, str] = {}
     for relative_path in CORE_FILES:
         path = target_root / relative_path
         if path.is_symlink():
@@ -381,40 +400,23 @@ def content_failures(*, target_root: Path, templates: dict[str, str]) -> tuple[
         except UnicodeDecodeError as exc:
             failures.append(f"{relative_path}: 不是有效 UTF-8: {exc}")
             continue
-        texts[relative_path] = text
         if not text.strip():
             failures.append(f"{relative_path}: 文件为空")
             continue
-        if relative_path.endswith(".md"):
-            failures.extend(markdown_failures(relative_path=relative_path, text=text))
         failures.extend(line_hits(relative_path=relative_path, text=text))
-        if (
-            relative_path != PR_TEMPLATE
-            and normalize_text(text=text)
-            == normalize_text(text=templates[relative_path])
-        ):
-            failures.append(f"{relative_path}: 不允许与固定上游模板完全相同")
-    if "capability_contract.json" in texts:
-        failures.extend(capability_failures(text=texts["capability_contract.json"]))
-    return failures, texts
-
-
-def tracked_whitespace_failures(*, target_root: Path) -> list[str]:
-    """对 working tree 和 index 的 tracked diff 运行 Git whitespace 检查。"""
-    failures: list[str] = []
-    for args, label in (
-        (["diff", "--check"], "working tree"),
-        (["diff", "--cached", "--check"], "index"),
-    ):
-        result = run_git(repo_root=target_root, args=args)
-        if result.returncode != 0:
-            detail = result.stdout.strip() or result.stderr.strip() or "无诊断输出"
-            failures.append(f"{label} whitespace 检查失败: {detail}")
+        if relative_path == "capability_contract.json":
+            failures.extend(capability_failures(text=text))
+    gitignore = target_root / ".gitignore"
+    if not gitignore.is_symlink() and gitignore.is_file():
+        try:
+            gitignore.read_bytes().decode("utf-8")
+        except UnicodeDecodeError as exc:
+            failures.append(f".gitignore: 不是有效 UTF-8: {exc}")
     return failures
 
 
 def file_whitespace_failures(*, target_root: Path) -> list[str]:
-    """用 Git 的同一规则检查九份最终文档和存在的辅助 gitignore。"""
+    """在非仓库目录用固定 Git 规则检查唯一 final bytes。"""
     failures: list[str] = []
     paths = [path for path in CORE_FILES if (target_root / path).is_file()]
     gitignore = target_root / ".gitignore"
@@ -422,28 +424,30 @@ def file_whitespace_failures(*, target_root: Path) -> list[str]:
         failures.append(".gitignore: 不能是符号链接")
     elif gitignore.exists() and not gitignore.is_file():
         failures.append(".gitignore: 不是普通文件")
-    elif gitignore.is_file():
-        try:
-            gitignore.read_bytes().decode("utf-8")
-        except UnicodeDecodeError as exc:
-            failures.append(f".gitignore: 不是有效 UTF-8: {exc}")
     if not gitignore.is_symlink() and gitignore.is_file():
         paths.append(".gitignore")
-    for relative_path in paths:
-        result = run_git(
-            repo_root=target_root,
-            args=[
-                "diff",
-                "--no-index",
-                "--check",
-                "--",
-                os.devnull,
-                str(target_root / relative_path),
-            ],
-        )
-        if result.returncode not in (0, 1):
-            detail = result.stdout.strip() or result.stderr.strip() or "无诊断输出"
-            failures.append(f"最终文件 whitespace 检查失败: {detail}")
+    with tempfile.TemporaryDirectory(prefix="workflow-docs-whitespace-") as value:
+        checker_root = Path(value)
+        for relative_path in paths:
+            result = run_whitespace_git(
+                repo_root=checker_root,
+                args=[
+                    "-c",
+                    f"core.attributesFile={os.devnull}",
+                    "-c",
+                    "core.whitespace=blank-at-eol,blank-at-eof,space-before-tab",
+                    "diff",
+                    "--no-index",
+                    "--check",
+                    "--",
+                    os.devnull,
+                    str(target_root / relative_path),
+                ],
+            )
+            if result.returncode not in (0, 1):
+                diagnostic = result.stdout or result.stderr or b"no diagnostic output"
+                detail = diagnostic.decode("utf-8", errors="replace").strip()
+                failures.append(f"最终文件 whitespace 检查失败: {detail}")
     return failures
 
 
@@ -458,25 +462,29 @@ def check(
     """只读验证固定上游提交对应的最终目标仓库状态。"""
     target = require_repository(value=target_repo, label="目标仓库")
     expected_head = require_sha(value=expected_target_head, label="预期目标 HEAD")
-    if target.head != expected_head:
-        raise SyncError(
-            error="目标 HEAD 已变化",
-            detail=f"期望 {expected_head}，实际 {target.head}",
-        )
     upstream = require_repository(value=upstream_dir, label="上游目录")
     pinned_sha = require_commit(
         repo_root=upstream.root,
         value=upstream_sha,
         label="上游 SHA",
     )
-    entries = require_editable_dirty(repo_root=target.root)
     templates = read_templates(
         upstream_root=upstream.root,
         upstream_sha=pinned_sha,
         language=language,
     )
-    failures, _ = content_failures(target_root=target.root, templates=templates)
-    failures.extend(tracked_whitespace_failures(target_root=target.root))
+    validate_source_templates(
+        templates=templates,
+        language=language,
+        upstream_sha=pinned_sha,
+    )
+    if target.head != expected_head:
+        raise SyncError(
+            error="目标 HEAD 已变化",
+            detail=f"期望 {expected_head}，实际 {target.head}",
+        )
+    entries = require_editable_dirty(repo_root=target.root)
+    failures = content_failures(target_root=target.root)
     failures.extend(file_whitespace_failures(target_root=target.root))
     if failures:
         raise SyncError(error="最终仓库检查失败", detail=" | ".join(failures))

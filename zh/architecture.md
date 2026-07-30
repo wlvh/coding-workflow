@@ -1,94 +1,57 @@
-# architecture.md
+# Architecture
 
-本文档描述本项目的系统结构、模块边界、数据流、架构不变量和扩展点。
+## 0. Scope and Update Triggers
 
-本文档不负责：
-- agent 工作规则：见 `AGENTS.md`
-- PR 流程：见 `PR_Checklist.md`
-- 测试策略：见 `TESTING.md`
-- 能力边界、职责边界与 agent 行为承诺：见 `capability_contract.json`
-- 用户可见行为：见 `interact.md`
-- 业务人员首次使用教学：见 `docs/business_user_guide.md`
-- 标准操作流程：见 `SOP.md`
+本文档是当前系统结构的权威说明。新增或删除运行入口、模块边界、调用链、数据契约、状态、
+错误模型、外部依赖、认证、配置、artifact、副作用、扩展点或架构债务时，必须更新或确认
+对应章节。内容必须来自当前实现、配置、测试、committed artifacts 或可重复运行证据。
 
----
+<!-- project-fill: 说明本文档覆盖的系统边界、排除项和本项目特有更新触发条件；完成后删除此 marker -->
 
-## 0. 更新触发条件
+## 1. System Purpose
 
-以下变化必须更新本文档：
+<!-- project-fill: 用不超过五句话说明服务对象、输入、输出和核心价值；只写已验证的当前事实；完成后删除此 marker -->
 
-- 新增 / 删除核心模块
-- 模块职责边界变化
-- 运行时调用链变化
-- 数据流、数据契约或 schema 变化
-- 状态模型变化
-- 错误处理模型变化
-- 外部依赖、认证、配置入口变化
-- 新增重要扩展点
-- 新增重要架构债务或约束
+## 2. Runtime Entrypoints and Main Flows
 
----
+<!-- project-fill: 从真实入口描述主要调用链、关键分支和最终输出；如无运行时入口，写 Not applicable — 已验证原因；完成后删除此 marker -->
 
-## 1. 系统目的
+## 3. Architecture Invariants
 
-<!--
-不超过 5 句。
-说明：
-- 本系统服务谁？
-- 输入是什么？
-- 输出是什么？
-- 核心价值是什么？
--->
+每条不变量应包含正向约束、适用边界、可证伪方式和违反后果。愿景或 proposed 设计不得写成
+当前不变量。
 
-本系统用于：
+<!-- project-fill: 写入有代码、配置或测试证据的架构不变量；没有时写 Not applicable — 已验证原因；完成后删除此 marker -->
 
-输入：
+## 4. Module Responsibility Boundaries
 
-输出：
+以稳定模块和职责为粒度，说明负责什么、不负责什么、允许依赖和禁止依赖；不要逐文件复制
+仓库目录。
 
-核心价值：
+<!-- project-fill: 描述核心模块边界及依赖方向，并引用精确实现证据；完成后删除此 marker -->
 
----
+## 5. Data Flow and Data Contracts
 
-## 2. 架构不变量
+<!-- project-fill: 描述输入如何被解析、转换、验证并输出，以及 schema、版本和边界契约；无数据流时写 Not applicable — 已验证原因；完成后删除此 marker -->
 
-<!--
-不变量 = 不管以后怎么改代码，都不能被破坏的系统级约束。
--->
+## 6. State and Persistence Model
 
-### 2.1 不变量名称
-- 正向陈述：
-- 反向陈述：
-- 适用边界：
-- Review 检测方式：
-- 自动化检测方式（如有）：
-- 违反后的后果：
+<!-- project-fill: 说明进程内状态、持久化、缓存、幂等性和生命周期；无持久化状态时写 Not applicable — 已验证原因；完成后删除此 marker -->
 
----
+## 7. Error and Failure Model
 
-## 3. 模块职责边界
+<!-- project-fill: 说明 validation、降级、重试、hard failure、回滚和用户可见错误的真实边界；完成后删除此 marker -->
 
-| 模块 / 目录 | 职责 | 非职责 | 可以依赖 | 不应依赖 |
-|---|---|---|---|---|
-|  |  |  |  |  |
+## 8. External Dependencies, Authentication, and Configuration
 
-### 3.1 边界规则
+<!-- project-fill: 列出真实外部依赖、认证边界、配置来源和缺失配置时的行为；没有时写 Not applicable — 已验证原因；完成后删除此 marker -->
 
-- 
-- 
-- 
+## 9. Artifacts and Side Effects
 
----
+<!-- project-fill: 区分 committed、generated、ephemeral artifacts，并说明文件、网络、服务或其他副作用及隔离要求；没有时写 Not applicable — 已验证原因；完成后删除此 marker -->
 
-## 4. 数据流主干
+## 10. Extension Points and Architecture Debt
 
-<!--
-主干图最多 3 层；复杂能力可以单独展开子链路。
--->
+future / proposed 项目必须显式标注状态，不得伪装为当前能力或既有扩展点。
 
-```mermaid
-flowchart LR
-    Input[Input] --> Entry[Entry / Parser]
-    Entry --> Service[Service / Orchestration]
-    Service --> Core[Core Logic]
-    Core --> Output[Output]
+<!-- project-fill: 列出有证据的扩展接口、已知架构债务、影响和触发重审条件；没有时写 None — 已验证原因；完成后删除此 marker -->

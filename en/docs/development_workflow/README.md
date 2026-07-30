@@ -1,79 +1,81 @@
 # Development Workflow
 
-This document is the English overview for the repository's human-in-the-loop
-coding workflow. The Chinese workflow remains the source of truth; this file
-only exposes the English path and the current English coverage boundary.
+This is the English overview of the repository's human-in-the-loop coding workflow. The Chinese workflow
+is the semantic source; this file closes the English meaning for the workflow content changed in this PR.
 
 ## Main Flow
 
 1. Define the requirement.
-2. Draft the `FSD Core Contract` with the Pro web model when local repository
-   exploration is not available.
-3. Use a Target State Bridge agent to compare the FSD, current repository code,
-   and authoritative docs, then produce the `Repo Impact Forecast` and
-   `Target State Bridge`.
-4. Use an Issue agent to turn the FSD, forecast, and bridge into an executable
-   issue contract.
-5. Let the coding agent implement the issue after reading `AGENTS.md`,
-   `SOP.md`, `TESTING.md`, `PR_Checklist.md`, `interact.md`, and any project
-   capability or business-user docs.
-6. Review the PR with business context first, then implementation quality,
-   test realism, and maintainability.
-7. When reviewer findings appear, do not change code first. Verify each finding
-   through code reading, a minimal reproduction, targeted tests, or a path close
-   to real use. If a finding is real, report the analysis before fixing it:
-   check the PR description for similar prior fixes and, if any exist, define
-   an end-to-end acceptance plan that prevents repeated rework; assess affected
-   upstream inputs, the current module, downstream callers, equivalent entry
-   points, and adjacent scenarios; and determine whether test notes, user docs,
-   architecture or workflow docs, the PR description, or the Review / Fix
-   Record must be updated, stating why if no update is needed.
-8. Keep PRs as one external commit when updating an existing PR, and keep
-   `PR_BODY.md` as local PR-body scratch unless the target project explicitly
-   tracks it.
-9. After merge, summarize the PR from a tech-lead perspective and run
-   user-view acceptance when useful.
+2. Draft the `FSD Core Contract` with the Pro web model when direct repository exploration is unavailable.
+3. Compare the FSD, current repository code, and authoritative documents to produce the `Repo Impact
+   Forecast` and `Target State Bridge`.
+4. Turn the FSD, forecast, and bridge into an executable issue contract.
+5. Implement the issue after reading `AGENTS.md`, `SOP.md`, `TESTING.md`, `PR_Checklist.md`,
+   `interact.md`, and project capability or business-user documents.
+6. Review business intent first, then implementation correctness, test realism, maintainability, and
+   documentation impact. Check the changed scope against `.github/pull_request_template.md`,
+   `docs/business_user_guide.md`, `AGENTS.md`, `architecture.md`, `capability_contract.json`, `interact.md`,
+   `PR_Checklist.md`, `SOP.md`, and `TESTING.md` where relevant.
+7. Verify each reviewer finding through code reading, a minimal reproduction, targeted tests, or a path
+   close to real use before changing code. Preserve finding IDs and closure evidence in the existing PR
+   review / fix record and GitHub threads; do not create a second reconciliation ledger.
+8. Follow the repository's current commit policy. A one-commit approach is a replaceable team default, not
+   a universal rule. Build the PR body as temporary Markdown outside the repository from
+   `.github/pull_request_template.md`, and let general GitHub publishing capability read it.
+9. After merge, summarize runtime mechanisms and tradeoffs from code evidence, then perform user-view
+   acceptance when useful.
 
 ## Core Artifacts
 
-- `FSD Core Contract`: requirement contract that can be implemented, tested,
-  and reviewed.
-- `Repo Impact Forecast`: predicted repository touch points, risks, docs, and
-  test impact.
-- `Target State Bridge`: target user or caller-visible state and validation
-  method.
-- `Issue`: executable development contract.
-- `PR_BODY.md`: local PR body draft generated from `.github/pull_request_template.md`.
-- `Workflow Docs Sync`: one invocation that maps current code, performs four
-  read-only domain analyses, lets the main agent update documents, runs a
-  read-only adversarial audit, executes tests, and checks final repository state.
+- `FSD Core Contract`: a requirement contract that can be implemented, tested, and reviewed.
+- `Repo Impact Forecast`: predicted repository touchpoints, risks, documentation, and test impact.
+- `Target State Bridge`: target user- or caller-visible state and its validation method.
+- `Issue`: the executable development contract.
+- External PR body Markdown: temporary review and publishing input derived from the tracked PR template;
+  it never enters the target worktree or commit.
+- `Workflow Docs Sync`: one invocation for full fact reconstruction, minimal necessary document changes,
+  real tests, fresh-context independent review or honest self-review, and deterministic final checks.
 
 ## English Coverage Boundary
 
-English workflow docs are intentionally exposed only when the English path is
-ready. The long prompt pack is not yet published as English-ready; see
-[en/prompts/README.md](../../prompts/README.md). If a PR changes Chinese prompt
-semantics without updating English, mark `en-pending` in the PR body.
+English workflow documentation is exposed only when its path is ready. The long prompt pack remains outside
+the English-ready surface; see [en/prompts/README.md](../../prompts/README.md). Bilingual template, README,
+and development-workflow content changed by a PR must close in that PR. Unchanged historical decisions
+retain their recorded translation status.
 
 ## Workflow Docs Sync
 
-Invoke `$workflow-docs-sync` once with the target repository, optional `en`
-language, and optional draft-PR intent. Upstream checkout and commit resolution
-are internal. The main agent is the only workspace writer; domain agents and
-the adversarial auditor return read-only findings in the current session.
+Invoke `$workflow-docs-sync` once with the target repository, a required `zh` / `en` language choice, and
+whether to create a draft PR after success. The Skill resolves the canonical upstream checkout or uses an
+external shallow clone, then pins target HEAD and upstream SHA for the entire run.
 
-The deterministic script has only two internal commands: `prepare` installs
-missing templates without replacing existing documents, and `check` validates
-the final repository state. The entire sync flow neither creates, reads, rewrites,
-nor deletes repository-local `PR_BODY.md`. It creates no run records, runs no
-target test command, and performs no commit, push, or GitHub operation. If the
-user asks for a draft PR, the post-check publishing step uses a temporary
-Markdown body outside the repository and the general GitHub publishing ability.
+- Before writing, use at least `git ls-files -z` to establish scope and reconstruct facts from code,
+  configuration, tests, committed artifacts, reproducible results, and necessary Git history. Existing
+  documents and upstream templates are hypotheses.
+- Architecture, Capability / User Behavior, Testing, and Governance are coverage dimensions, not a fixed
+  agent topology. The main agent may investigate directly or delegate read-only work by module, call flow,
+  risk, or evidence type.
+- The main agent is the only target-workspace writer. It questions all nine documents but changes only
+  incorrect, missing, or misleading content; correct content stays at zero diff. The workflow creates no
+  disposition ledger, run state, or receipt.
+- Test environments follow real commands, side effects, CI capabilities, and project policy. Record the
+  actual environment, isolation, residue, and cleanup instead of fixing one implementation across projects.
+- Review prefers a fresh-context, blind-first independent reviewer. When cognitive isolation is unavailable,
+  the final result says self-review and never claims independence. Fix all BLOCKERs and actionable WARNs that
+  do not require a new product decision, then recheck their direct effects.
+- `sync_docs.py prepare` first validates all nine UTF-8 source templates at the pinned object and language,
+  including the non-PR active-marker invariant, then fills only missing templates. `check` rereads that pinned
+  source and validates final HEAD, dirty scope, no index/worktree split on editable paths, nine regular UTF-8
+  nonempty files, a JSON object, active markers, and an existing `.gitignore` as UTF-8. Final-byte whitespace
+  runs with fixed Git rules from a temporary non-repository directory, independent of target attributes. It
+  does not parse Markdown or validate capability truth, test levels, prose quality, or execution history.
+- Keep temporary PR body Markdown outside the repository. Commit, push, and draft-PR creation occur through
+  general GitHub publishing capability only after successful checks and only when the user asks.
 
 Key implementation files:
 
 - `../../../zh/skills/workflow-docs-sync/SKILL.md`: orchestration contract.
-- `../../../zh/skills/workflow-docs-sync/references/sections.md`: four domain analyses.
-- `../../../zh/skills/workflow-docs-sync/references/audit.md`: adversarial audit.
+- `../../../zh/skills/workflow-docs-sync/agents/openai.yaml`: UI metadata.
+- `../../../zh/skills/workflow-docs-sync/evals/README.md`: forward-eval cases.
 - `../../../zh/skills/workflow-docs-sync/scripts/sync_docs.py`: mechanical preparation and check.
-- `../../../tests/test_workflow_docs_sync.py`: regression tests.
+- `../../../tests/test_workflow_docs_sync.py`: regression and real-template quality tests.

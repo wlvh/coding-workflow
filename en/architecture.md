@@ -1,97 +1,60 @@
-# architecture.md
+# Architecture
 
-This document describes the project's system structure, module boundaries, data flow, architecture invariants, and extension points.
+## 0. Scope and Update Triggers
 
-This document does not cover:
+This document is the authority for the current system structure. Update or confirm the relevant section
+when runtime entrypoints, module boundaries, call flows, data contracts, state, error models, external
+dependencies, authentication, configuration, artifacts, side effects, extension points, or architecture
+debt change. Every claim must come from current implementation, configuration, tests, committed artifacts,
+or reproducible evidence.
 
-- Agent work rules: see `AGENTS.md`
-- PR process: see `PR_Checklist.md`
-- Testing strategy: see `TESTING.md`
-- Capability boundaries, responsibility boundaries, and agent behavior commitments: see `capability_contract.json`
-- User-visible behavior: see `interact.md`
-- First-time business-user teaching: see `docs/business_user_guide.md`
-- Standard operating procedures: see `SOP.md`
-
----
-
-## 0. Update Triggers
-
-Update this document when a change affects:
-
-- Core modules added or removed
-- Module responsibility boundaries
-- Runtime call flow
-- Data flow, data contracts, or schema
-- State model
-- Error handling model
-- External dependencies, authentication, or configuration entrypoints
-- Important extension points
-- Important architecture debt or constraints
-
----
+<!-- project-fill: Describe the system boundary, exclusions, and project-specific update triggers, then remove this marker. -->
 
 ## 1. System Purpose
 
-<!--
-Use no more than five sentences.
-Explain:
-- Who does this system serve?
-- What are the inputs?
-- What are the outputs?
-- What is the core value?
--->
+<!-- project-fill: In no more than five sentences, describe verified users, inputs, outputs, and core value, then remove this marker. -->
 
-This system is used for:
+## 2. Runtime Entrypoints and Main Flows
 
-Inputs:
+<!-- project-fill: Describe main call flows, important branches, and final outputs from real entrypoints. If there is no runtime entrypoint, write Not applicable with a verified reason, then remove this marker. -->
 
-Outputs:
+## 3. Architecture Invariants
 
-Core value:
+Each invariant should state the positive constraint, scope, falsification method, and consequence of
+violation. Do not present a vision or proposed design as a current invariant.
 
----
+<!-- project-fill: Add architecture invariants supported by code, configuration, or tests. If none exist, write Not applicable with a verified reason, then remove this marker. -->
 
-## 2. Architecture Invariants
+## 4. Module Responsibility Boundaries
 
-<!--
-An invariant is a system-level constraint that must remain true as the code evolves.
--->
+Describe stable modules by responsibility, non-responsibility, permitted dependencies, and forbidden
+dependencies. Do not copy the repository tree file by file.
 
-### 2.1 Invariant Name
+<!-- project-fill: Describe core module boundaries and dependency direction with precise implementation evidence, then remove this marker. -->
 
-- Positive statement:
-- Negative statement:
-- Scope:
-- Review check:
-- Automated check, if any:
-- Consequence if violated:
+## 5. Data Flow and Data Contracts
 
----
+<!-- project-fill: Describe how inputs are parsed, transformed, validated, and emitted, including schema, version, and boundary contracts. If there is no data flow, write Not applicable with a verified reason, then remove this marker. -->
 
-## 3. Module Responsibility Boundaries
+## 6. State and Persistence Model
 
-| Module / Directory | Responsibility | Non-responsibility | May Depend On | Must Not Depend On |
-|---|---|---|---|---|
-|  |  |  |  |  |
+<!-- project-fill: Describe in-process state, persistence, caches, idempotency, and lifecycle. If there is no persisted state, write Not applicable with a verified reason, then remove this marker. -->
 
-### 3.1 Boundary Rules
+## 7. Error and Failure Model
 
--
--
--
+<!-- project-fill: Describe real validation, degradation, retry, hard-failure, rollback, and user-visible error boundaries, then remove this marker. -->
 
----
+## 8. External Dependencies, Authentication, and Configuration
 
-## 4. Main Data Flow
+<!-- project-fill: List real external dependencies, authentication boundaries, configuration sources, and missing-configuration behavior. If none exist, write Not applicable with a verified reason, then remove this marker. -->
 
-<!--
-Keep the main flow to at most three layers; complex capabilities can have their own subflow.
--->
+## 9. Artifacts and Side Effects
 
-```mermaid
-flowchart LR
-    Input[Input] --> Entry[Entry / Parser]
-    Entry --> Service[Service / Orchestration]
-    Service --> Core[Core Logic]
-    Core --> Output[Output]
-```
+<!-- project-fill: Distinguish committed, generated, and ephemeral artifacts, and describe file, network, service, or other side effects and isolation. If none exist, write Not applicable with a verified reason, then remove this marker. -->
+
+## 10. Extension Points and Architecture Debt
+
+Mark future or proposed items explicitly; do not present them as current capabilities or existing extension
+points.
+
+<!-- project-fill: List evidence-backed extension interfaces, known architecture debt, impact, and review triggers. If none exist, write None with a verified reason, then remove this marker. -->

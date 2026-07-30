@@ -1,52 +1,55 @@
 # PR Submission Checklist
 
-## Commit / Push Strategy
+This file is the pre-submission todo. Check only items proven by the current diff, test output, or repository
+state; record a reason when an item does not apply. Do not commit, push, or create a PR unless the user
+explicitly requests it.
 
-This project defaults to "one PR, one commit + PR body records review and fix rounds."
+<!-- project-fill: Add project-specific approval, commit, base/head, or release gates. Remove this marker when no project-specific rule applies. -->
 
-Goals:
+## Scope and Git State
 
-- Keep public PR history easy to review.
-- Avoid making reviewers or LLMs reason from commit timeline noise.
-- Use the PR body's Review / Fix Record as the durable review history.
+- [ ] Resolve `<base>` from the repository default branch and confirm the current and target branches.
+- [ ] Inspect `git status`, working-tree diff, staged diff, and `git diff --name-only <base>...HEAD`.
+- [ ] Ensure actual scope matches delivery notes and excludes local drafts, secrets, generated debris, and
+  unimplemented plans.
+- [ ] Treat a one-commit policy as a replaceable team default when the project uses one; otherwise follow
+  current repository policy. Rewriting remote history requires explicit authority and lease protection.
 
-Rules:
+## Tests and Evidence
 
-1. One PR should normally keep one commit.
-2. After every review / fix round, update the PR body's Review / Fix Record first.
-3. Merge fixes into the current commit with `git commit --amend`.
-4. Push rewritten PR branches with `git push --force-with-lease`; never use bare `git push --force`.
-5. Use `.github/pull_request_template.md` as the PR body template.
-6. `.github/pull_request_template.md` is a long-term template file; do not submit it directly as the PR body.
-7. `PR_BODY.md` is a local temporary PR body draft generated from the template. It is not committed and is important review input.
+- [ ] Select real commands from `TESTING.md` and current repository configuration; do not infer a runner or
+  service from a template.
+- [ ] For each test, record exact command, scope, result, not-run reason, actual environment, and isolation
+  method.
+- [ ] Ensure environment choice follows command side effects, CI capabilities, and project policy, with
+  verifiable records for writes, external state, residue, and cleanup.
+- [ ] Describe failures, skips, and validation level accurately; do not present light, golden, or repair
+  evidence as full validation.
 
-## Capability Contract and User Documentation Sync
+## Documentation and Contracts
 
-- [ ] If this PR changes `capability_contract.json`, check whether `interact.md` and `docs/business_user_guide.md` need matching updates. If not, explain why in the PR body.
-- [ ] If this PR changes "can do / cannot do / must ask / must refuse" claims in `interact.md` or `docs/business_user_guide.md`, confirm those claims anchor to `capability_contract.json`, `interact.md`, or tests.
-- [ ] If this PR adds agent behavior commitments such as "must ask", "must refuse", "must not guess", or "must degrade", register a stable `anchor_id` in `capability_contract.json` and add test evidence or an explicit untestable reason.
-- [ ] If this PR changes what business users can ask, how they ask, how they read results, or when they ask a human, check `docs/business_user_guide.md`.
+- [ ] Check `AGENTS.md`, `architecture.md`, `capability_contract.json`, `interact.md`, the business guide,
+  `TESTING.md`, and `SOP.md` according to actual impact. Give a real no-update reason for affected candidates
+  left unchanged; do not edit every document merely for completeness.
+- [ ] Keep the authority direction `capability_contract.json → interact.md → business_user_guide.md` for
+  capability changes. User-visible claims have current implementation or test evidence and stable anchors.
+- [ ] Check architecture impact across entrypoints, module boundaries, data flow, state, error models,
+  external dependencies, artifacts, and side effects.
+- [ ] Replace or delete every active project-fill marker while preserving valid Markdown and JSON.
 
-## PR Submission Steps
+## Review Closure
 
-Convert this checklist into a step-by-step todo list before submitting a PR.
+- [ ] Complete the review gate required by this project's test and delivery policy, and accurately record
+  reviewer identity, scope, and limitations.
+- [ ] Fix every BLOCKER and actionable WARN that does not require a new product decision. Keep remaining
+  issues in open decisions with evidence and impact.
+- [ ] Rerun affected tests and mechanical checks after fixes, then recheck the final diff and Git state.
 
-Use this fixed flow to avoid submitting the long-term template as the PR body:
+## PR Delivery
 
-```bash
-cp .github/pull_request_template.md PR_BODY.md
-# Fill PR_BODY.md
-gh pr create --title "<title MMDD>" --body-file PR_BODY.md --head <feature-branch> --base master
-```
-
-Before submitting:
-
-- [ ] Write a structured summary with background / goal, implementation, and change scope.
-- [ ] Confirm the current branch is not the main branch.
-- [ ] Inspect local changes with git diff and confirm no intended file is missing.
-- [ ] Use `git diff --name-only <base>...HEAD` to verify the PR body's change scope.
-- [ ] Use `TESTING.md` as the testing authority: decide whether tests need changes, which tests to run, and how to record evidence.
-- [ ] If tests were added or changed, update the test file overview or relevant testing notes in `TESTING.md`.
-- [ ] If files were added or changed, update the matching document overview where required.
-- [ ] If user-visible behavior changed, update `interact.md` and ensure acceptance evidence covers it.
-- [ ] Before the final commit, compare `git diff --name-only <base>...HEAD`, `git status`, and `PR_BODY.md` to ensure the PR body contains no stale drafts, local-only changes, or unimplemented plans.
+- [ ] Write only completed facts in the PR body and use `.github/pull_request_template.md` for structure.
+- [ ] Follow target-project policy for the PR body draft location, publishing tool, and commit treatment;
+  never commit a temporary draft accidentally, and keep the body consistent with the real diff and test
+  evidence.
+- [ ] Use `<base>` or the repository default branch instead of hardcoding a branch name.
+- [ ] Create a draft PR only when requested, and reconfirm title, base, head, body, and actual diff first.

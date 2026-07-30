@@ -1,50 +1,47 @@
-# PR提交检查清单
-## Commit / Push 策略
+# PR Submission Checklist
 
-本项目默认采用“单 PR 单 commit + PR body 记录修复轮次”的策略。
+本文件本身就是提交前 todo。只勾选已经由当前 diff、测试输出或仓库状态证明的项目；不适用
+时记录原因。除非用户明确要求，不执行 commit、push 或 PR 创建。
 
-目标：
-- 保持 PR 对外 commit history 简洁。
-- 避免 reviewer / LLM 被 commit timeline 分散注意力。
-- 用 PR body 的“Review / 修复记录”保存每轮 review 与修复历史。
+<!-- project-fill: 补充本项目特有的审批、提交、base/head 或发布 gate；没有项目专属要求时删除此 marker -->
 
-规则：
-1. 一个 PR 默认保持 1 个 commit。
-2. 每轮 review / 修复后，必须先更新 PR body 的“Review / 修复记录”。
-3. 修复代码、测试、文档后，使用 `git commit --amend` 合入当前 commit。
-4. 推送重写后的 PR 分支时，必须使用 `git push --force-with-lease`，禁止裸 `git push --force`。
-5. PR body 模板参照 `.github/pull_request_template.md`。
-6. `.github/pull_request_template.md` 是长期模板文件，不直接作为 PR body 提交。
-7. `PR_BODY.md` 是本地临时 PR body 草稿，由 `.github/pull_request_template.md` 生成，不提交仓库，是 review 的重要输入材料，不是核心长期文档。
+## Scope and Git State
 
-## 能力契约与用户文档同步
+- [ ] 从 repository default branch 解析 `<base>`，确认当前工作分支和目标分支正确。
+- [ ] 检查 `git status`、工作树 diff、暂存区 diff 和 `git diff --name-only <base>...HEAD`。
+- [ ] 实际变更范围与交付说明一致，不包含本地草稿、秘密、生成垃圾或未落地计划。
+- [ ] 团队若采用单 commit，将其视为可替换的团队默认；否则遵循仓库现有提交策略。重写远端
+  历史前必须有明确授权，并使用安全的 lease 保护。
 
-- [ ] 如果本 PR 修改了 `capability_contract.json`，必须检查 `interact.md` 和 `docs/business_user_guide.md` 中相关能力声明是否需要同步更新；如无需更新，必须在 PR body 的“文档影响”中说明原因。
-- [ ] 如果本 PR 修改了 `interact.md` 或 `docs/business_user_guide.md` 中关于“能做 / 不能做 / 必须追问 / 必须拒绝”的能力或行为声明，必须确认这些声明能在 `capability_contract.json`、`interact.md` 或对应测试中找到锚点；找不到时，必须补充锚点或说明为什么暂时只能人工维护。
-- [ ] 如果本 PR 新增 agent 行为承诺，例如“必须追问”“必须拒绝”“不得猜测”“必须降级”，必须在 `capability_contract.json` 中登记稳定 `anchor_id`，并在 `TESTING.md` 允许的范围内提供对应测试或写明暂时不可测原因。
-- [ ] 如果本 PR 改变业务人员能问什么、怎么问、结果怎么看、什么时候该找人，必须检查 `docs/business_user_guide.md`；如无需更新，必须在 PR body 的“文档影响”中说明原因。
+## Tests and Evidence
 
-## PR提交检查清单
-注意：你必须一一完成check清单（等价于todo list）并最终提交pr，任何偷懒和跳过都会让用户暴跳如雷。
-使用以下固定流程创建 PR，避免把长期模板直接作为 PR body 提交：
+- [ ] 按 `TESTING.md` 和当前仓库配置选择真实命令，没有从模板猜测 runner 或服务。
+- [ ] 每条测试记录 exact command、scope、result、not-run reason、实际环境和隔离方式。
+- [ ] 环境选择与命令副作用、CI 能力和项目政策一致；写入、外部状态、残留和清理结果均有
+  可核对记录。
+- [ ] 失败、跳过和验证层级被准确描述；light、golden 或 repair 未冒充 full validation。
 
-```bash
-cp .github/pull_request_template.md PR_BODY.md
-# 填写 PR_BODY.md
-gh pr create --title "<标题 MMDD>" --body-file PR_BODY.md --head <feature-branch> --base master
-```
+## Documentation and Contracts
 
-始终牢记你可以使用 gh 工具。
+- [ ] 已按真实影响检查 `AGENTS.md`、`architecture.md`、`capability_contract.json`、
+  `interact.md`、business guide、`TESTING.md` 和 `SOP.md`；无需更新的候选项有真实
+  no-update reason，不要求为了齐全而修改所有文档。
+- [ ] 能力变化遵循 `capability_contract.json → interact.md → business_user_guide.md` 的权威
+  方向；用户可见声明有当前实现或测试证据和稳定 anchor。
+- [ ] 架构影响已核对入口、模块边界、数据流、状态、错误模型、外部依赖、artifact 和副作用。
+- [ ] 所有 active project-fill marker 已替换或删除，Markdown 与 JSON 仍可被严格解析。
 
-在提交 PR 前的确认清单，你需要将其转为todo list进行step by step的完成：
-- [ ] 撰写结构化的工作总结，至少包含以下小节，确保下一个开发人员能顺利接手继续开发：
-  - 背景 & 目标（Why）：本次改动解决了什么问题？关联哪些 Issue / 需求？
-  - 实现方案（How）：核心思路、关键设计决策、有无其他候选方案。
-  - 变更范围（What）：主要修改了哪些模块/文件（可按目录分组列出）；文件清单必须来自 `git diff --name-only <base>...HEAD` 的实际输出，禁止写未出现在当前 patch 中的文件。
-- [ ] 确认当前分支不是主干，并调用 git diff 工具仔细分析本地修改，确认无遗漏
-- [ ] 已用 `git diff --name-only <base>...HEAD` 反向核对 `PR_BODY.md` 的“变更范围”：diff 中有但 PR_BODY 未列的已补齐，PR_BODY 中列了但 diff 中不存在的已删除。
-- [ ] 测试策略以 `TESTING.md` 为唯一权威：已按 `TESTING.md` 判断本 PR 是否需要新增/修改测试、需要运行哪些测试、以及测试证据如何记录。
-- [ ] 如果本 PR 新增/修改测试文件，已按 `TESTING.md` 更新测试文件简介或相关测试说明。
-- [ ] 当有文件新增和修改后，确认对应的文档已更新。例如新增了测试文件，就需要更新在`TESTING.md`，有代码脚本的功能被修改，更新在`AGENTS.md`的## 文件简介。
-- [ ] 任何用户可见的行为变化（入口/输出结构/默认行为/错误提示/排序稳定性）都必须同步更新`interact.md`，并确保浏览器验收覆盖了对应断言
-- [ ] 最终提交前，已重新对照 `git diff --name-only <base>...HEAD`、`git status` 与 `PR_BODY.md`，确认 PR 描述不包含历史草稿、本地未提交改动或“计划做但未落地”的内容
+## Review Closure
+
+- [ ] 已完成本项目测试与交付政策要求的 review gate，并准确记录 reviewer 身份、范围和限制。
+- [ ] 所有 BLOCKER 和不需要新产品决策的 actionable WARN 已修复并复核；其余问题进入 open
+  decisions，包含证据与影响。
+- [ ] 修复后重跑受影响测试和机械检查，最终 diff 与 Git 状态已再次检查。
+
+## PR Delivery
+
+- [ ] PR body 只写当前已完成事实，并使用 `.github/pull_request_template.md` 的结构。
+- [ ] PR body 的草稿位置、发布工具和提交方式遵循目标项目政策；临时草稿不得被误提交，且
+  body 必须与真实 diff 和测试证据一致。
+- [ ] base 使用 `<base>` 或 repository default branch，不硬编码某个分支名。
+- [ ] 只有用户要求时才创建 draft PR；发布前再次确认 title、base、head、body 和实际 diff。

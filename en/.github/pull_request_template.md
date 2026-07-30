@@ -1,114 +1,50 @@
 <!--
-PR body principles:
-
-1. Write only facts completed by this PR, not plans.
-2. File lists must come from: git diff --name-only <base>...HEAD.
-3. Testing strategy and test evidence follow TESTING.md.
-4. User-visible changes are checked against interact.md.
-5. Architecture changes are checked against architecture.md.
-6. Every review / fix round must be recorded in "Review / Fix Record".
+Write only facts completed by this PR. Derive scope from the actual Git diff, follow TESTING.md for test
+evidence, and check user behavior and architecture against interact.md and architecture.md. Do not include
+plans, historical drafts, or local uncommitted content.
 -->
 
 ## 1. Background and Goal
 
----
+<!-- Explain the problem, goal, linked requirement, and scope explicitly excluded from this PR. -->
 
-## 2. Implementation
+## 2. Implementation and Tradeoffs
 
-<!--
-Explain the core approach and key tradeoffs.
-Do not restate every code change.
--->
+<!-- Explain the core implementation, key tradeoffs, and rejected alternatives without restating every file diff. -->
 
----
+## 3. Actual Change Scope
 
-## 3. Change Scope
-
-<!--
-Must come from:
-git diff --name-only <base>...HEAD
-
-List only files or directories actually changed in this PR.
-Do not list files absent from the current patch.
--->
-
-| File / Directory | Change Type | Notes |
-|---|---|---|
-|  | Added / Modified / Deleted |  |
-
----
+<!-- List actual changes from git diff --name-only <base>...HEAD. Do not keep empty tables or planned files. -->
 
 ## 4. Documentation Impact
 
-<!--
-List affected documents only. If no documents need updates, write: None.
+<!-- List documents actually updated and their evidence. Give a real no-update reason for affected candidate documents left unchanged; not every document needs a diff. -->
 
-If this PR changes capability boundaries, check capability_contract.json / interact.md / docs/business_user_guide.md.
+## 5. User-visible and Architecture Impact
 
-If this PR changes user-visible behavior, check interact.md and decide whether docs/business_user_guide.md also needs updates.
+<!-- Describe user-visible and architecture changes separately. If none exist, write None and the evidence checked. -->
 
-If this PR changes what business users can ask, how they ask, how they read results, or when they ask a human, check docs/business_user_guide.md.
+## 6. Testing Evidence
 
-If this PR adds "can do / cannot do / must ask / must refuse" statements, confirm each has a capability_contract.json anchor_id or a test anchor.
--->
+- Exact command: Record the command verbatim, or write `Not run`.
+- Scope: State the layer, entrypoint, and boundary the command actually proves.
+- Result: Record pass, failure, skip, and important counts or errors.
+- Not-run reason: Write `Not applicable` when run; otherwise give the concrete reason and risk.
+- Environment: Record the actual execution environment, isolation method, side effects, and cleanup result.
 
-Affected documents:
+## 7. Review / Fix Record
 
-- None
+<!-- For each finding ID, record severity, evidence, judgment, fix, and recheck result. If there are no findings, list the high-risk areas checked. Do not add a duplicate reconciliation ledger. -->
 
-Notes:
+## 8. Known Limits, Open Decisions, and Rollback
 
--
+<!-- Separate known limits, product decisions still open, and executable rollback. Write None when a category is empty. -->
 
----
+## 9. Final Self-check
 
-## 5. User and Architecture Impact
-
-User-visible change:
-
-- Yes / No
-- Notes:
-
-Architecture change:
-
-- Yes / No
-- Notes:
-
----
-
-## 6. Review / Fix Record
-
-<!--
-Under the one-commit strategy, this section is the fix history.
-Update it after every review, fix, or merge-readiness response.
--->
-
-| Round | Source | Issue Summary | Judgment | Result | Evidence |
-|---|---|---|---|---|---|
-| R0 | Initial submission | N/A | N/A | Initial implementation |  |
-| R1 | Codex / Claude / Human |  | Real / Invalid / Defer | Fixed / Won't fix / N/A |  |
-
----
-
-## 7. Known Limits and Rollback
-
-Known limits:
-
--
-
-Rollback:
-
--
-
----
-
-## 8. Final Self-Check
-
-- [ ] Current branch is not the main branch.
-- [ ] Ran `git diff --name-only <base>...HEAD`.
-- [ ] Change Scope matches the actual diff.
-- [ ] PR body contains no stale drafts, old branch names, or unimplemented plans.
-- [ ] Testing and test evidence follow `TESTING.md`.
-- [ ] User-visible changes were checked against `interact.md`.
-- [ ] Architecture changes were checked against `architecture.md`.
-- [ ] Every review / fix round is recorded in "Review / Fix Record".
+- [ ] Actual Change Scope matches the real diff.
+- [ ] Test commands, scope, results, and not-run reasons are accurate.
+- [ ] User-visible and architecture impact were checked against their authoritative documents.
+- [ ] BLOCKERs and actionable WARNs are closed; open decisions are not presented as complete.
+- [ ] The PR body contains no historical draft, unimplemented plan, wrong base/head, or repository-local
+  temporary body path.
