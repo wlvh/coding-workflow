@@ -45,7 +45,7 @@
    正式审核任务短 prompt：
 
    ```text
-   对 XX 项目的 PR XX（最新head XX）进行严格详细全面的代码审查。在评估代码时不但要评估开发是否符合issue，还要评估有没有过度开发，是否可以在架构层级精简（功能可以提前开发，但是不允许有脱裤子放屁的冗余）。切记不要去优化或修复一个本不应该存在的问题！PR_BODY.md 是你重要的参考材料，你需要检查有没有重复开发和修补，如果有，分析其原因。重要问题需要实际运行代码来验证你的猜想，没有调查就没有发言权。
+   对 XX 项目的 PR XX（最新 head XX）进行严格详细全面的代码审查。在评估代码时不但要评估开发是否符合 issue，还要评估有没有过度开发，是否可以在架构层级精简（功能可以提前开发，但是不允许有脱裤子放屁的冗余）。切记不要去优化或修复一个本不应该存在的问题！仓库外临时 PR body Markdown 是重要参考材料，你需要检查有没有重复开发和修补，如果有，分析其原因。重要问题需要实际运行代码来验证你的猜想，没有调查就没有发言权。
    
    并检查是否遵守:
    * .github/pull_request_template.md
@@ -72,14 +72,14 @@
    先判断本地是主干还是分支，如果是主干则先创建分支并。然后在既有分支的既有 PR 上提交本地全部代码，
    要求：
    1. 遵守 PR_Checklist.md。
-   2. PR 对外保持 1 个 commit。
-   3. 每轮 review / 修复都必须更新 PR_BODY.md 的“Review / 修复记录”。
-   4. PR_BODY.md 必须根据 `.github/pull_request_template.md` 填写，并覆盖已有 PR （如果本次对话才创建分支可以跳过）和本地全部修改内容。
+   2. 遵守仓库当前 commit 策略；单 commit 只是可替换的团队默认。
+   3. 每轮 review / 修复都必须更新 PR body 的“Review / 修复记录”。
+   4. 根据 `.github/pull_request_template.md` 在仓库外创建临时 Markdown body，并覆盖已有 PR（如果本次对话才创建分支可以跳过）和本地全部修改内容。
    5. 测试策略与测试证据记录方式以 TESTING.md 为准。
 
    备注：
-   - PR_BODY.md 是本地临时产物，不提交仓库。
-   - PR_BODY.md 是重要的代码审核材料之一。
+   - 临时 PR body 位于仓库外，不进入目标工作树或 commit。
+   - PR body 是重要的代码审核材料之一，由通用 GitHub 发布能力读取。
    - PR 审核指南：《》
    ```
 
@@ -106,7 +106,7 @@
    * 修复后：继续复用“PR 提交短 prompt”。然后新开codex对话进行pr审核，一直到没有P0和P1问题为止。P2问题可以接受。
    * 备注：同一个 PR 的 patch 不需要每次重新完整粘贴给 GPT，可以在原对话里覆盖最新 patch，避免上下文过时。
    * 完整顺序：在具体操作中，先让codex 负责PR的代码审核，如果review 有问题，用第8节的prompt分别交给codex（新对话）和claude code验证，这里实习生的发现就是codex审核pr给出的发现。在验证阶段codex和cc经常会有不同意见，在这里交互意见最多三次，然后以codex的意见为准，在codex验证的对话里直接输入‘按照你的观点进行修复‘，然后在这个对话继续‘重新以 PR 审核的态度审核你的新增代码，如有问题先验证是否真实存在，再决定是否修复’这个pr提交环节。然后新开codex对话进行pr审核，一直到没有P0和P1问题为止。P2问题可以接受。
-   * Finding 并集销号：跨 reviewer 或跨会话接力前，必须把历史 Finding Ledger、全部 GitHub review thread 和本轮新增 finding 做并集。每个来源 ID 都必须保留，并明确标记为 `confirmed`、`rejected`、`merged_as_duplicate:<ID>`、`downgraded:<新严重度>` 或 `needs_human`；已修复项另记关闭证据。任何 finding 从后续清单静默消失都视为流程错误，在并集未逐项销号前不得声明“无剩余问题”。
+   * Finding 闭合：在既有 PR review / fix record 和 GitHub thread 中保留来源 ID、判断与关闭证据；不得让未解决 finding 静默消失，也不另建一套重复 reconciliation ledger。
 
 11. **如果 review 没有问题（定义为没有P0/P1级别发现），在 PR 评论区输入 `/claude-merge-check`**（这个环节暂时放弃，反复的PR审查已经足够）
    自动化文件：[.github/workflows/claude-merge-readiness.yml](../../../.github/workflows/claude-merge-readiness.yml)
@@ -180,53 +180,60 @@ E. 输出风格约束
 - `Repo Impact Forecast`：预测 FSD 与当前仓库的真实触点、风险、文档和测试影响。
 - `Target State Bridge`：定义开发完成后用户 / 调用方应该看到什么状态，以及如何验证。
 - `Issue`：把契约、范围、任务拆解、文档更新预测、测试更新预测、验收条件固化。
-- `PR_BODY.md`：本地临时 PR body 草稿，由 `.github/pull_request_template.md` 生成，不提交仓库；是 review 的重要输入材料。
+- 仓库外 PR body Markdown：由 `.github/pull_request_template.md` 派生，不进入目标工作树或 commit；是 review 和通用 GitHub 发布能力的输入。
 - `Merge Readiness Report`：判断当前 PR 是否具备合并条件。
 - `FSD 完备性验收报告`：Issue 关闭前的最后一道契约核查。
-- `Workflow Docs Sync`：用户一次调用完成代码地图、四领域只读分析、主 Agent 统一改写、
-  内部只读审计、测试和最终仓库检查。
+- `Workflow Docs Sync`：用户一次调用完成全量事实重建、最小必要改写、真实测试、
+  fresh-context independent review 或诚实 self-review，以及最终仓库检查。
 
 ## 代码项目核心文档
 
-本仓库中的这些文件是给目标项目继承和项目化的 upstream 模板 / 样本文档。开发 sync
-工具时，不因为工具实现细节去改写 `AGENTS.md`、`TESTING.md`、`PR_Checklist.md`、
-`architecture.md` 这类模板；sync 工具自身说明和实现放在
-`zh/skills/workflow-docs-sync/`。例外是 `.github/pull_request_template.md`：它是长期
-PR body 模板，可以直接继承 upstream。
+本仓库中的这些文件是给目标项目继承和项目化的跨语言、跨框架 upstream 基础模板。固定
+规范写成完整规则，项目事实 slot 使用 active project-fill marker；目标项目通过最终检查前
+必须替换或删除 marker。仅对 sync 工具自身有意义的实现细节放在
+`zh/skills/workflow-docs-sync/`，不写入下游模板。
 
-- `AGENTS.md`：agent 工作入口、文件简介、代码规范与文档关系。
-- `architecture.md`：系统架构、模块边界、数据流、架构不变量与扩展点。
+- `AGENTS.md`：agent 权威入口、稳定模块地图、影响规则与项目约定。
+- `architecture.md`：系统目的、运行时主流程、边界、状态、失败与副作用。
 - `capability_contract.json`：能力边界、职责边界、agent 行为承诺的机器可读真相源。
 - `interact.md`：用户可观察行为与验收不变量。
 - `docs/business_user_guide.md`：面向首次接触业务人员的教学派生文档。
-- `TESTING.md`：测试策略、测试分层、测试证据与 contract alignment 测试原则。
-- `PR_Checklist.md`：PR 提交、commit / push、PR body 使用规则。
+- `TESTING.md`：测试入口、测试分层、隔离、测试证据与 alignment 边界。
+- `PR_Checklist.md`：PR todo、Git diff、测试、文档、review closure 与仓库外 body 边界。
 - `SOP.md`：标准流程骨架，只做入口，不重复规范。
 - `.github/pull_request_template.md`：PR body 的长期模板。
 
 ## Workflow Docs Sync
 
-用户只调用一次 `$workflow-docs-sync`，只提供目标仓库、可选 `zh` / `en` 和可选 draft
-PR 意图。Skill 内部解析 canonical upstream checkout；无法定位时使用仓库外临时 shallow
-clone，并在整轮固定同一上游提交。
+用户只调用一次 `$workflow-docs-sync`，只提供目标仓库、必选的 `zh` / `en`，以及成功后是否
+创建 draft PR。Skill 内部解析 canonical upstream checkout；无法定位时使用仓库外临时 shallow clone，
+并在整轮固定目标 HEAD 与上游 SHA。
 
-- 主 Agent 是目标工作区唯一写入者，先建立真实代码地图。
-- Architecture、Capability / User Behavior、Testing、Governance 四领域分析只读并只在
-  当前会话返回发现；无 subagent 平台由主 Agent 按四个隔离章节顺序执行。
-- 主 Agent 统一修改九份核心文档，再由内部只读对抗性审计检查事实、跨文档闭合和验证
-  层级；BLOCKER 与可行动 WARN 修复后进行轻量复审。
-- 主 Agent 实际运行目标项目必要测试并记录命令与结果。
-- `sync_docs.py prepare` 只补齐缺失模板；`check` 只读验证最终 HEAD、dirty 范围、九份
-  文件、编码、JSON、标题、模板残留、固定上游差异和 whitespace。
-- 同步过程不读取、创建、改写或删除仓库内 `PR_BODY.md`，也不创建工单、模板镜像或运行状态。
-  commit、push 和 draft PR 创建由通用 GitHub 发布能力在检查成功后完成。
-- 最终机械检查只证明最终仓库状态，不证明四领域分析、审计或测试曾运行。
+- 写文档前至少以 `git ls-files -z` 建立范围，从代码、配置、测试、committed artifacts、
+  可重复运行结果和必要 Git 历史全量重建事实；现有文档与上游模板只是 hypotheses。
+- Architecture、Capability / User Behavior、Testing、Governance 是覆盖维度，不是固定 Agent
+  拓扑。主 Agent 可独立完成，也可按模块、调用链、风险或证据类型动态委派只读调查。
+- 主 Agent 是目标工作区唯一写入者。全量质疑九份文档后只改错误、缺失或失真部分；正确
+  内容保持零 diff，不输出 disposition ledger、run state 或 receipt。
+- 测试环境由真实命令、副作用、CI 能力和项目政策决定；记录实际环境、隔离、残留和清理，
+  不把一种环境实现固化成跨项目规则。
+- 复核优先使用 fresh-context、blind-first independent reviewer；不可用时明确标记
+  self-review，不能冒充独立复核。BLOCKER 与无需产品决策的 actionable WARN 修复后复核。
+- `sync_docs.py prepare` 先验证固定 object 与 language 下九份 UTF-8 source template 及非 PR
+  active-marker invariant，再补齐缺失模板；`check` 重读同一 pinned source，并只读验证最终
+  HEAD、dirty 范围、editable path 无 index/worktree 分叉、九份普通 UTF-8 非空文件、JSON
+  object、active marker，以及存在时为 UTF-8 的 `.gitignore`。最终 bytes 的 whitespace 使用
+  临时非 Git 目录和固定 Git 规则，不继承目标仓库 attributes。Checker 不解析 Markdown，也不
+  验证目标项目 capability、测试层级或文案质量。
+- PR body 临时 Markdown 始终位于仓库外。commit、push 和 draft PR 创建只在用户要求且检查
+  成功后，由通用 GitHub 发布能力完成。
+- 最终机械检查只证明最终仓库状态，不证明调查、测试或复核执行历史。
 
 维护入口：
 
 - `zh/skills/workflow-docs-sync/SKILL.md`
-- `zh/skills/workflow-docs-sync/references/sections.md`
-- `zh/skills/workflow-docs-sync/references/audit.md`
+- `zh/skills/workflow-docs-sync/agents/openai.yaml`
+- `zh/skills/workflow-docs-sync/evals/README.md`
 - `zh/skills/workflow-docs-sync/scripts/sync_docs.py`
 - `zh/scripts/install_skills.py`
 - `tests/test_workflow_docs_sync.py`
@@ -261,7 +268,7 @@ clone，并在整轮固定同一上游提交。
 
 - 做什么：以中文 diff 为锚，判断英文是否覆盖同一流程、能力边界、验收不变量、路径和拒绝 / 追问规则；`both` 状态重点判断英文是否是中文语义派生，而不是独立创作。
 - 去哪看：中文文件当前内容、英文文件当前内容、`zh/README.md` 的中文锚点规则和
-  `zh/skills/workflow-docs-sync/references/` 的领域语义。
+  `zh/skills/workflow-docs-sync/SKILL.md` 的领域语义。
 - 做完如何验收：每个配对文件得到一个结论：`ok`、`missing translation`、`stale en`、`contradiction`、`intentionally pending`；除 `ok` 外都必须记录具体文件、段落和建议处理方式。
 
 ### Step 4：生成审核结论

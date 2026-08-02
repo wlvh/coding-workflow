@@ -1,51 +1,39 @@
-## 文档关系
+# User-visible Behavior and Acceptance
 
-`capability_contract.json` 是能力边界的机器可读真相源，回答“系统能不能做”。
+## 0. Authority and Scope
 
-`interact.md` 是用户可观察行为与验收不变量的真相源，回答“系统做的时候必须如何表现”。
+`capability_contract.json` 是能力边界的机器可读真相源；本文档是用户可观察行为与验收不变量
+的真相源；`docs/business_user_guide.md` 只能派生解释二者。本文档只写可由 UI、API 响应或
+其他公开入口直接观察的行为，不把日志、监控或内部状态当成用户结果。
 
-`docs/business_user_guide.md` 是面向首次接触业务人员的派生教学文档，回答“业务人员怎么开始用”。
+<!-- project-fill: 说明本项目的公开入口、覆盖范围与明确排除项；完成后删除此 marker -->
 
-当三者不一致时：
-1. 能力边界以 `capability_contract.json` 为准。
-2. 用户可观察行为以 `interact.md` 为准。
-3. `docs/business_user_guide.md` 必须回到前两者修正。
+## 1. Audience and Granularity
 
-## 写作规则
+面向用户、产品和验收人员。按能独立产生用户价值的 journey 编写；等价选项只保留代表，
+描述可组合的原子行为，不枚举无价值的排列组合。future / proposed 行为必须显式标注状态。
 
-凡是描述“能做 / 不能做 / 必须追问 / 必须拒绝”的用户可见能力或行为承诺，应尽量通过隐藏锚点引用 `capability_contract.json` 中的稳定 `anchor_id`。
+<!-- project-fill: 写明本项目的目标用户和验收粒度；完成后删除此 marker -->
 
-隐藏锚点只引用稳定 `anchor_id`，不引用 JSON 路径、数组下标或当前 schema 内部路径。
+## 2. Supported User Journeys
 
-# 1，定位
-* 能力分组：按用户心智而不是代码模块
-* 用户体验/验收路线：“用户能做什么”、“用户能看到什么”、“用户能得到什么价值”
-# 2，读者
-为普通用户/PM/业务方，只描述“用户可观察行为”；工程细节与实现方式一律不写。
-# 3，边界
-* 允许“文档领先代码”，但必须显式标注状态。为了防止“代码领先文档”，PR checklist需要检查：“任何用户可见的行为变化（入口/输出结构/默认行为/错误提示/排序稳定性）都必须同步更新 interact.md”。验收写“不变量”，不要写“数据相关的具体数值”。
-* 不做“权威引用列表”，只做入口。
-* “关键失败路径”：为避免文档过度膨胀，失败路径只由人类手动提供。哪些失败愿意暴露给用户、哪些要隐藏/降级，需要由有品味的PM决定。
-* 叙事性：不要写冷冰冰的“点击 A，显示 B”。要写“用户为了解决 X 问题，进入 Y 页面，操作 Z，获得了 W 结果”。
-* 可见性（UI/API）：任何例子都必须能被目标读者通过 UI 或 API 响应直接验证；只在日志/监控/代码内部状态可感知的内容不写。
-* 可证伪：描述必须包含具体的**“验收断言”**（例如：“看到绿色的成功提示”），让非技术人员也能判断对错。
-# 颗粒度
-一个app它有很多选项，如果排序组合的话，它可能有无穷个操作顺序。因此需要定几个原则，限定住用户体验的颗粒度。interact.md 的颗粒度标准是 “产品经理演示给 CEO 看的颗粒度”。 CEO 不关心所有下拉框的组合，他关心的是核心业务流是否跑通，以及关键的体验是否爽。守住这个底线，文档就不会无限膨胀。
-* 等价类原则：如果 10 个选项的业务逻辑是相同的，只写 1 个代表。
-* 正交性原则：描述“原子能力”的可组合性，而不是描述“所有组合结果”。 如果一个页面有“时间筛选”和“地区筛选”，不需要写“时间+地区”、“时间only”、“地区only”三种剧本。
-* 独立价值原则：只有当一个场景能独立回答"用户获得了什么价值"时，才值得写。
-## 例子
-```
-# 值得写（独立价值）
-用户想了解过去30天的工单升级趋势，
-进入 Flow 分析页面，选择时间范围，
-看到升级率从 12% 降到 8%，判断近期改进措施有效。
+每个 scenario 都必须来自当前实现或测试证据，并使用以下字段。没有已验证 journey 时，写
+`Not configured —` 加已检查的入口和原因，而不是编造示例。
 
-# 不值得写（没有独立价值，只是操作细节）
-用户点击"国家"下拉框，
-展开选项列表，
-选择"United States"，
-下拉框收起并显示已选项。
-```
+### Scenario
 
-# 4，用户可观察不变量（UI）
+<!-- project-fill: 用一个已验证的真实场景替换本段；包含 User goal、Required context、User action or request、Directly observable result、Failure / degradation / escalation、Acceptance assertion 和 capability anchor；完成后删除此 marker -->
+
+## 3. Cross-cutting User-visible Invariants
+
+不变量必须可由目标读者直接判断，通过稳定 capability anchor 回到 contract，并避免依赖
+会随数据变化的示例数值。
+
+<!-- project-fill: 列出跨 journey 的真实可见不变量与验收证据；没有时写 Not applicable — 已验证原因；完成后删除此 marker -->
+
+## 4. Known Limits and Human Escalation
+
+限制必须区分当前不支持、暂时降级和 future / proposed。人工升级只写用户能识别的触发条件、
+可见解释和责任角色，不暴露内部监控细节。
+
+<!-- project-fill: 写入已验证限制、降级、拒绝和人工升级路径，并引用 capability anchor；没有配置升级路径时准确说明；完成后删除此 marker -->

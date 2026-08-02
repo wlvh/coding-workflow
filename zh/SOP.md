@@ -1,12 +1,28 @@
-## 指引
-你需要将你被要求完成的SOP的步骤转为todo list进行step by step的完成。
+# Standard Operating Procedures
 
-## SOP 原则
-* 原则 A：SOP 每一步都用同一种结构：每一步只允许包含三类信息：做什么（动作），去哪看（权威引用，精确到文件/章节），做完如何验收（跑哪个测试/生成哪个 artifact）。除此之外，不允许把规范再讲一遍。
-* 原则 B：SOP 不写“会变的列表”，只写“入口”。这样将来就算 Stage 变更、环境变量调整，也只需要改 TESTING.md / 脚本，而 SOP.md 不用动（自然防 drift）。
-* 原则 C：SOP.md 绝对不是“规范文档”；它只是“流程骨架 + 指向权威文档/命令/测试”的导航页。发生冲突时：以 tests / 合同 / 规范文档为准，SOP.md 自动作废。
-* 例子：如果 PR_Checklist 和 TESTING.md 已经覆盖了“该跑什么、该更新什么、该交付什么产物”，SOP 不再重复 PR/测试细节。反过来，如果 SOP 被迫写 PR/测试细节，说明 Checklist 或 TESTING 有缺口，应该补它们，而不是补 SOP。
+## Purpose and Authority
 
+`SOP.md` 只保存稳定流程入口，不复制易漂移的命令、测试清单或发布细节。发生冲突时，以
+当前代码、配置、测试、契约以及 `TESTING.md`、`PR_Checklist.md` 等专项权威为准。执行中的
+checklist 只存在于当前会话，不落盘为 run state、receipt 或临时 SOP。
 
-## SOP 0：
+## Available SOPs
 
+<!-- project-fill: 列出本项目真实存在的 SOP 名称和权威入口；没有时替换为 None — 已检查的范围与原因；完成后删除此 marker -->
+
+## SOP Entry Structure
+
+每个 SOP step 只包含：
+
+1. Action：要执行的稳定动作。
+2. Authority / Source：应读取的权威入口，不复制其易漂移内容。
+3. Acceptance：如何用当前测试、artifact 或可观察结果判断完成。
+
+## Failure, Rollback, and Escalation
+
+失败时停止在安全边界，保留精确错误和当前仓库状态；回滚方式必须与真实持久化及副作用
+模型一致。需要权限、产品判断或外部协调时，明确升级给责任人，不猜测或绕过。
+
+<!-- project-fill: 写入本项目已验证的停止条件、可恢复回滚入口和升级责任；没有专属规则时写 None — 已验证原因；完成后删除此 marker -->
+
+所有文本文件使用 LF 换行与 UTF-8 编码，除非仓库配置明确规定其他格式。

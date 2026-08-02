@@ -1,60 +1,42 @@
-## Document Relationships
+# User-visible Behavior and Acceptance
 
-`capability_contract.json` is the machine-readable source of truth for capability boundaries. It answers whether the system can do something.
+## 0. Authority and Scope
 
-`interact.md` is the source of truth for user-visible behavior and acceptance invariants. It answers how the system must behave while doing it.
+`capability_contract.json` is the machine-readable source of truth for capability boundaries. This document
+is the source of truth for user-visible behavior and acceptance invariants. `docs/business_user_guide.md`
+may only derive explanations from those two sources. Describe only behavior directly observable through a
+UI, API response, or other public entrypoint; logs, monitoring, and internal state are not user results.
 
-`docs/business_user_guide.md` is the derived teaching document for first-time business users. It answers how business users can start.
+<!-- project-fill: Describe public entrypoints, scope, and explicit exclusions for this project, then remove this marker. -->
 
-When these documents disagree:
+## 1. Audience and Granularity
 
-1. Capability boundaries follow `capability_contract.json`.
-2. User-visible behavior follows `interact.md`.
-3. `docs/business_user_guide.md` must be corrected from the first two documents.
+Write for users, product staff, and acceptance reviewers. Organize by journeys that independently create
+user value. Keep one representative for equivalent options, describe composable atomic behavior, and do
+not enumerate low-value combinations. Mark future or proposed behavior explicitly.
 
-## Writing Rules
+<!-- project-fill: State the target users and acceptance granularity for this project, then remove this marker. -->
 
-Any user-visible statement about "can do / cannot do / must ask / must refuse" should reference a stable `anchor_id` from `capability_contract.json` through a hidden Markdown anchor.
+## 2. Supported User Journeys
 
-Hidden anchors reference stable `anchor_id` values only. They must not reference JSON paths, array indexes, or schema-internal paths.
+Every scenario must have current implementation or test evidence and use the fields below. If no journey
+is verified, write `Not configured —` with the entrypoints checked and the reason instead of inventing one.
 
-## 1. Positioning
+### Scenario
 
-- Capability groups should follow user mental models, not code modules.
-- User experience and acceptance should describe what the user can do, what the user can see, and what value the user receives.
+<!-- project-fill: Replace this section with one verified scenario containing User goal, Required context, User action or request, Directly observable result, Failure / degradation / escalation, Acceptance assertion, and capability anchor, then remove this marker. -->
 
-## 2. Audience
+## 3. Cross-cutting User-visible Invariants
 
-Write for ordinary users, PMs, and business stakeholders. Describe only user-visible behavior; do not explain engineering details or implementation.
+Invariants must be directly judgeable by the target reader, trace to the contract through stable capability
+anchors, and avoid example values that change with data.
 
-## 3. Boundaries
+<!-- project-fill: List real cross-journey visible invariants and acceptance evidence. If none exist, write Not applicable with a verified reason, then remove this marker. -->
 
-- Documentation may lead code only when status is explicit. To prevent code from leading documentation, the PR checklist must require every user-visible behavior change to update `interact.md`.
-- Acceptance should be written as invariants, not data-dependent exact values.
-- This document is an entrypoint, not an exhaustive authority list.
-- Critical failure paths are manually curated. A tasteful PM should decide which failures are exposed to users and which are hidden or degraded.
-- Narrative matters: do not write cold click-by-click UI traces. Explain what problem the user is solving, where they go, what they do, and what result they obtain.
-- Visibility matters: every example must be directly verifiable through UI or API response. Log-only, monitoring-only, or internal-code state does not belong here.
-- Falsifiability matters: each statement should include a concrete acceptance assertion that non-technical users can judge.
+## 4. Known Limits and Human Escalation
 
-## Granularity
+Distinguish currently unsupported behavior, temporary degradation, and future or proposed work. Human
+escalation should expose user-recognizable triggers, explanations, and responsible roles without leaking
+internal monitoring details.
 
-The granularity standard for `interact.md` is "what a PM would demo to a CEO." The CEO does not care about every dropdown combination; the CEO cares whether the core business flow works and feels right.
-
-- Equivalence class principle: if ten options share the same business logic, write one representative case.
-- Orthogonality principle: describe composable atomic capabilities, not every combination.
-- Independent value principle: write a scenario only when it independently answers what value the user receives.
-
-## Examples
-
-```text
-# Worth writing
-A user wants to understand the escalation trend over the last 30 days.
-They enter the Flow Analysis page, select a time range, and see escalation rate
-fall from 12% to 8%, supporting the judgment that recent improvements worked.
-
-# Not worth writing
-A user opens the Country dropdown, chooses United States, and the dropdown closes.
-```
-
-## 4. User-Visible Invariants
+<!-- project-fill: Add verified limits, degradation, refusal, and human escalation paths with capability anchors. If no path is configured, say so accurately, then remove this marker. -->

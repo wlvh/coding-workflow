@@ -1,72 +1,95 @@
-## File Overview
+# Agent Working Guide
 
-### Core Config
+## Authority Map
 
-- `AGENTS.md`: Agent entrypoint, file overview, coding rules, and user-facing document relationships.
-- `capability_contract.json`: Cross-project sample registry for capability boundaries, responsibility boundaries, and agent behavior commitments.
-- `.github/pull_request_template.md`: Long-term PR body template used to draft local `PR_BODY.md`.
+- Current code, configuration, tests, committed artifacts, and reproducible results are project facts.
+- `architecture.md` defines system structure and boundaries; `TESTING.md` defines test entrypoints and
+  evidence levels; `PR_Checklist.md` defines delivery checks; `SOP.md` keeps only stable process entrypoints.
+- `capability_contract.json` defines capability boundaries, `interact.md` defines user-visible behavior and
+  acceptance, and `docs/business_user_guide.md` only derives explanations from the first two.
+- Existing documents are claims to verify against implementation; they cannot prove themselves correct.
+
+<!-- project-fill: Add other authoritative project sources and conflict precedence, then remove this marker. -->
+
+## Repository Overview
+
+Describe stable modules, entrypoints, and responsibilities. Do not permanently mirror `git ls-files`.
+
+### Core Configuration
+
+<!-- project-fill: List real configuration entrypoints and responsibilities. If none apply, write Not applicable with a verified reason, then remove this marker. -->
+
+### Runtime Entrypoints
+
+<!-- project-fill: List real user, service, job, or CLI runtime entrypoints, then remove this marker. -->
 
 ### Core Modules
 
-### Business Logic
+<!-- project-fill: Summarize core implementation by stable module boundaries, not individual files, then remove this marker. -->
 
-### Notes
+### Domain Logic
 
-- When files are added or changed, update this file overview where relevant. Test files are governed by `TESTING.md`.
-- All repository files use UTF-8. Command-line reads and edits must explicitly use UTF-8.
-- One-off artifact folders are exempt from this overview when explicitly approved.
+<!-- project-fill: Identify modules containing domain rules and their authoritative tests or contracts, then remove this marker. -->
+
+### Generated Artifacts and External State
+
+<!-- project-fill: List committed or generated artifacts, persisted state, and external systems. If none exist, write Not applicable with a verified reason, then remove this marker. -->
+
+## Change Impact Rules
+
+- Update or confirm `architecture.md` when module boundaries, runtime call flow, data flow, state, error
+  model, external dependencies, or extension points change.
+- For capability changes, update or confirm `capability_contract.json` first, then inspect `interact.md`
+  and the business guide. For user-visible behavior changes, update or confirm `interact.md` first.
+- Tests remain factual evidence; keep exact commands, fixtures, layers, and isolation details in
+  `TESTING.md` only.
+- Not every change requires every document to change. Give a current, evidence-based no-update reason for
+  each affected candidate document left unchanged.
+- Derive encoding, lint, formatter, build, and type rules from real repository configuration, not this
+  template.
+
+## Collaboration
+
+- The primary executor owns final judgments, deliverables, and writes; delegated results must be reviewed
+  and synthesized before use.
+- Assign non-overlapping path ownership before parallel writes; follow the target project's policy for the
+  isolation method.
+- Divide work dynamically by module, call flow, risk, or evidence type; do not require a fixed agent count
+  or schedule.
+- Agreement, voting, or consensus is not evidence. Important conclusions must trace to repository facts and
+  reproducible validation.
+- Investigation and review tasks are read-only by default; when changes are needed, hand them off explicitly
+  to an executor who owns the affected paths.
+
+<!-- project-fill: Add verified project collaboration or ownership rules. If none exist, remove this marker. -->
 
 ## Architecture
 
-The authoritative architecture document is `architecture.md`. If a change affects module boundaries, runtime call flow, data flow, state model, error model, external dependencies, or extension points, update `architecture.md`; otherwise explain the no-update reason in the PR body.
+Treat `architecture.md` as the architecture authority. Rebuild affected call paths from real entrypoints
+before a change, then verify invariants, module responsibilities, data contracts, state, side effects, and
+failure paths afterward.
 
-## Business Knowledge
+## Testing
 
-## Review Checklist
-
-When the user asks you to submit a PR, fully follow `PR_Checklist.md`; any exemption must be explained in the PR description.
-
-## Testing Flow
-
-Before fixing bugs, starting tests, or submitting a PR, read and follow `TESTING.md`. Main branch changes must go through PR merge only.
+Read `TESTING.md` completely before testing and derive exact commands from repository configuration. Do not
+present light, mock, golden, or local repair success as a higher validation level. Choose the execution
+environment from command side effects, CI capabilities, and project policy, with isolation and cleanup
+verified before execution.
 
 ## SOP
 
-When you execute a standard process, read and follow `SOP.md`; when SOP entries are added or changed, update this list with the SOP name.
+Read the corresponding `SOP.md` entry for a standard process. Keep execution checklists in the current
+session; do not create repository run state, receipts, or temporary process documents.
 
-## User-Facing Document Relationships
+## PR Delivery
 
-This project distinguishes three user-facing sources of truth:
+- Follow `PR_Checklist.md` and `.github/pull_request_template.md`; write delivery facts from the actual Git
+  diff, test output, and final repository state.
+- Resolve the default branch from the repository instead of hardcoding it. Follow target-project policy for
+  PR body draft location and publishing; never commit temporary drafts accidentally, and keep the body
+  consistent with the real diff and test evidence.
+- Do not commit, push, or create a PR unless the user explicitly requests it.
 
-1. `capability_contract.json`
-   - Machine-readable source for capability boundaries.
-   - Answers what the system can do, cannot do, must ask about, or must refuse.
+## Project-specific Conventions
 
-2. `interact.md`
-   - Source for user-visible behavior and acceptance invariants.
-   - Answers how the system must behave and what acceptance means.
-
-3. `docs/business_user_guide.md`
-   - Derived teaching document for first-time business users.
-   - Answers what business users can ask, how to ask, how to read results, and when to ask a human.
-   - It must not declare independent capabilities; it only explains capabilities and behavior already declared in `capability_contract.json` and `interact.md`.
-
-Update rules:
-
-- If capability boundaries change, update or confirm `capability_contract.json` first, then check `interact.md` and `docs/business_user_guide.md`.
-- If user-visible behavior changes, update or confirm `interact.md` first, then check `docs/business_user_guide.md`.
-- If business-user questions, prompts, result interpretation, or escalation guidance change, check `docs/business_user_guide.md`.
-- Any "can do / cannot do / must ask / must refuse" statement in `docs/business_user_guide.md` must anchor to `capability_contract.json`, `interact.md`, or tests.
-
-## Coding Rules
-
-1. What I cannot create, I do not understand.
-2. Use the project's selected working language; answer in English unless user or project instructions require otherwise. Code volume is a liability after functionality is met; keep code as small as possible, then optimize for maintainability.
-3. Follow PEP 8 for Python. Use UTC time. Use UTF-8 text.
-4. Manage parameters centrally. Always call functions with explicit parameter names instead of relying on positional defaults. Do not use `get` for expected parameters; fail fast when a required parameter is missing.
-5. Every class and function needs a docstring. Each functional block inside a function needs comments explaining why, expected output, and parameter meaning, range, and format. Script-level docstrings must explain purpose and call relationships.
-6. Do not let `try/except` or `if/else` blocks run naked. Use explicit exception types and enough print/log information in `except` and `else` branches. Unexpected errors should fail inside the current function.
-7. Data in, data out: scripts, functions, and modules interact only through explicit data inputs and outputs, not hidden external state.
-8. Reused code blocks should be wrapped into functions or modules to keep code DRY.
-9. Use language features to reduce code and performance cost while keeping readability.
-10. Do everything necessary to help the user reach the goal.
+<!-- project-fill: Derive project conventions from lint, formatter, compiler, build, or team configuration. If none are verifiable, write None and the configuration scope checked, then remove this marker. -->

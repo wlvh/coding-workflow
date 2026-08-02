@@ -1,88 +1,86 @@
-# Testing Flow
+# Testing
 
-Read and follow this guide before submitting any PR or running regression tests. Unless stated otherwise, run commands from the repository root and prefer the project-provided test runner when one exists.
+## 0. Canonical Test Entrypoints
 
-## Testing Philosophy
+Derive every exact command from current repository scripts, task configuration, CI, build files, or test
+framework configuration, and verify it from the repository root or a recorded working directory. Do not
+infer a language, runner, service, or phase from this template.
 
-- Reject tests written only for the sake of tests. Tests should verify behavior and contracts, not implementation trivia.
-- Avoid redundancy. If an end-to-end or scenario test already covers a behavior, do not duplicate it with a mock-only unit test unless it gives a much faster feedback loop or covers an edge case the live test cannot cover.
-- Keep the suite lean. Regularly remove obsolete tests that no longer provide value.
-- Keep tests deterministic. Except for explicit live monitors, tests should not depend on changing production data.
-- Keep tests isolated. One test must not depend on another test's order or leftover state.
-- Make failures diagnosable. Assertions should explain what was expected and what was observed.
-- Keep this document current when test files are added or changed.
+<!-- project-fill: List executable test commands, working directories, environment prerequisites, and scope from the current repository, then remove this marker. -->
 
-## Capability Contract Alignment Tests
+## 1. Testing Philosophy
 
-When a project uses `capability_contract.json`, `interact.md`, or `docs/business_user_guide.md`, provide a lightweight contract alignment test such as `tests/.../test_capability_contract_alignment.py`.
+- Test behavior, contracts, and failure boundaries without locking in implementation details that have no
+  user value.
+- Each new test should cover a real gap. A higher-level test does not automatically make a fast,
+  diagnosable lower-level regression redundant.
+- Use fixed inputs by default instead of changing production data. Mark live tests with their external
+  dependencies and risks.
+- Keep tests isolated from order and residual state, and make failures explain expected versus actual
+  behavior.
+- Record scope and reason accurately when a test is not run, skipped, or limited to static checks; do not
+  infer a pass.
 
-The test does not verify business logic. It verifies that machine-readable capability contracts and user-readable claims have not obviously drifted.
+## 2. Test Layers and What Each Proves
 
-### anchor_id Extraction
+- **Unit**: proves local behavior of one function, class, or module under isolated input.
+- **Contract**: proves a public schema, interface, file format, or cross-module agreement.
+- **Scenario**: proves a user or caller path through multiple real components.
+- **Golden**: proves reviewed output for deterministic input; it does not alone prove external systems or
+  the complete runtime chain.
+- **Report build**: proves a report or deliverable can be generated; it does not automatically prove
+  business correctness.
+- **Repair validation**: proves a repaired artifact satisfies a specific gate; it does not prove every
+  upstream phase is correct.
+- **Light review**: proves only the limited scope its implementation checks; never describe it as full
+  validation.
+- **Full validation**: use this name only when the complete target path, dependencies, and acceptance
+  boundary are actually covered.
+- **Live**: proves one run against real external dependencies; record environment, time sensitivity, and
+  reproducibility risk.
 
-Alignment tests should recursively scan the full `capability_contract.json` tree for objects containing `anchor_id`. Do not hardcode JSON paths, bucket names, array indexes, or the current schema hierarchy.
+## 3. Capability Contract Alignment
 
-### Markdown Anchor Syntax
+An alignment test belongs to the target project's test suite, not the documentation sync checker. It
+should recursively collect stable `anchor_id` values from every object in `capability_contract.json` and
+check uniqueness and Markdown references without hardcoding buckets, JSON paths, array positions, or
+requiring every contract entry to appear in the business guide.
 
-All user-readable documents must reference contract anchors with this exact format:
+Use `test_anchor: null` with a concrete reason for declarations without automation. Register the real test
+anchor when a test exists. Before claiming an alignment test exists, verify its implementation and command
+in the target repository.
 
-```text
-<!-- capability-anchor: <ANCHOR_ID> -->
-```
+<!-- project-fill: Cite the target project's real alignment test, command, and scope. If it is not implemented, write Not configured and the reason, then remove this marker. -->
 
-Rules:
+## 4. Change Type to Required Evidence
 
-- Do not use variants such as `<!-- anchor: ... -->`, `<!-- ref: ... -->`, or `<!-- contract: ... -->`.
-- `<ANCHOR_ID>` must exist in `capability_contract.json`.
-- Do not reference JSON paths, array indexes, or schema-internal paths.
-- Alignment tests recognize only this syntax.
+<!-- project-fill: Map code, configuration, schema, user behavior, artifact, and documentation changes to evidence levels using actual project risk, then remove this marker. -->
 
-### What Tests Should Cover
+## 5. Side Effects and Isolation
 
-1. `anchor_id` uniqueness.
-2. Recursive `anchor_id` extraction.
-3. Valid Markdown anchor syntax.
-4. No naked placeholder anchors such as `capability-anchor: TODO`.
-5. Agent behavior commitments are registered.
-6. Not every contract entry must appear in the business guide.
-7. Teaching copy style is not a test target.
-8. Alignment tests should read local files only and must not call real external services.
+Before running a command, identify its write paths, external services, credentials, concurrency, ordering,
+cleanup, and CI policy, then choose an environment that isolates those real side effects. The environment
+may be CI, a container, a separate checkout, a remote test environment, or another project-validated
+execution surface; this template does not prescribe one implementation. Record the actual environment,
+isolation method, residual state, and cleanup result.
 
-### Failure and Warning Rules
+<!-- project-fill: Identify side effects, actual isolation environment, cleanup, and selection rationale for each project command, then remove this marker. -->
 
-- A document references a missing `anchor_id`: fail.
-- Duplicate `anchor_id`: fail.
-- Naked TODO anchors: fail or high-priority warning.
-- Untested behavior with an explicit untested reason: warn, do not fail by default.
-- Contract entries missing from the business guide: do not fail unless marked as required for the guide.
+## 6. Test Suite Overview
 
-## Test Layers and Naming
+Describe stable test directories, entrypoints, and responsibilities instead of permanently listing every
+test file.
 
-1. Module-level tests
-   - Goal: fast checks for one module's behavior.
-   - Naming: `<module_path>/<name>.py` and `tests/<module_path>/test_<name>.py`.
-   - These tests should not depend on external services.
+<!-- project-fill: Summarize the real test suites, important fixtures, external dependencies, and recommended entrypoints, then remove this marker. -->
 
-2. Contract / scenario / live tests
-   - Goal: validate public API contracts, full business scenarios, or external dependencies.
-   - Use only when the behavior cannot be covered by faster deterministic tests.
+## 7. Known Gaps and Untested Reasons
 
-## When to Add or Modify Tests
+<!-- project-fill: List current coverage gaps, risk, owner, or trigger. If none are known, write None and the verified scope, then remove this marker. -->
 
-If a code change fixes a bug not covered by existing tests, add a minimal regression test that reproduces the bug before or with the fix. After the fix, ensure the new test passes in the applicable gate.
+## 8. Lessons Learned
 
-Any behavioral code change needs test evidence. If no tests changed, explain why existing tests already cover the behavior and provide rerun evidence.
+Record reusable test-decision rules supported by real failures, not incident chronology or volatile
+commands. If a failure came from layers passing independently while their combination failed, keep both a
+minimal regression and a scenario test that crosses the real boundary.
 
-## Test File Overview
-
-## Recommended Test Gate by Change Type
-
-## Lessons Learned
-
-### Lesson Maintenance Rules
-
-- Add a lesson only when a real defect shows that existing testing guidance could not reliably lead to the right test strategy.
-- Update existing lessons by raising abstraction level and clarifying boundaries, not by rewriting them for one implementation detail.
-- Merge lessons that describe the same failure mode.
-- Delete or rewrite a lesson only when a stronger rule, process, or automation fully replaces it.
-- Lessons should guide future testing decisions, not preserve incident chronology.
+<!-- project-fill: Add lessons supported by real failures and not replaced by stronger rules or automation. If none exist, write None, then remove this marker. -->

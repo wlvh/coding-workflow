@@ -1,123 +1,107 @@
 {
   "schema_version": "0.1.0",
-  "status": "sample",
-  "purpose": "Cross-project sample registry for stable capability, boundary, responsibility, behavior, and document anchors.",
+  "status": "__PROJECT_FILL__: 替换为已验证的契约状态",
+  "purpose": "当前能力、边界、职责、行为及文档锚点的机器可读登记表。",
+  "source_language": "zh-CN",
   "rules": [
-    "Markdown documents reference stable anchor_id values only.",
-    "Markdown documents must not reference JSON paths, array indexes, or schema-specific internal paths.",
-    "Deprecated anchors should stay registered and must not be reused for a different meaning.",
-    "Untested contracts use test_anchor: null with untested_reason or pending_since instead of scattered TODO markers."
+    "每个填充项必须在验证前替换为已核实的项目内容，或从契约中删除。",
+    "每条 active 声明必须有当前实现、配置、测试、committed artifacts 或可重复运行结果作为证据。",
+    "future 或 proposed 行为必须使用明确的非 active 状态，不得呈现为当前可用能力。",
+    "Markdown 文档只引用稳定的 anchor_id，不引用 JSON path、数组位置或 schema 内部路径。",
+    "deprecated anchor 必须保留原始语义登记，且不得复用于其他含义。",
+    "没有自动化覆盖的契约使用 test_anchor: null，并记录具体 untested_reason 或 pending_since。"
   ],
   "contracts": {
     "capabilities": [
       {
-        "anchor_id": "CAPABILITY.sample_supported_question",
+        "anchor_id": "__PROJECT_FILL__:CAPABILITY.identifier",
         "type": "capability",
-        "status": "experimental",
-        "statement": "Sample capability placeholder for a project-supported business question type.",
+        "status": "__PROJECT_FILL__: 替换为 active、experimental、future、proposed 或 deprecated",
+        "statement": "__PROJECT_FILL__: 替换为已验证的项目能力",
         "audience": [
-          "business_user",
-          "agent",
-          "reviewer"
+          "__PROJECT_FILL__: 替换为真实受众"
         ],
         "test_anchor": null,
         "test_status": "not_automated",
-        "untested_reason": "Sample entry only; replace with a project-specific contract and test anchor.",
-        "pending_since": "2026-04-26",
-        "since": "2026-04-26"
+        "untested_reason": "__PROJECT_FILL__: 替换为缺少自动化的原因；如已有测试则填写 test_anchor 并删除本字段",
+        "pending_since": "__PROJECT_FILL__: 替换为适用日期，或删除本字段",
+        "since": "__PROJECT_FILL__: 替换为首次验证的版本或日期"
       }
     ],
     "capability_boundaries": [
       {
-        "anchor_id": "BOUNDARY.sample_multi_object_comparison_not_supported",
+        "anchor_id": "__PROJECT_FILL__:BOUNDARY.identifier",
         "type": "capability_boundary",
-        "status": "experimental",
-        "statement": "Sample boundary placeholder for a currently unsupported capability that may be added later.",
+        "status": "__PROJECT_FILL__: 替换为已验证的状态",
+        "statement": "__PROJECT_FILL__: 替换为已验证的当前限制、拒绝或降级边界",
         "audience": [
-          "business_user",
-          "agent",
-          "reviewer"
+          "__PROJECT_FILL__: 替换为真实受众"
         ],
         "test_anchor": null,
         "test_status": "not_automated",
-        "untested_reason": "Sample entry only; replace with a project-specific boundary and test anchor.",
-        "pending_since": "2026-04-26",
-        "since": "2026-04-26"
+        "untested_reason": "__PROJECT_FILL__: 替换为缺少自动化的原因；如已有测试则填写 test_anchor 并删除本字段",
+        "pending_since": "__PROJECT_FILL__: 替换为适用日期，或删除本字段",
+        "since": "__PROJECT_FILL__: 替换为首次验证的版本或日期"
       }
     ],
     "responsibility_boundaries": [
       {
-        "anchor_id": "RESPONSIBILITY.sample_no_final_business_decision",
+        "anchor_id": "__PROJECT_FILL__:RESPONSIBILITY.identifier",
         "type": "responsibility_boundary",
-        "status": "experimental",
-        "statement": "Sample responsibility boundary placeholder for decisions the system should not make on behalf of humans.",
+        "status": "__PROJECT_FILL__: 替换为已验证的状态",
+        "statement": "__PROJECT_FILL__: 替换为已验证的人类或系统职责边界",
         "audience": [
-          "business_user",
-          "agent",
-          "reviewer"
+          "__PROJECT_FILL__: 替换为真实受众"
         ],
         "test_anchor": null,
         "test_status": "not_automated",
-        "untested_reason": "Sample entry only; replace with a project-specific responsibility boundary and test anchor.",
-        "pending_since": "2026-04-26",
-        "since": "2026-04-26"
+        "untested_reason": "__PROJECT_FILL__: 替换为缺少自动化的原因；如已有测试则填写 test_anchor 并删除本字段",
+        "pending_since": "__PROJECT_FILL__: 替换为适用日期，或删除本字段",
+        "since": "__PROJECT_FILL__: 替换为首次验证的版本或日期"
       }
     ],
     "agent_behaviors": [
       {
-        "anchor_id": "BEHAVIOR.sample_requires_context_before_answer",
+        "anchor_id": "__PROJECT_FILL__:BEHAVIOR.identifier",
         "type": "agent_behavior",
-        "status": "experimental",
-        "statement": "Sample behavior placeholder requiring the agent to ask for missing critical context instead of guessing.",
+        "status": "__PROJECT_FILL__: 替换为已验证的状态",
+        "statement": "__PROJECT_FILL__: 替换为已验证的追问、拒绝、解释或降级行为",
         "audience": [
-          "business_user",
-          "agent",
-          "developer",
-          "reviewer"
+          "__PROJECT_FILL__: 替换为真实受众"
         ],
         "test_anchor": null,
         "test_status": "not_automated",
-        "untested_reason": "Sample entry only; replace with a project-specific behavior contract and test anchor.",
-        "pending_since": "2026-04-26",
-        "since": "2026-04-26"
+        "untested_reason": "__PROJECT_FILL__: 替换为缺少自动化的原因；如已有测试则填写 test_anchor 并删除本字段",
+        "pending_since": "__PROJECT_FILL__: 替换为适用日期，或删除本字段",
+        "since": "__PROJECT_FILL__: 替换为首次验证的版本或日期"
       }
     ],
     "documents": [
       {
-        "anchor_id": "DOC.business_user_guide",
-        "type": "document",
-        "status": "experimental",
-        "statement": "docs/business_user_guide.md is a teaching document derived from capability_contract.json and interact.md.",
-        "audience": [
-          "business_user",
-          "agent",
-          "reviewer"
-        ],
-        "document_path": "docs/business_user_guide.md",
-        "language": "zh-CN",
-        "test_anchor": null,
-        "test_status": "not_automated",
-        "untested_reason": "Alignment principles are documented in TESTING.md; project-specific tests are added by each target project.",
-        "pending_since": "2026-04-26",
-        "since": "2026-04-26"
-      },
-      {
         "anchor_id": "DOC.interact",
         "type": "document",
         "status": "active",
-        "statement": "interact.md is the source of truth for user-visible behavior and acceptance invariants.",
+        "statement": "interact.md 是用户可观察行为与验收不变量的真相源。",
         "audience": [
           "business_user",
           "agent",
           "reviewer"
         ],
         "document_path": "interact.md",
-        "language": "zh-CN",
-        "test_anchor": null,
-        "test_status": "not_automated",
-        "untested_reason": "Alignment principles are documented in TESTING.md; project-specific tests are added by each target project.",
-        "pending_since": "2026-04-26",
-        "since": "2026-04-26"
+        "language": "zh-CN"
+      },
+      {
+        "anchor_id": "DOC.business_user_guide",
+        "type": "document",
+        "status": "active",
+        "statement": "docs/business_user_guide.md 是派生自 capability_contract.json 与 interact.md 的教学文档。",
+        "audience": [
+          "business_user",
+          "agent",
+          "reviewer"
+        ],
+        "document_path": "docs/business_user_guide.md",
+        "language": "zh-CN"
       }
     ]
   }
