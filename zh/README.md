@@ -54,15 +54,31 @@ Markdown project-fill slot 使用 `<!-- project-fill: ... -->`，JSON 使用
 - GitHub 路径：根 `.github/` 只服务本仓库 CI/GitHub；`zh/.github/` 与 `en/.github/` 是下游
   模板源。
 
-最短入口是 `python3 -m pytest -q`。完整收口命令：
+最短入口是 `PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider`。以下是唯一完整
+验证命令权威；它比较验证前后的普通与 ignored 状态，不使用 `git clean`：
 
 ```bash
-python3 -m pytest -q
-python3 -m py_compile zh/skills/workflow-docs-sync/scripts/sync_docs.py zh/scripts/install_skills.py
-python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" \
+set -euo pipefail
+validation_tmp="$(mktemp -d /tmp/coding-workflow-validation.XXXXXX)"
+trap 'rm -rf -- "$validation_tmp"' EXIT
+before="$validation_tmp/status.before"
+after="$validation_tmp/status.after"
+
+git status --porcelain=v1 -z --untracked-files=all --ignored > "$before"
+PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider
+PYTHONPYCACHEPREFIX="$validation_tmp/pycache" python3 -m py_compile \
+  zh/skills/workflow-docs-sync/scripts/sync_docs.py zh/scripts/install_skills.py
+PYTHONDONTWRITEBYTECODE=1 \
+  python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" \
   zh/skills/workflow-docs-sync
 git diff --check
-python3 zh/skills/workflow-docs-sync/scripts/sync_docs.py --help
+PYTHONDONTWRITEBYTECODE=1 python3 zh/skills/workflow-docs-sync/scripts/sync_docs.py --help
+git status --porcelain=v1 -z --untracked-files=all --ignored > "$after"
+
+if ! cmp -s "$before" "$after"; then
+  diff -u <(tr '\0' '\n' < "$before") <(tr '\0' '\n' < "$after") || true
+  exit 1
+fi
 ```
 
 ## 目录地图

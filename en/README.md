@@ -49,8 +49,9 @@ Templates do not assume a programming language, framework, test runner, service,
 - GitHub paths: root `.github/` serves this repository, while `.github/` here and under `zh/` are downstream
   template sources.
 
-The shortest entrypoint is `python3 -m pytest -q`. Full closure commands are maintained in the
-[Chinese maintainer map](../zh/README.md#维护者地图).
+The residue-safe shortest entrypoint is
+`PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider`. The full closure sequence is maintained
+only in the [Chinese maintainer map](../zh/README.md#维护者地图).
 
 ## Directory Map
 
