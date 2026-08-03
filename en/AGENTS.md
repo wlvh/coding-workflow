@@ -92,4 +92,4 @@ session; do not create repository run state, receipts, or temporary process docu
 
 ## Project-specific Conventions
 
-<!-- project-fill: Derive project conventions from lint, formatter, compiler, build, or team configuration. If none are verifiable, write None and the configuration scope checked, then remove this marker. -->
+<!-- project-fill: Derive project conventions from machine enforcement such as lint, formatter, compiler, and build configuration, plus current repository or team instructions and accepted decisions that apply to this scope. Distinguish machine-enforced from owner-declared rules and identify authority, scope, and conflicts checked. Keep personal or session preferences only when explicitly adopted as project policy and persisted in repository authority. If none are verifiable, write None and the configuration and governance scope checked, then remove this marker. -->

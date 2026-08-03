@@ -19,6 +19,8 @@ explicitly requests it.
 
 - [ ] Select real commands from `TESTING.md` and current repository configuration; do not infer a runner or
   service from a template.
+- [ ] Ensure the decision to add or not add tests follows `TESTING.md` section 4; with no test diff, cite a
+  specific covering test and rerun evidence.
 - [ ] For each test, record exact command, scope, result, not-run reason, actual environment, and isolation
   method.
 - [ ] Ensure environment choice follows command side effects, CI capabilities, and project policy, with
@@ -33,6 +35,8 @@ explicitly requests it.
   left unchanged; do not edit every document merely for completeness.
 - [ ] Keep the authority direction `capability_contract.json → interact.md → business_user_guide.md` for
   capability changes. User-visible claims have current implementation or test evidence and stable anchors.
+- [ ] Reference Markdown anchors through the capability contract's contract-defined protocol without copying
+  its token here; do not present alignment as sentence-level binding or proof of capability semantics.
 - [ ] Check architecture impact across entrypoints, module boundaries, data flow, state, error models,
   external dependencies, artifacts, and side effects.
 - [ ] Replace or delete every active project-fill marker while preserving valid Markdown and JSON.
@@ -43,6 +47,12 @@ explicitly requests it.
   reviewer identity, scope, and limitations.
 - [ ] Fix every BLOCKER and actionable WARN that does not require a new product decision. Keep remaining
   issues in open decisions with evidence and impact.
+- [ ] Preserve material rounds, REOPENED findings, and SUPERSEDED candidates or evidence. Reopening keeps the
+  original finding ID, and finding state is not confused with evidence state.
+- [ ] Support a prior miss explanation with evidence or label it `hypothesis` / `unknown`; never invent cause
+  merely to fill a field.
+- [ ] Evaluate every material finding for promotion to a long-term rule or automated gate, and record why when
+  it is not promoted.
 - [ ] Rerun affected tests and mechanical checks after fixes, then recheck the final diff and Git state.
 
 ## PR Delivery

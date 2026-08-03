@@ -7,9 +7,11 @@
     "Every fill entry must be replaced with verified project content or deleted before validation.",
     "Every active statement must have evidence in the current implementation, configuration, tests, committed artifacts, or reproducible results.",
     "Future or proposed behavior must use an explicit non-active status and must not be presented as currently available.",
-    "Markdown documents reference stable anchor_id values only, never JSON paths, array indexes, or schema-internal paths.",
+    "Markdown documents use only `<!-- capability-anchor: <ANCHOR_ID> -->` to reference stable anchor_id values; the marker name and ANCHOR_ID are case-sensitive, ANCHOR_ID must match `[A-Za-z0-9_.-]+`, and a target checker may tolerate whitespace differences inside the comment, but a JSON path, array position, or schema-internal path cannot replace the anchor ID.",
+    "Other anchor, ref, contract, or wiki-link forms are unsupported and do not establish an alignment reference; this generic protocol does not guarantee that any consumer exhaustively detects or rejects unknown aliases.",
+    "An anchor reference proves only that a registered ID is referenced structurally; it does not by itself prove sentence-level binding, business semantics, or implementation.",
     "Deprecated anchors remain registered for their original meaning and must never be reused.",
-    "A contract without automation uses test_anchor: null and records a concrete untested_reason or pending_since value."
+    "A contract that explicitly uses test_anchor: null must record both a nonempty, concrete untested_reason and a nonempty pending_since value; this registers a coverage gap and does not mean the claim is verified."
   ],
   "contracts": {
     "capabilities": [
@@ -24,7 +26,7 @@
         "test_anchor": null,
         "test_status": "not_automated",
         "untested_reason": "__PROJECT_FILL__: replace with the reason automation is absent, or replace test_anchor and remove this field",
-        "pending_since": "__PROJECT_FILL__: replace with the applicable date or remove this field",
+        "pending_since": "__PROJECT_FILL__: replace with the date the coverage gap was registered; keep this field while test_anchor is null",
         "since": "__PROJECT_FILL__: replace with the first verified version or date"
       }
     ],
@@ -40,7 +42,7 @@
         "test_anchor": null,
         "test_status": "not_automated",
         "untested_reason": "__PROJECT_FILL__: replace with the reason automation is absent, or replace test_anchor and remove this field",
-        "pending_since": "__PROJECT_FILL__: replace with the applicable date or remove this field",
+        "pending_since": "__PROJECT_FILL__: replace with the date the coverage gap was registered; keep this field while test_anchor is null",
         "since": "__PROJECT_FILL__: replace with the first verified version or date"
       }
     ],
@@ -56,7 +58,7 @@
         "test_anchor": null,
         "test_status": "not_automated",
         "untested_reason": "__PROJECT_FILL__: replace with the reason automation is absent, or replace test_anchor and remove this field",
-        "pending_since": "__PROJECT_FILL__: replace with the applicable date or remove this field",
+        "pending_since": "__PROJECT_FILL__: replace with the date the coverage gap was registered; keep this field while test_anchor is null",
         "since": "__PROJECT_FILL__: replace with the first verified version or date"
       }
     ],
@@ -72,7 +74,7 @@
         "test_anchor": null,
         "test_status": "not_automated",
         "untested_reason": "__PROJECT_FILL__: replace with the reason automation is absent, or replace test_anchor and remove this field",
-        "pending_since": "__PROJECT_FILL__: replace with the applicable date or remove this field",
+        "pending_since": "__PROJECT_FILL__: replace with the date the coverage gap was registered; keep this field while test_anchor is null",
         "since": "__PROJECT_FILL__: replace with the first verified version or date"
       }
     ],

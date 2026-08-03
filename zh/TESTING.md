@@ -4,6 +4,9 @@
 
 所有 exact command 必须从当前仓库的脚本、任务配置、CI、构建文件或测试框架配置中提取，
 并在仓库根目录或明确记录的工作目录验证。不得从本模板猜测语言、runner、服务或阶段名。
+已有经过验证的 repository-owned 统一入口时优先使用，并记录它实际覆盖的范围；不存在时不应
+仅为满足模板而创建 wrapper。只有多命令编排、服务生命周期或清理步骤长期重复并形成独立
+维护收益时，才把 wrapper 作为单独项目改动审查。
 
 <!-- project-fill: 列出当前仓库真实可执行的测试命令、工作目录、环境前提和适用范围；完成后删除此 marker -->
 
@@ -30,15 +33,25 @@
 ## 3. Capability Contract Alignment
 
 alignment test 属于目标项目自己的测试套件，不属于文档同步 checker。它应在本地递归收集
-`capability_contract.json` 中所有对象的稳定 `anchor_id`，检查唯一性和 Markdown 引用，
+`capability_contract.json` 中所有对象的稳定 `anchor_id`，并按 contract rules 定义的协议检查
+唯一性和 Markdown 引用，
 但不硬编码 bucket、JSON path、数组位置或要求所有 contract 条目进入 business guide。
 
-无法自动化的声明使用 `test_anchor: null` 并记录具体原因；已有测试时登记真实测试锚点。
-文档声明 alignment test 存在之前，必须确认目标仓库确有对应测试实现和可执行命令。
+显式使用 `test_anchor: null` 时同时记录非空、具体的 `untested_reason` 和非空 `pending_since`；
+已有测试时登记真实测试锚点。Anchor alignment 只证明结构引用、合法 ID 和非悬空等机械事实，
+不单独证明句子级绑定或声明的业务语义已经实现。文档声明 alignment test 存在之前，必须确认
+目标仓库确有对应测试实现和可执行命令。
 
 <!-- project-fill: 引用目标项目真实 alignment test、命令和覆盖范围；尚未实现时准确写 Not configured 及原因；完成后删除此 marker -->
 
 ## 4. Change Type to Required Evidence
+
+1. 可安全、确定性复现的 escaped bug：先建立修复前失败的最小回归测试或 fixture，再改实现。
+2. 无法先建立失败测试：保留修复前失败证据，说明无法稳定自动化的原因和剩余风险。
+3. 用户可观察行为、公开契约或 schema 变化：默认新增或修改最近边界的 contract/scenario 测试。
+4. 无 test diff：指出具体已有测试如何覆盖本次新风险并提供重跑证据；“已有高层测试”不充分。
+5. 纯内部重构且行为不变：可不新增测试，但须重跑受影响路径并记录 no-test-change reason。
+6. 文档-only gate：只证明实际检查的结构、解析或 alignment 范围，不得冒充运行时行为验证。
 
 <!-- project-fill: 按本项目真实风险映射代码、配置、schema、用户行为、artifact 和文档变更所需测试层级；完成后删除此 marker -->
 
@@ -65,5 +78,7 @@ alignment test 属于目标项目自己的测试套件，不属于文档同步 c
 
 只记录真实缺陷暴露出的可复用测试决策规则，不保存事故编年史或易漂移命令。若一次事故
 来自“各层单独通过但组合失败”，同时保留最小回归测试与覆盖真实边界的 scenario 测试。
+同一失效模式合并为更一般的规则；只有知识被更强测试、自动化 gate 或权威规则完整接管时才
+退役，不能只因案例变旧而删除。
 
 <!-- project-fill: 写入由真实失败支持、且尚未被更强规则或自动化替代的教训；没有时写 None；完成后删除此 marker -->

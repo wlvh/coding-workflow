@@ -72,6 +72,28 @@ external shallow clone, then pins target HEAD and upstream SHA for the entire ru
 - Keep temporary PR body Markdown outside the repository. Commit, push, and draft-PR creation occur through
   general GitHub publishing capability only after successful checks and only when the user asks.
 
+### DEC-007 Summary
+
+[DEC-007](../../../zh/docs/development_workflow/decisions.md) refines DEC-006 without restoring proxy
+controls. It classifies descriptive facts, normative policies, personal or session preferences, and mixed
+claims by meaning; configuration proves enforcement but does not silently supersede policy intent, and a
+task preference persists only after explicit owner adoption in repository authority.
+
+The capability contract is the single definition point for the canonical anchor form, case-sensitive ID
+grammar, and whitespace tolerance. Unsupported forms do not establish alignment, the generic protocol does
+not promise exhaustive alias detection, and structural references do not prove claim semantics. An explicit
+`test_anchor: null` requires both a nonempty `untested_reason` and `pending_since`; the authoring-rule change
+does not raise `schema_version` from `0.1.0`. TESTING defines minimum evidence for escaped bugs, public
+contracts, no-test diffs, refactors, and documentation-only gates, while the checklist enforces the
+add-or-not-add test decision.
+Findings keep stable IDs and first-seen evidence; REOPENED is an event, CURRENT / SUPERSEDED applies only to
+candidates or evidence, and prior misses are evidence-backed, labeled hypothesis, or recorded as unknown.
+
+With the same target base, upstream candidate, language, and round-one document bytes, Case A round two passes
+only as `PASS_NOOP`; an added valid correction is `ROUND1_INCOMPLETE`, and unsupported prose drift is
+`ROUND2_DRIFT`. Either failure restarts both rounds from a clean target. This decision adds no parser, ledger,
+receipt, run state, installer behavior, or `sync_docs.py` / CLI feature.
+
 Key implementation files:
 
 - `../../../zh/skills/workflow-docs-sync/SKILL.md`: orchestration contract.

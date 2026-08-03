@@ -5,6 +5,10 @@
 Derive every exact command from current repository scripts, task configuration, CI, build files, or test
 framework configuration, and verify it from the repository root or a recorded working directory. Do not
 infer a language, runner, service, or phase from this template.
+Prefer a verified repository-owned unified entrypoint when one exists and record what it actually covers;
+otherwise, do not create a wrapper only to satisfy this template. Review a wrapper as a separate project
+change only when repeated multi-command orchestration, service lifecycle, or cleanup steps provide independent
+maintenance value.
 
 <!-- project-fill: List executable test commands, working directories, environment prerequisites, and scope from the current repository, then remove this marker. -->
 
@@ -43,16 +47,32 @@ infer a language, runner, service, or phase from this template.
 
 An alignment test belongs to the target project's test suite, not the documentation sync checker. It
 should recursively collect stable `anchor_id` values from every object in `capability_contract.json` and
-check uniqueness and Markdown references without hardcoding buckets, JSON paths, array positions, or
-requiring every contract entry to appear in the business guide.
+use the protocol defined by the contract rules to check uniqueness and Markdown references without
+hardcoding buckets, JSON paths, array positions, or requiring every contract entry to appear in the
+business guide.
 
-Use `test_anchor: null` with a concrete reason for declarations without automation. Register the real test
-anchor when a test exists. Before claiming an alignment test exists, verify its implementation and command
-in the target repository.
+When `test_anchor: null` is explicit, record both a nonempty, concrete `untested_reason` and a nonempty
+`pending_since`; register the real test anchor when a test exists. Anchor alignment proves only mechanical
+facts such as a structural reference, a valid ID, and no dangling target. It does not by itself prove
+sentence-level binding or that claim semantics are implemented. Before claiming an alignment test exists,
+verify its implementation and command in the target repository.
 
 <!-- project-fill: Cite the target project's real alignment test, command, and scope. If it is not implemented, write Not configured and the reason, then remove this marker. -->
 
 ## 4. Change Type to Required Evidence
+
+1. For a safely and deterministically reproducible escaped bug, establish the smallest regression test or
+   fixture that fails before the fix, then change the implementation.
+2. When a test cannot establish a failing test first, preserve pre-fix failure evidence and state why stable
+   automation is unavailable and what risk remains.
+3. For user-visible behavior, public contract, or schema changes, add or update the nearest-boundary contract
+   or scenario test by default.
+4. With no test diff, identify the specific existing test that covers the new risk and provide rerun evidence;
+   “an existing high-level test” is not sufficient.
+5. A behavior-preserving internal refactor may add no test, but rerun affected paths and record the
+   no-test-change reason.
+6. A documentation-only gate proves only the structure, parsing, or alignment it actually checks; it is not
+   runtime behavior validation.
 
 <!-- project-fill: Map code, configuration, schema, user behavior, artifact, and documentation changes to evidence levels using actual project risk, then remove this marker. -->
 
@@ -82,5 +102,7 @@ test file.
 Record reusable test-decision rules supported by real failures, not incident chronology or volatile
 commands. If a failure came from layers passing independently while their combination failed, keep both a
 minimal regression and a scenario test that crosses the real boundary.
+Merge the same failure mode into a more general rule. Retire it only when a stronger test, automated gate,
+or authoritative rule fully carries the knowledge, never merely because the example is old.
 
 <!-- project-fill: Add lessons supported by real failures and not replaced by stronger rules or automation. If none exist, write None, then remove this marker. -->

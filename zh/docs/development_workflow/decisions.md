@@ -133,3 +133,38 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 “已验证不存在”或“检测能力已验证”。
 
 - 英文状态：本决策对应的对外说明已同步到英文 README 与 development workflow。
+
+## DEC-007：政策证据、Anchor 协议与两轮严格收敛
+
+- 状态：accepted
+- 日期：2026-08-03 UTC
+- 知识分类：描述性事实必须由当前代码、配置、测试、committed artifacts 或可重复运行结果
+  支持；规范性政策可由 scoped repository instruction、accepted decision、团队/项目配置或已
+  持久化的 owner decision 支持；个人/会话偏好默认不进入下游项目。混合语句拆分核验，禁止
+  把事实改写成政策或把政策伪装成实现事实。
+- 政策权威：机器配置证明 enforcement，不自动 supersede 规范意图。配置与政策冲突是治理
+  漂移，必须形成 finding/open decision；同类政策按显式 supersession 和既有 authority/scope
+  规则裁决。权威仍不明确时保留原文和已检查来源，不静默删除或永久神圣化。
+- 持久化边界：当前 task instruction 只授权当前任务；只有 owner 明确采纳为长期项目政策并在
+  同一变更中写入 repository authority 或 accepted decision 后，才可跨轮保留。
+- Anchor 协议：canonical authoring form、大小写、ID grammar 和 whitespace tolerance 只在
+  `capability_contract.json.rules` 定义。其他形式不受支持，但当前 SEC consumer/checker 不承诺
+  穷举拒绝未知 alias；结构引用不单独证明句子级绑定或业务语义。显式 `test_anchor: null` 同时
+  要求非空、具体的 `untested_reason` 和非空 `pending_since`，只表示覆盖缺口已登记。
+- 版本语义：`schema_version` 继续为 `0.1.0`，只表示 JSON shape 和机器必需字段；纯 authoring
+  prose 规则变化不升级该字段，未来 shape 或机器必需字段变化再按版本策略处理。
+- 测试决策：跨项目模板保留 escaped-bug、无法先红测、公开契约、无 test diff、纯重构和
+  documentation-only gate 的最低证据规则，并由 PR checklist 执行。一个协议只有一个定义点。
+- Finding 闭环：finding 使用 stable ID、severity、first-seen 和 OPEN / CLOSED / DEFERRED；
+  REOPENED 是保留原 ID 的事件。CURRENT / SUPERSEDED 只描述 candidate/evidence。漏检原因必须
+  evidence-backed、标为 hypothesis 或写 unknown；closure 时评估可复用规则提升。
+- Case A：同一 target code/config/test/committed-artifact base、upstream candidate、language 和
+  round 1 最终九文档 bytes 下，round 2 只接受 `PASS_NOOP`。冻结事实支持的新增修正为
+  `ROUND1_INCOMPLETE`，无新增反证的表达漂移为 `ROUND2_DRIFT`；两者都使 gate 失败，并要求从
+  clean target 重跑完整两轮。外部状态或 identity 变化使证据失效，不构成 PASS 例外。
+- 与 DEC-006 的关系：本决策 refine 其 Case A 两轮收敛语义，并补充政策证据、Anchor publisher
+  和测试/finding 合同；不恢复 template equality、旧 token blacklist、固定 Agent 拓扑或代理
+  parser。
+- 实现边界：不修改 `sync_docs.py`、installer 或 CLI schema，不新增 anchor/policy/Markdown
+  parser、repository ledger、receipt、run state 或 claim-level binding。
+- 英文状态：双语下游模板已等价同步；canonical Skill、eval 与决策继续以中文路径为权威。

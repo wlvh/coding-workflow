@@ -46,6 +46,23 @@ UTF-8、八份非 PR source 至少含一个 active marker；随后只创建缺�
 committed artifacts、可重复运行结果和必要 Git 历史；不得用旧文档证明旧文档正确，也不得
 因为内容未出现在近期 diff 中而跳过。
 
+按语义而非句式分类待核对声明：
+
+- 描述性事实说明当前状态、能力、命令、职责、行为、副作用、交付状态或证据强度，必须由
+  当前代码、配置、测试、committed artifacts 或可重复运行结果支持。
+- 规范性政策规定开发者或 Agent 应如何工作，可由当前 scoped repository instruction、accepted
+  decision、团队/项目配置，或已明确采纳并持久化的 owner decision 支持。
+- 个人或当前会话偏好默认不属于目标项目；只有 owner 明确采纳为长期政策并在同一变更中写入
+  repository authority 或 accepted decision 后才可持久化。
+- 混合语句拆分规范意图与现状断言，事实部分仍按描述性事实核验。不得把事实改写成政策来
+  规避证据，也不得把政策写成实现事实。
+
+当前 tracked、scoped 治理入口可推定为 active policy authority；明显模板残留、个人偏好、历史
+说明、失效状态或冲突仍须形成 finding。机器配置证明 enforcement，不自动 supersede 规范意图；
+两者冲突时登记 finding/open decision，既不破坏硬 gate，也不静默选边。同类政策先按显式
+supersession 和现有 authority/scope 规则裁决；仍有歧义时保留原文并记录已检查来源。对 material
+policy 的保留、修改或 no-update reason 必须记录 authority source、scope 和冲突检查结果。
+
 确认文档问题后、任何语义编辑前，先在会话中登记 finding：唯一 ID、`BLOCKER` / `WARN` /
 `NOTE`、代码/配置/测试或 artifact 证据、风险和最小修复边界。不得在编辑完成后根据最终 diff
 或 reviewer 结论倒填为“写入前 finding”。同一根因、同一证据链和同一修复边界影响多份文档
@@ -53,7 +70,9 @@ committed artifacts、可重复运行结果和必要 Git 历史；不得用旧�
 必须在编辑前登记 `BLOCKER`。
 
 - 全量质疑九份文档，只改错误、缺失、失真或失效内容；正确内容保持零 diff。
-- 删除没有当前事实证据的强声明。需要产品判断时记录 open decision，不编造结论。
+- 删除、收窄或降级没有当前证据的描述性强声明；规范性政策按政策权威、作用域和冲突处理。
+  不得把事实改写为政策以规避证据，也不得把政策伪装成实现事实。需要产品判断时记录 open
+  decision，不编造结论。
 - 保持 `capability_contract.json → interact.md → docs/business_user_guide.md` 的权威方向。
 - 清除所有 active project-fill marker；不要使用固定写入顺序、完成百分比、KEEP ledger 或
   过程状态。

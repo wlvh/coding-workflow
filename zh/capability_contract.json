@@ -7,9 +7,11 @@
     "每个填充项必须在验证前替换为已核实的项目内容，或从契约中删除。",
     "每条 active 声明必须有当前实现、配置、测试、committed artifacts 或可重复运行结果作为证据。",
     "future 或 proposed 行为必须使用明确的非 active 状态，不得呈现为当前可用能力。",
-    "Markdown 文档只引用稳定的 anchor_id，不引用 JSON path、数组位置或 schema 内部路径。",
+    "Markdown 文档只用 `<!-- capability-anchor: <ANCHOR_ID> -->` 引用稳定 anchor_id；marker 名称与 ANCHOR_ID 大小写敏感，ANCHOR_ID 必须匹配 `[A-Za-z0-9_.-]+`；目标 checker 可容忍 comment 内空白差异，但不得用 JSON path、数组位置或 schema 内部路径代替 anchor ID。",
+    "其他 anchor、ref、contract 或 wiki link 形式不受支持，不能建立 alignment 引用；本通用协议不保证任何消费者会穷举发现或拒绝未知 alias。",
+    "Anchor 引用只证明结构上引用了已登记 ID，不单独证明句子级绑定、业务语义或实现已完成。",
     "deprecated anchor 必须保留原始语义登记，且不得复用于其他含义。",
-    "没有自动化覆盖的契约使用 test_anchor: null，并记录具体 untested_reason 或 pending_since。"
+    "显式使用 test_anchor: null 的契约必须同时记录非空、具体的 untested_reason 与非空 pending_since；这只登记覆盖缺口，不表示声明已经验证。"
   ],
   "contracts": {
     "capabilities": [
@@ -24,7 +26,7 @@
         "test_anchor": null,
         "test_status": "not_automated",
         "untested_reason": "__PROJECT_FILL__: 替换为缺少自动化的原因；如已有测试则填写 test_anchor 并删除本字段",
-        "pending_since": "__PROJECT_FILL__: 替换为适用日期，或删除本字段",
+        "pending_since": "__PROJECT_FILL__: 替换为覆盖缺口登记日期；test_anchor 为 null 时必须保留本字段",
         "since": "__PROJECT_FILL__: 替换为首次验证的版本或日期"
       }
     ],
@@ -40,7 +42,7 @@
         "test_anchor": null,
         "test_status": "not_automated",
         "untested_reason": "__PROJECT_FILL__: 替换为缺少自动化的原因；如已有测试则填写 test_anchor 并删除本字段",
-        "pending_since": "__PROJECT_FILL__: 替换为适用日期，或删除本字段",
+        "pending_since": "__PROJECT_FILL__: 替换为覆盖缺口登记日期；test_anchor 为 null 时必须保留本字段",
         "since": "__PROJECT_FILL__: 替换为首次验证的版本或日期"
       }
     ],
@@ -56,7 +58,7 @@
         "test_anchor": null,
         "test_status": "not_automated",
         "untested_reason": "__PROJECT_FILL__: 替换为缺少自动化的原因；如已有测试则填写 test_anchor 并删除本字段",
-        "pending_since": "__PROJECT_FILL__: 替换为适用日期，或删除本字段",
+        "pending_since": "__PROJECT_FILL__: 替换为覆盖缺口登记日期；test_anchor 为 null 时必须保留本字段",
         "since": "__PROJECT_FILL__: 替换为首次验证的版本或日期"
       }
     ],
@@ -72,7 +74,7 @@
         "test_anchor": null,
         "test_status": "not_automated",
         "untested_reason": "__PROJECT_FILL__: 替换为缺少自动化的原因；如已有测试则填写 test_anchor 并删除本字段",
-        "pending_since": "__PROJECT_FILL__: 替换为适用日期，或删除本字段",
+        "pending_since": "__PROJECT_FILL__: 替换为覆盖缺口登记日期；test_anchor 为 null 时必须保留本字段",
         "since": "__PROJECT_FILL__: 替换为首次验证的版本或日期"
       }
     ],
