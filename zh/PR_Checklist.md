@@ -16,6 +16,7 @@
 ## Tests and Evidence
 
 - [ ] 按 `TESTING.md` 和当前仓库配置选择真实命令，没有从模板猜测 runner 或服务。
+- [ ] 新增或不新增测试的决策符合 `TESTING.md` 第 4 节；无 test diff 时有具体覆盖测试和重跑证据。
 - [ ] 每条测试记录 exact command、scope、result、not-run reason、实际环境和隔离方式。
 - [ ] 环境选择与命令副作用、CI 能力和项目政策一致；写入、外部状态、残留和清理结果均有
   可核对记录。
@@ -28,6 +29,8 @@
   no-update reason，不要求为了齐全而修改所有文档。
 - [ ] 能力变化遵循 `capability_contract.json → interact.md → business_user_guide.md` 的权威
   方向；用户可见声明有当前实现或测试证据和稳定 anchor。
+- [ ] Markdown anchor 按 capability contract 的 contract-defined protocol 引用，没有在本文复写
+  token；alignment 结论没有冒充句子级绑定或能力语义证明。
 - [ ] 架构影响已核对入口、模块边界、数据流、状态、错误模型、外部依赖、artifact 和副作用。
 - [ ] 所有 active project-fill marker 已替换或删除，Markdown 与 JSON 仍可被严格解析。
 
@@ -36,6 +39,10 @@
 - [ ] 已完成本项目测试与交付政策要求的 review gate，并准确记录 reviewer 身份、范围和限制。
 - [ ] 所有 BLOCKER 和不需要新产品决策的 actionable WARN 已修复并复核；其余问题进入 open
   decisions，包含证据与影响。
+- [ ] Material rounds、REOPENED finding 与 SUPERSEDED candidate/evidence 均保留；重开沿用原
+  finding ID，finding 状态没有与证据状态混用。
+- [ ] 上一轮漏检原因有证据，或明确标为 `hypothesis` / `unknown`，没有为填字段编造因果。
+- [ ] 每个 material finding 已评估是否提升为长期规则或自动化 gate；未提升时记录原因。
 - [ ] 修复后重跑受影响测试和机械检查，最终 diff 与 Git 状态已再次检查。
 
 ## PR Delivery

@@ -82,4 +82,4 @@
 
 ## Project-specific Conventions
 
-<!-- project-fill: 从 lint、formatter、compiler、build 或团队配置提取项目专属约定；没有可验证约定时写 None — 已检查的配置范围；完成后删除此 marker -->
+<!-- project-fill: 从 lint、formatter、compiler、build 等机器 enforcement，以及当前有效且适用于本范围的 repository/team instruction 或 accepted decision 提取项目专属约定；区分 machine-enforced 与 owner-declared，并标明权威来源、作用域和已检查冲突。个人/会话偏好仅在被明确采纳为项目政策并写入仓库权威后保留；没有可验证约定时写 None — 已检查的配置和治理范围；完成后删除此 marker -->

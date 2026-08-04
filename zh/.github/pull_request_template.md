@@ -34,7 +34,7 @@
 
 ## 7. Review / Fix Record
 
-<!-- 按 finding ID 记录 severity、证据、判断、修复和复核结果；没有 finding 时列出已核对的高风险点。不要增加重复 reconciliation ledger。 -->
+<!-- 每个 finding 记录 stable ID、severity、first-seen round/source、证据、判断、修复和复核结果；状态使用 OPEN / CLOSED / DEFERRED。REOPENED 是事件而非状态，保留原 ID 并追加证据。CURRENT / SUPERSEDED 只描述 candidate/evidence，不覆盖 finding 状态或早期失败。上一轮漏检原因必须 evidence-backed、标为 hypothesis，或写 unknown。正式 raw record 可放在 comments，body 保留索引。记录 Promoted reusable rule: <authority / None>。没有 finding 时列出已核对的高风险点；不要增加重复 reconciliation ledger。 -->
 
 ## 8. Known Limits, Open Decisions, and Rollback
 

@@ -34,7 +34,7 @@ plans, historical drafts, or local uncommitted content.
 
 ## 7. Review / Fix Record
 
-<!-- For each finding ID, record severity, evidence, judgment, fix, and recheck result. If there are no findings, list the high-risk areas checked. Do not add a duplicate reconciliation ledger. -->
+<!-- For each finding, record a stable ID, severity, first-seen round or source, evidence, judgment, fix, and recheck result. Finding states are OPEN / CLOSED / DEFERRED. REOPENED is an event, not a state; it preserves the original ID and appends evidence. CURRENT / SUPERSEDED describes only a candidate or evidence, never finding state or an overwritten earlier failure. A prior miss explanation must be evidence-backed, labeled hypothesis, or written as unknown. Formal raw records may live in comments while the body keeps an index. Record Promoted reusable rule: <authority / None>. If there are no findings, list the high-risk areas checked. Do not add a duplicate reconciliation ledger. -->
 
 ## 8. Known Limits, Open Decisions, and Rollback
 

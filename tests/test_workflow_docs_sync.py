@@ -1146,7 +1146,36 @@ def test_scenario_5_repository_distribution_contract() -> None:
                     f"{language}/{relative_path}"
                 )
 
-    # 固定文档锚点不得在 marker 清零后偷偷保留泛化测试结论。
+    # Anchor 协议必须由 contract 单点发布。
+    # 显式 null-test 缺口必须保留完整元数据。
+    canonical_anchor = "<!-- capability-anchor: <ANCHOR_ID> -->"
+    anchor_marker = "capability-anchor:"
+    anchor_rule_fragments = {
+        "zh": (
+            "大小写敏感",
+            "[A-Za-z0-9_.-]+",
+            "空白",
+            "JSON path",
+        ),
+        "en": (
+            "case-sensitive",
+            "[A-Za-z0-9_.-]+",
+            "whitespace",
+            "JSON path",
+        ),
+    }
+    boundary_fragments = {
+        "zh": (
+            "不受支持",
+            "不保证",
+            "不单独证明",
+        ),
+        "en": (
+            "unsupported",
+            "does not guarantee",
+            "does not by itself prove",
+        ),
+    }
     instructional_metadata = (
         "目标项目存在本地 alignment test 时，必须登记其真实测试锚点。",
         "The target project must register its own local alignment test when one exists.",
@@ -1154,6 +1183,51 @@ def test_scenario_5_repository_distribution_contract() -> None:
     for language in ("zh", "en"):
         contract_path = REPO_ROOT / language / "capability_contract.json"
         contract = json.loads(s=contract_path.read_text(encoding="utf-8"))
+        assert contract["schema_version"] == "0.1.0"
+        rules_text = "\n".join(contract["rules"])
+        anchor_rules = [
+            rule for rule in contract["rules"] if canonical_anchor in rule
+        ]
+        assert len(anchor_rules) == 1
+        assert all(
+            fragment in anchor_rules[0]
+            for fragment in anchor_rule_fragments[language]
+        )
+        assert all(
+            fragment in rules_text for fragment in boundary_fragments[language]
+        )
+        null_test_rules = [
+            rule for rule in contract["rules"] if "test_anchor: null" in rule
+        ]
+        assert len(null_test_rules) == 1
+        assert all(
+            field in null_test_rules[0]
+            for field in ("untested_reason", "pending_since")
+        )
+        anchor_publishers = [
+            relative_path
+            for relative_path in CORE_FILES
+            if anchor_marker
+            in (REPO_ROOT / language / relative_path).read_text(
+                encoding="utf-8"
+            )
+        ]
+        assert anchor_publishers == ["capability_contract.json"]
+        assert rules_text.count(canonical_anchor) == 1
+        assert rules_text.count(anchor_marker) == 1
+
+        explicit_null_entries = [
+            entry
+            for entries in contract["contracts"].values()
+            for entry in entries
+            if "test_anchor" in entry and entry["test_anchor"] is None
+        ]
+        assert explicit_null_entries
+        for entry in explicit_null_entries:
+            for field in ("untested_reason", "pending_since"):
+                assert isinstance(entry[field], str) and entry[field].strip()
+
+        # 固定文档锚点不得在 marker 清零后偷偷保留泛化测试结论。
         projectized = replace_active_markers(value=contract)
         serialized = json.dumps(obj=projectized, ensure_ascii=False)
         assert not any(marker in serialized for marker in ACTIVE_MARKERS)
@@ -1166,7 +1240,115 @@ def test_scenario_5_repository_distribution_contract() -> None:
                 "test_anchor",
                 "test_status",
                 "untested_reason",
+                "pending_since",
             } & set(by_anchor[anchor])
+
+    # 测试、review 和两轮 eval 直接保护风险，不复制 anchor 定义或
+    # 增加 parser。
+    downstream_contract_fragments = {
+        "zh": {
+            "TESTING.md": (
+                "仅为满足模板而创建 wrapper",
+                "可安全、确定性复现的 escaped bug",
+                "无法先建立失败测试",
+                "无 test diff",
+                "纯内部重构",
+                "文档-only gate",
+            ),
+            "PR_Checklist.md": (
+                "TESTING.md` 第 4 节",
+                "contract-defined protocol",
+                "REOPENED finding",
+                "SUPERSEDED candidate",
+                "长期规则",
+            ),
+            ".github/pull_request_template.md": (
+                "first-seen",
+                "REOPENED",
+                "SUPERSEDED",
+                "hypothesis",
+                "unknown",
+                "Promoted reusable rule",
+            ),
+        },
+        "en": {
+            "TESTING.md": (
+                "do not create a wrapper only to satisfy this template",
+                "safely and deterministically reproducible escaped bug",
+                "cannot establish a failing test first",
+                "no test diff",
+                "behavior-preserving internal refactor",
+                "documentation-only gate",
+            ),
+            "PR_Checklist.md": (
+                "TESTING.md` section 4",
+                "contract-defined protocol",
+                "REOPENED findings",
+                "SUPERSEDED candidates",
+                "long-term rule",
+            ),
+            ".github/pull_request_template.md": (
+                "first-seen",
+                "REOPENED",
+                "SUPERSEDED",
+                "hypothesis",
+                "unknown",
+                "Promoted reusable rule",
+            ),
+        },
+    }
+    for language, files in downstream_contract_fragments.items():
+        for relative_path, fragments in files.items():
+            text = (REPO_ROOT / language / relative_path).read_text(
+                encoding="utf-8"
+            )
+            assert canonical_anchor not in text
+            assert all(fragment in text for fragment in fragments)
+
+    skill_text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+    assert canonical_anchor not in skill_text
+
+    decisions = (
+        REPO_ROOT / "zh/docs/development_workflow/decisions.md"
+    ).read_text(encoding="utf-8")
+    assert "## DEC-007" in decisions
+    assert "- 状态：accepted" in decisions.split("## DEC-007", maxsplit=1)[1]
+    for fragment in (
+        "描述性事实",
+        "规范性政策",
+        "个人/会话偏好",
+        "schema_version",
+        "PASS_NOOP",
+        "不修改 `sync_docs.py`",
+    ):
+        assert fragment in decisions.split("## DEC-007", maxsplit=1)[1]
+
+    eval_contract = (SKILL_ROOT / "evals/README.md").read_text(
+        encoding="utf-8"
+    )
+    for fragment in (
+        "三条当前 scoped normative policy",
+        "ENTRY_STATUSES={active, deprecated}",
+        "check_capability_contract_alignment.py --base-ref",
+        "PASS_NOOP",
+        "ROUND1_INCOMPLETE",
+        "ROUND2_DRIFT",
+    ):
+        assert fragment in eval_contract
+
+    english_workflow = (
+        REPO_ROOT / "en/docs/development_workflow/README.md"
+    ).read_text(encoding="utf-8")
+    for fragment in (
+        "DEC-007 Summary",
+        "descriptive facts",
+        "normative policies",
+        "REOPENED",
+        "PASS_NOOP",
+        "ROUND1_INCOMPLETE",
+        "ROUND2_DRIFT",
+    ):
+        assert fragment in english_workflow
 
     # 机械兜底只覆盖本次真实误植过的八份下游模板与五个精确 token。
     internal_context_tokens = (
