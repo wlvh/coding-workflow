@@ -45,7 +45,9 @@ receipt、scratch 或 PR body。
 - 对照 contract publisher 的 canonical grammar 与 SEC checker 真实 regex，记录 consumer 只
   支持 canonical form、不穷举 alias；记录 SEC 的 `ENTRY_STATUSES={active, deprecated}` 是项目
   侧加严，不要求通用模板复制该词表；
-- 核对目标 `TESTING.md` 的 bug-first 与 no-test-diff 规则，正确且更具体的内容保持零 diff；
+- 分别核对目标 `TESTING.md` 的 bug-first 与 no-test-diff 规则：bug-first 不能替代“无 test diff
+  时指出具体已有覆盖并提供重跑证据”；仅有按变更类型选测试的表格也不等价。目标已有正确且
+  更具体的两条规则时保持零 diff，缺少任一条时形成 finding；
 - 运行项目真实测试，准确记录验证层级，并完成 review 与最终 `check`。
 
 这些检查是现实抽样。所选 HEAD 初始状态不含相应缺陷时，只能报告“本次未观察到”，不得写

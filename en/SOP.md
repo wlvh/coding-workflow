@@ -4,8 +4,8 @@
 
 `SOP.md` keeps stable process entrypoints and does not copy volatile commands, test lists, or publishing
 details. When sources conflict, current code, configuration, tests, contracts, and focused authorities such
-as `TESTING.md` and `PR_Checklist.md` take precedence. Keep execution checklists in the current session;
-do not write them as repository run state, receipts, or temporary SOPs.
+as `TESTING.md` and `PR_Checklist.md` take precedence. Follow this project's actual audit, recoverability,
+and delivery policy for how execution records are stored and retained.
 
 ## Available SOPs
 

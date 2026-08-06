@@ -32,9 +32,8 @@
 
 ## 3. Capability Contract Alignment
 
-alignment test 属于目标项目自己的测试套件，不属于文档同步 checker。它应在本地递归收集
-`capability_contract.json` 中所有对象的稳定 `anchor_id`，并按 contract rules 定义的协议检查
-唯一性和 Markdown 引用，
+项目的 alignment test 应在本地递归收集 `capability_contract.json` 中所有对象的稳定
+`anchor_id`。它应按 contract rules 定义的协议检查唯一性和 Markdown 引用，
 但不硬编码 bucket、JSON path、数组位置或要求所有 contract 条目进入 business guide。
 
 显式使用 `test_anchor: null` 时同时记录非空、具体的 `untested_reason` 和非空 `pending_since`；

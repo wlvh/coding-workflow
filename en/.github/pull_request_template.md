@@ -18,7 +18,7 @@ plans, historical drafts, or local uncommitted content.
 
 ## 4. Documentation Impact
 
-<!-- List documents actually updated and their evidence. Give a real no-update reason for affected candidate documents left unchanged; not every document needs a diff. -->
+<!-- List documents actually updated and their evidence. State the current factual basis for affected authorities left unchanged. -->
 
 ## 5. User-visible and Architecture Impact
 
@@ -34,7 +34,7 @@ plans, historical drafts, or local uncommitted content.
 
 ## 7. Review / Fix Record
 
-<!-- For each finding, record a stable ID, severity, first-seen round or source, evidence, judgment, fix, and recheck result. Finding states are OPEN / CLOSED / DEFERRED. REOPENED is an event, not a state; it preserves the original ID and appends evidence. CURRENT / SUPERSEDED describes only a candidate or evidence, never finding state or an overwritten earlier failure. A prior miss explanation must be evidence-backed, labeled hypothesis, or written as unknown. Formal raw records may live in comments while the body keeps an index. Record Promoted reusable rule: <authority / None>. If there are no findings, list the high-risk areas checked. Do not add a duplicate reconciliation ledger. -->
+<!-- Record the actual review, actionable feedback, disposition and recheck results, and any open decisions or limits according to this project's delivery policy. -->
 
 ## 8. Known Limits, Open Decisions, and Rollback
 
@@ -45,6 +45,5 @@ plans, historical drafts, or local uncommitted content.
 - [ ] Actual Change Scope matches the real diff.
 - [ ] Test commands, scope, results, and not-run reasons are accurate.
 - [ ] User-visible and architecture impact were checked against their authoritative documents.
-- [ ] BLOCKERs and actionable WARNs are closed; open decisions are not presented as complete.
-- [ ] The PR body contains no historical draft, unimplemented plan, wrong base/head, or repository-local
-  temporary body path.
+- [ ] Actionable review feedback required by this project is handled or explicitly recorded as open.
+- [ ] The PR body contains no historical draft, unimplemented plan, or wrong base/head.

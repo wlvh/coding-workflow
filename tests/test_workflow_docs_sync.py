@@ -452,6 +452,19 @@ def run_repo_install(
     return result, parse_single_json(result=result)
 
 
+def assert_user_install_failure_unchanged(
+    *, upstream: Path, home: Path, expected_error: str
+) -> dict[str, Any]:
+    """断言 user-scope 预检失败且安装根 bytes 完全不变。"""
+    before = file_tree(root=home)
+    result, payload = run_user_install(upstream=upstream, home=home)
+    assert result.returncode != 0
+    assert payload["status"] == "failed"
+    assert expected_error in payload["error"]
+    assert file_tree(root=home) == before
+    return payload
+
+
 def assert_installed(*, install_root: Path) -> None:
     """验证双平台安装、Claude 显式调用边界与精确清理结果。"""
     for platform, platform_root in PLATFORM_ROOTS:
@@ -701,6 +714,17 @@ def test_scenario_2_prepare_safe_failures(tmp_path: Path) -> None:
         expected_core_paths=set(),
     )
 
+    # 上游子目录同样不能冒充 Git 根；目标仍须保持完全未写入。
+    upstream_nested = upstream / "nested"
+    upstream_nested.mkdir()
+    upstream_non_root_target = init_repo(path=tmp_path / "upstream-non-root-target")
+    assert_prepare_failure(
+        target=upstream_non_root_target,
+        upstream=upstream_nested,
+        expected_error="上游目录必须是 Git 根目录",
+        expected_core_paths=set(),
+    )
+
     # allowlist 外 dirty path 必须在任何核心模板落盘前终止。
     outside_dirty = init_repo(path=tmp_path / "outside-dirty")
     (outside_dirty / "rogue.txt").write_text(data="rogue\n", encoding="utf-8")
@@ -837,8 +861,32 @@ def test_scenario_3_check_rejects_invalid_final_states(tmp_path: Path) -> None:
         target=target,
         upstream=upstream,
         prepared=prepared,
-        expected_error="最终仓库检查失败",
-        expected_detail="核心文档不能是符号链接",
+        expected_error="核心文档路径不能是符号链接",
+        expected_detail="architecture.md",
+    )
+
+    # 已提交父目录 symlink 也不能让末级普通文件逃逸到目标仓库外。
+    root = tmp_path / "check-parent-symlink"
+    upstream, target, prepared = create_ready_case(root=root, language="zh")
+    outside_directory = tmp_path / "check-parent-outside"
+    outside_directory.mkdir()
+    (outside_directory / "pull_request_template.md").write_text(
+        data="# External pull request template\n",
+        encoding="utf-8",
+    )
+    (target / ".github/pull_request_template.md").unlink()
+    (target / ".github").rmdir()
+    (target / ".github").symlink_to(
+        target=outside_directory,
+        target_is_directory=True,
+    )
+    prepared["target_head"] = commit_all(repo=target, message="parent symlink")
+    assert_check_failure(
+        target=target,
+        upstream=upstream,
+        prepared=prepared,
+        expected_error="核心文档路径不能是符号链接",
+        expected_detail=".github/pull_request_template.md",
     )
 
     # 同一 final-bytes 路径覆盖 untracked、staged、tracked 和 committed 四种 Git 状态。
@@ -870,15 +918,15 @@ def test_scenario_3_check_rejects_invalid_final_states(tmp_path: Path) -> None:
             expected_detail="trailing whitespace",
         )
 
-    # ignored core path 仍属于 final bytes；Git-equivalent 检查也必须拒绝 conflict marker。
-    root = tmp_path / "ignored-conflict-marker"
+    # ignored core path 仍属于 final bytes，不能绕过同一 whitespace gate。
+    root = tmp_path / "ignored-whitespace"
     upstream, target, prepared = create_ready_case(root=root, language="zh")
     (target / ".gitignore").write_text(
         data="architecture.md\n",
         encoding="utf-8",
     )
     (target / "architecture.md").write_text(
-        data="<<<<<<< ours\nproject fact\n=======\nother fact\n>>>>>>> theirs\n",
+        data="project fact with trailing whitespace \n",
         encoding="utf-8",
     )
     ignored_status = git(
@@ -892,7 +940,7 @@ def test_scenario_3_check_rejects_invalid_final_states(tmp_path: Path) -> None:
         upstream=upstream,
         prepared=prepared,
         expected_error="最终仓库检查失败",
-        expected_detail="leftover conflict marker",
+        expected_detail="trailing whitespace",
     )
 
     root = tmp_path / "gitignore-whitespace"
@@ -939,6 +987,47 @@ def test_scenario_3_check_rejects_invalid_final_states(tmp_path: Path) -> None:
         expected_error="editable path 存在 index/worktree 分叉",
         expected_detail="MM architecture.md",
     )
+
+    # Git 会把 staged delete 与同路径重建拆成两条记录；ignored 重建
+    # 甚至不出现在普通 status。
+    for replacement in ("untracked", "ignored"):
+        root = tmp_path / f"delete-recreate-{replacement}"
+        upstream, target, _ = create_ready_case(root=root, language="zh")
+        commit_all(repo=target, message="project docs")
+        if replacement == "ignored":
+            (target / ".gitignore").write_text(
+                data="architecture.md\n",
+                encoding="utf-8",
+            )
+            commit_all(repo=target, message="ignore recreated architecture")
+        prepared = prepare_success(
+            target=target,
+            upstream=upstream,
+            language="zh",
+        )
+        architecture = target / "architecture.md"
+        final_bytes = architecture.read_bytes()
+        git(repo=target, args=["rm", "architecture.md"], check=True)
+        architecture.write_bytes(data=final_bytes)
+        status = repository_status(root=target)
+        assert "D  architecture.md" in status
+        if replacement == "untracked":
+            assert "?? architecture.md" in status
+        else:
+            ignored_status = git(
+                repo=target,
+                args=["status", "--porcelain=v1", "--ignored"],
+                check=True,
+            )
+            assert "!! architecture.md" in ignored_status
+        payload = assert_check_failure(
+            target=target,
+            upstream=upstream,
+            prepared=prepared,
+            expected_error="editable path 存在 index/worktree 分叉",
+            expected_detail="architecture.md",
+        )
+        assert "D  architecture.md" in payload["detail"]
 
     # 目标仓库 attributes 不得关闭 checker 对 final Markdown 的 whitespace 规则。
     root = tmp_path / "attributes-cannot-disable-whitespace"
@@ -1077,6 +1166,164 @@ def test_scenario_4_installer_end_to_end(tmp_path: Path) -> None:
     assert repeated_payload["removed_obsolete"] == []
     assert repository_snapshot(root=target) == repo_snapshot
 
+    # 两个平台必须在任何删除前拒绝父路径 symlink，不能改写仓库外目标。
+    unsafe_home = tmp_path / "unsafe-parent-home"
+    unsafe_home.mkdir()
+    (unsafe_home / ".claude").mkdir()
+    protected_directory = tmp_path / "protected-install-parent"
+    protected_directory.mkdir()
+    protected_file = protected_directory / "protected.bin"
+    protected_file.write_bytes(data=b"protected parent\x00")
+    (unsafe_home / ".claude/skills").symlink_to(
+        target=protected_directory,
+        target_is_directory=True,
+    )
+    assert_user_install_failure_unchanged(
+        upstream=upstream,
+        home=unsafe_home,
+        expected_error="安装路径父级不能是符号链接",
+    )
+    assert protected_file.read_bytes() == b"protected parent\x00"
+
+    # canonical source 的 tracked symlink 不得把仓库外 bytes 带入安装结果。
+    symlink_upstream = create_installer_upstream(
+        root=tmp_path / "symlink-upstream"
+    )
+    protected_source = tmp_path / "protected-source.bin"
+    protected_source.write_bytes(data=b"protected source\x00")
+    source_link = (
+        symlink_upstream
+        / "zh/skills/workflow-docs-sync/protected-source.bin"
+    )
+    source_link.symlink_to(target=protected_source)
+    commit_all(repo=symlink_upstream, message="tracked source symlink")
+    source_home = tmp_path / "unsafe-source-home"
+    source_home.mkdir()
+    assert_user_install_failure_unchanged(
+        upstream=symlink_upstream,
+        home=source_home,
+        expected_error="canonical Skill 不能包含符号链接",
+    )
+    assert protected_source.read_bytes() == b"protected source\x00"
+
+    # canonical source 的祖先链也必须留在已验证的 upstream Git 根内。
+    ancestor_upstream = init_repo(path=tmp_path / "ancestor-upstream")
+    protected_zh = tmp_path / "protected-upstream-zh"
+    protected_skill = protected_zh / "skills/workflow-docs-sync"
+    protected_skill.parent.mkdir(parents=True)
+    shutil.copytree(src=SKILL_ROOT, dst=protected_skill)
+    (ancestor_upstream / "zh").symlink_to(
+        target=protected_zh,
+        target_is_directory=True,
+    )
+    commit_all(repo=ancestor_upstream, message="tracked source ancestor symlink")
+    ancestor_home = tmp_path / "ancestor-source-home"
+    ancestor_home.mkdir()
+    assert_user_install_failure_unchanged(
+        upstream=ancestor_upstream,
+        home=ancestor_home,
+        expected_error="canonical Skill 路径不能包含符号链接",
+    )
+    assert (protected_skill / "SKILL.md").is_file()
+
+    # Claude frontmatter 也在 mutation 前验证，失败不能留下半安装状态。
+    invalid_upstream = create_installer_upstream(
+        root=tmp_path / "invalid-frontmatter-upstream"
+    )
+    invalid_skill = invalid_upstream / "zh/skills/workflow-docs-sync/SKILL.md"
+    invalid_skill.write_text(data="# Missing frontmatter\n", encoding="utf-8")
+    commit_all(repo=invalid_upstream, message="invalid frontmatter")
+    invalid_home = tmp_path / "invalid-frontmatter-home"
+    invalid_home.mkdir()
+    assert_user_install_failure_unchanged(
+        upstream=invalid_upstream,
+        home=invalid_home,
+        expected_error="SKILL.md 缺少标准 YAML frontmatter",
+    )
+
+    # 普通 status 看不到 ignored source；会被复制的 residue 必须在
+    # 四种安装 mutation 前失败。
+    ignored_upstream = create_installer_upstream(
+        root=tmp_path / "ignored-source-upstream"
+    )
+    (ignored_upstream / ".gitignore").write_text(
+        data="PR_BODY.md\nPRIVATE_STATE/\n",
+        encoding="utf-8",
+    )
+    commit_all(repo=ignored_upstream, message="ignore local PR body")
+    ignored_draft = (
+        ignored_upstream / "zh/skills/workflow-docs-sync/PR_BODY.md"
+    )
+    ignored_draft.write_text(data="private draft\n", encoding="utf-8")
+    ignored_directory = (
+        ignored_upstream / "zh/skills/workflow-docs-sync/PRIVATE_STATE"
+    )
+    ignored_directory.mkdir()
+    assert repository_status(root=ignored_upstream) == ""
+    ignored_source_status = git(
+        repo=ignored_upstream,
+        args=["status", "--porcelain=v1", "--ignored"],
+        check=True,
+    )
+    assert "!! zh/skills/workflow-docs-sync/PR_BODY.md" in ignored_source_status
+    ignored_directory_rule = git(
+        repo=ignored_upstream,
+        args=[
+            "check-ignore",
+            "-v",
+            "zh/skills/workflow-docs-sync/PRIVATE_STATE",
+        ],
+        check=True,
+    )
+    assert "PRIVATE_STATE/" in ignored_directory_rule
+
+    ignored_home = tmp_path / "ignored-source-home"
+    ignored_home.mkdir()
+    seed_legacy_install(
+        install_root=ignored_home,
+        obsolete_kinds=("directory", "file"),
+    )
+    ignored_user_payload = assert_user_install_failure_unchanged(
+        upstream=ignored_upstream,
+        home=ignored_home,
+        expected_error="canonical Skill 包含会被安装的 ignored path",
+    )
+    assert "PR_BODY.md" in ignored_user_payload["error"]
+    assert "PRIVATE_STATE" in ignored_user_payload["error"]
+
+    ignored_target = init_repo(path=tmp_path / "ignored-source-target")
+    seed_legacy_install(
+        install_root=ignored_target,
+        obsolete_kinds=("directory", "directory"),
+    )
+    commit_all(repo=ignored_target, message="existing installation")
+    target_before = repository_snapshot(root=ignored_target)
+    ignored_result, ignored_payload = run_repo_install(
+        upstream=ignored_upstream,
+        target=ignored_target,
+    )
+    assert ignored_result.returncode != 0
+    assert ignored_payload["status"] == "failed"
+    assert (
+        "canonical Skill 包含会被安装的 ignored path"
+        in ignored_payload["error"]
+    )
+    assert "PR_BODY.md" in ignored_payload["error"]
+    assert "PRIVATE_STATE" in ignored_payload["error"]
+    assert repository_snapshot(root=ignored_target) == target_before
+    for install_root in (ignored_home, ignored_target):
+        for _, platform_root in PLATFORM_ROOTS:
+            assert not (
+                install_root
+                / platform_root
+                / "workflow-docs-sync/PR_BODY.md"
+            ).exists()
+            assert not (
+                install_root
+                / platform_root
+                / "workflow-docs-sync/PRIVATE_STATE"
+            ).exists()
+
 
 def test_scenario_5_repository_distribution_contract() -> None:
     """场景 5：真实仓库 bytes、Skill 结构、语境边界与旧控制面保持可分发。"""
@@ -1146,56 +1393,16 @@ def test_scenario_5_repository_distribution_contract() -> None:
                     f"{language}/{relative_path}"
                 )
 
-    # Anchor 协议必须由 contract 单点发布。
-    # 显式 null-test 缺口必须保留完整元数据。
+    # 只固定 PR #21 的机器结构；自然语言质量交给 review 与真实 consumer eval。
     canonical_anchor = "<!-- capability-anchor: <ANCHOR_ID> -->"
     anchor_marker = "capability-anchor:"
-    anchor_rule_fragments = {
-        "zh": (
-            "大小写敏感",
-            "[A-Za-z0-9_.-]+",
-            "空白",
-            "JSON path",
-        ),
-        "en": (
-            "case-sensitive",
-            "[A-Za-z0-9_.-]+",
-            "whitespace",
-            "JSON path",
-        ),
-    }
-    boundary_fragments = {
-        "zh": (
-            "不受支持",
-            "不保证",
-            "不单独证明",
-        ),
-        "en": (
-            "unsupported",
-            "does not guarantee",
-            "does not by itself prove",
-        ),
-    }
-    instructional_metadata = (
-        "目标项目存在本地 alignment test 时，必须登记其真实测试锚点。",
-        "The target project must register its own local alignment test when one exists.",
-    )
     for language in ("zh", "en"):
         contract_path = REPO_ROOT / language / "capability_contract.json"
         contract = json.loads(s=contract_path.read_text(encoding="utf-8"))
         assert contract["schema_version"] == "0.1.0"
         rules_text = "\n".join(contract["rules"])
-        anchor_rules = [
-            rule for rule in contract["rules"] if canonical_anchor in rule
-        ]
-        assert len(anchor_rules) == 1
-        assert all(
-            fragment in anchor_rules[0]
-            for fragment in anchor_rule_fragments[language]
-        )
-        assert all(
-            fragment in rules_text for fragment in boundary_fragments[language]
-        )
+        assert rules_text.count(canonical_anchor) == 1
+        assert rules_text.count(anchor_marker) == 1
         null_test_rules = [
             rule for rule in contract["rules"] if "test_anchor: null" in rule
         ]
@@ -1213,8 +1420,6 @@ def test_scenario_5_repository_distribution_contract() -> None:
             )
         ]
         assert anchor_publishers == ["capability_contract.json"]
-        assert rules_text.count(canonical_anchor) == 1
-        assert rules_text.count(anchor_marker) == 1
 
         explicit_null_entries = [
             entry
@@ -1231,7 +1436,6 @@ def test_scenario_5_repository_distribution_contract() -> None:
         projectized = replace_active_markers(value=contract)
         serialized = json.dumps(obj=projectized, ensure_ascii=False)
         assert not any(marker in serialized for marker in ACTIVE_MARKERS)
-        assert not any(text in serialized for text in instructional_metadata)
         documents = projectized["contracts"]["documents"]
         by_anchor = {entry["anchor_id"]: entry for entry in documents}
         for anchor in ("DOC.interact", "DOC.business_user_guide"):
@@ -1243,124 +1447,16 @@ def test_scenario_5_repository_distribution_contract() -> None:
                 "pending_since",
             } & set(by_anchor[anchor])
 
-    # 测试、review 和两轮 eval 直接保护风险，不复制 anchor 定义或
-    # 增加 parser。
-    downstream_contract_fragments = {
-        "zh": {
-            "TESTING.md": (
-                "仅为满足模板而创建 wrapper",
-                "可安全、确定性复现的 escaped bug",
-                "无法先建立失败测试",
-                "无 test diff",
-                "纯内部重构",
-                "文档-only gate",
-            ),
-            "PR_Checklist.md": (
-                "TESTING.md` 第 4 节",
-                "contract-defined protocol",
-                "REOPENED finding",
-                "SUPERSEDED candidate",
-                "长期规则",
-            ),
-            ".github/pull_request_template.md": (
-                "first-seen",
-                "REOPENED",
-                "SUPERSEDED",
-                "hypothesis",
-                "unknown",
-                "Promoted reusable rule",
-            ),
-        },
-        "en": {
-            "TESTING.md": (
-                "do not create a wrapper only to satisfy this template",
-                "safely and deterministically reproducible escaped bug",
-                "cannot establish a failing test first",
-                "no test diff",
-                "behavior-preserving internal refactor",
-                "documentation-only gate",
-            ),
-            "PR_Checklist.md": (
-                "TESTING.md` section 4",
-                "contract-defined protocol",
-                "REOPENED findings",
-                "SUPERSEDED candidates",
-                "long-term rule",
-            ),
-            ".github/pull_request_template.md": (
-                "first-seen",
-                "REOPENED",
-                "SUPERSEDED",
-                "hypothesis",
-                "unknown",
-                "Promoted reusable rule",
-            ),
-        },
-    }
-    for language, files in downstream_contract_fragments.items():
-        for relative_path, fragments in files.items():
-            text = (REPO_ROOT / language / relative_path).read_text(
-                encoding="utf-8"
-            )
-            assert canonical_anchor not in text
-            assert all(fragment in text for fragment in fragments)
-
     skill_text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
     assert canonical_anchor not in skill_text
-
-    decisions = (
-        REPO_ROOT / "zh/docs/development_workflow/decisions.md"
-    ).read_text(encoding="utf-8")
-    assert "## DEC-007" in decisions
-    assert "- 状态：accepted" in decisions.split("## DEC-007", maxsplit=1)[1]
-    for fragment in (
-        "描述性事实",
-        "规范性政策",
-        "个人/会话偏好",
-        "schema_version",
-        "PASS_NOOP",
-        "不修改 `sync_docs.py`",
-    ):
-        assert fragment in decisions.split("## DEC-007", maxsplit=1)[1]
-
-    eval_contract = (SKILL_ROOT / "evals/README.md").read_text(
-        encoding="utf-8"
-    )
-    for fragment in (
-        "三条当前 scoped normative policy",
-        "ENTRY_STATUSES={active, deprecated}",
-        "check_capability_contract_alignment.py --base-ref",
-        "PASS_NOOP",
-        "ROUND1_INCOMPLETE",
-        "ROUND2_DRIFT",
-    ):
-        assert fragment in eval_contract
-
-    english_workflow = (
-        REPO_ROOT / "en/docs/development_workflow/README.md"
-    ).read_text(encoding="utf-8")
-    for fragment in (
-        "DEC-007 Summary",
-        "descriptive facts",
-        "normative policies",
-        "REOPENED",
-        "PASS_NOOP",
-        "ROUND1_INCOMPLETE",
-        "ROUND2_DRIFT",
-    ):
-        assert fragment in english_workflow
 
     # 机械兜底只覆盖本次真实误植过的八份下游模板与五个精确 token。
     internal_context_tokens = (
         "disposable clone",
         "同步工作树",
         "synchronized worktree",
-        "共享工作树",
-        "shared worktree",
         "fresh-context",
         "blind-first",
-        "通用 GitHub 发布能力",
-        "general GitHub publishing capability",
     )
     guarded_templates = (
         "AGENTS.md",
@@ -1377,27 +1473,6 @@ def test_scenario_5_repository_distribution_contract() -> None:
                 if token in text:
                     context_hits.append(f"{language}/{relative_path}: {token}")
     assert context_hits == []
-
-    # 窄修只撤回 WDS 实现，主执行者、证据与只读审查等通用协作原则必须保留。
-    collaboration_contract = {
-        "zh": (
-            "主执行者对最终判断、最终产物和最终写入结果负责",
-            "受委派结果必须经过审阅与合成",
-            "不强制 Agent 数量或固定调度顺序",
-            "协作者结论、投票或共识不等于证据",
-            "调查与审查任务默认只读",
-        ),
-        "en": (
-            "The primary executor owns final judgments, deliverables, and writes",
-            "delegated results must be reviewed",
-            "do not require a fixed agent count",
-            "Agreement, voting, or consensus is not evidence",
-            "Investigation and review tasks are read-only by default",
-        ),
-    }
-    for language, statements in collaboration_contract.items():
-        text = (REPO_ROOT / language / "AGENTS.md").read_text(encoding="utf-8")
-        assert all(statement in text for statement in statements)
 
     deleted_paths = (
         "PR_BODY.md",

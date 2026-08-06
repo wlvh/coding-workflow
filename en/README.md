@@ -28,6 +28,9 @@ Review prefers a fresh-context, blind-first independent reviewer. When cognitive
 the result is reported honestly as self-review. The deterministic checker proves final repository state
 only, not investigation, test, or review history.
 
+The installer copies only the canonical Skill. Before any target mutation it rejects symlinks, invalid
+frontmatter, and ignored source residue that would otherwise be copied; it stores no source receipt.
+
 ## Template Contract
 
 Markdown project-fill slots use `<!-- project-fill: ... -->`; JSON uses strings prefixed with

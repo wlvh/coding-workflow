@@ -25,8 +25,8 @@
 ## Documentation and Contracts
 
 - [ ] 已按真实影响检查 `AGENTS.md`、`architecture.md`、`capability_contract.json`、
-  `interact.md`、business guide、`TESTING.md` 和 `SOP.md`；无需更新的候选项有真实
-  no-update reason，不要求为了齐全而修改所有文档。
+  `interact.md`、business guide、`TESTING.md` 和 `SOP.md`；确受影响但保持不变的权威文档有
+  当前事实依据，不要求为了齐全而修改所有文档。
 - [ ] 能力变化遵循 `capability_contract.json → interact.md → business_user_guide.md` 的权威
   方向；用户可见声明有当前实现或测试证据和稳定 anchor。
 - [ ] Markdown anchor 按 capability contract 的 contract-defined protocol 引用，没有在本文复写
@@ -37,12 +37,8 @@
 ## Review Closure
 
 - [ ] 已完成本项目测试与交付政策要求的 review gate，并准确记录 reviewer 身份、范围和限制。
-- [ ] 所有 BLOCKER 和不需要新产品决策的 actionable WARN 已修复并复核；其余问题进入 open
-  decisions，包含证据与影响。
-- [ ] Material rounds、REOPENED finding 与 SUPERSEDED candidate/evidence 均保留；重开沿用原
-  finding ID，finding 状态没有与证据状态混用。
-- [ ] 上一轮漏检原因有证据，或明确标为 `hypothesis` / `unknown`，没有为填字段编造因果。
-- [ ] 每个 material finding 已评估是否提升为长期规则或自动化 gate；未提升时记录原因。
+- [ ] 已按本项目政策处理可执行的 review feedback；已解决项有复核证据，未解决项明确记录
+  影响与所需决策。
 - [ ] 修复后重跑受影响测试和机械检查，最终 diff 与 Git 状态已再次检查。
 
 ## PR Delivery
