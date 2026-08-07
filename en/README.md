@@ -6,13 +6,48 @@ This directory provides English templates derived from the Chinese semantic sour
 language-, framework-, and project-neutral. The canonical `workflow-docs-sync` Skill remains under
 `zh/skills/workflow-docs-sync/` and reads English templates from the pinned upstream commit.
 
-## Skill Installation
+## One-line start
 
-### User-level installation (recommended for a first trial)
+Copy this exact instruction into Codex while it is open in the target project:
 
-A user-level installation does not modify a target project, so it is the recommended way to try the Skill
-locally in Codex or Claude. Clone the canonical repository, verify that the checkout is clean, and run the
-default user-scope installation:
+```text
+用 $skill-installer 安装 https://github.com/wlvh/coding-workflow/tree/main/zh/skills/workflow-docs-sync，然后立即用 $workflow-docs-sync 同步当前项目文档并创建 draft PR；如果当前会话尚未注册新 Skill，直接读取安装器返回目录中的 SKILL.md 继续执行，不要停下来要求重启。
+```
+
+The user does not provide an absolute target path, `zh` / `en`, a branch name, upstream SHA, or installation
+path, and does not need to clean the target worktree first. A successful system `$skill-installer` run prints
+`Installed workflow-docs-sync to <installed-skill-root>`. If the current session has not registered the
+Skill, use that actual directory from this successful run, read its complete `SKILL.md`, resolve scripts from
+the same directory, and continue in the current turn. Do not guess an installation path or wait for another
+turn.
+
+## Defaults
+
+- Target: use the Git root containing Codex's current working directory. Ask only when the current directory
+  is not in a Git repository.
+- Language: an explicit `zh` / `en` wins; otherwise a Chinese request selects `zh` and any other language
+  selects `en`.
+- PR: an explicit request not to create a PR selects false. Mentioning PR, opening, creating, or submitting a
+  pull request selects true. No mention selects false. The Skill never marks a PR Ready or merges it.
+- Worktree: when a PR is requested, always create an external clean worktree and a unique branch from the
+  committed HEAD captured at invocation. Ordinary, staged, untracked, and ignored state in the original
+  worktree remains unchanged; the Skill does not stash, clean, commit, or overwrite user changes there.
+  Before the final report, it compares status, raw index bytes, and a full-worktree content-digest manifest,
+  rather than relying only on paths and status codes.
+
+The final report states that the sync and PR use the invocation-time committed HEAD and exclude uncommitted
+changes from the original worktree.
+
+A repository with no commit is a `BLOCKER`. If documentation sync passes but the remote, authentication,
+push permission, or PR creation fails, the Skill preserves the external worktree, branch, commit, and
+out-of-repository PR body. It reports `Documentation sync: PASS`, `Publication: PR_BLOCKED`, and
+`Overall: PARTIAL` instead of claiming that a PR exists.
+
+## Repository installer (optional)
+
+This path is for maintainers or for installing both Codex and Claude copies; it is not the one-line entrypoint
+above. Clone the canonical repository and verify that this upstream checkout is clean. That clean requirement
+does not apply to the target project being synchronized:
 
 ```bash
 git clone --depth 1 https://github.com/wlvh/coding-workflow.git
@@ -22,13 +57,11 @@ git status --porcelain=v1 --untracked-files=all
 python3 zh/scripts/install_skills.py --upstream-dir "$PWD"
 ```
 
-`git status` should print nothing. If it prints any entry, stop and inspect the checkout before installing.
-On success, the command ends with one line of JSON containing `"status":"passed"` and writes both
-`~/.agents/skills/workflow-docs-sync/` and `~/.claude/skills/workflow-docs-sync/`.
+`git status` should print nothing. If it prints an entry, stop and inspect the canonical checkout. A
+successful JSON result lists actions for both `~/.agents/skills/workflow-docs-sync/` and
+`~/.claude/skills/workflow-docs-sync/`.
 
-### Repository-level installation
-
-To review and share the Skill as part of a target project, run this from the canonical checkout root above:
+To review and share the Skill as part of a target project, run this from the canonical checkout root:
 
 ```bash
 python3 zh/scripts/install_skills.py \
@@ -37,42 +70,19 @@ python3 zh/scripts/install_skills.py \
   --upstream-dir "$PWD"
 ```
 
-The target path must be exactly a clean Git repository root. The installation is written to
-`.agents/skills/workflow-docs-sync/` and `.claude/skills/workflow-docs-sync/` in that repository. Review the
-resulting Git diff, then commit it according to the target project's policy.
-
-Both scopes copy only the canonical `workflow-docs-sync`; they store no source state and do not update it
-automatically. The installer replaces any existing Skill with the same name in both locations and removes
-only the obsolete `workflow-docs-sync-review`. Back up local customizations in those directories first.
+The repo-scope target must be exactly a clean Git repository root. Review the resulting Git diff, then commit
+it according to the target project's policy. Both scopes replace an existing Skill with the same name,
+remove only the obsolete `workflow-docs-sync-review`, store no source state, and do not update automatically.
 Studio can also load the canonical `zh/skills/workflow-docs-sync/` directly.
 
-## Quick Start
-
-Installation only copies the Skill; it does not synchronize any target documents. After installation, use
-the matching explicit entrypoint in a Codex or Claude session. The Skill does not allow implicit invocation.
-
-Invoke the Skill once with the target Git repository, `zh` or `en`, and whether to create a draft PR after
-success:
-
-Codex:
-
-```text
-Use $workflow-docs-sync for /absolute/path/to/repository in English.
-Do not create a draft PR.
-```
-
-Claude:
-
-```text
-/workflow-docs-sync Sync /absolute/path/to/repository in English. Do not create a draft PR.
-```
+## Synchronization boundary
 
 The Skill pins target HEAD and upstream SHA, reconstructs facts from current code, configuration, tests,
 committed artifacts, reproducible results, and necessary Git history, then makes only the document changes
 those facts require. Existing documents and upstream templates are hypotheses, not evidence.
 
 Architecture, Capability / User Behavior, Testing, and Governance are coverage dimensions, not a fixed
-agent topology. The main agent is the only target-workspace writer. Test environments follow actual
+agent topology. The main agent is the only execution-worktree writer. Test environments follow actual
 commands, side effects, CI capabilities, and project policy.
 
 Review prefers a fresh-context, blind-first independent reviewer. When cognitive isolation is unavailable,
