@@ -1226,20 +1226,27 @@ def test_scenario_4_installer_end_to_end(tmp_path: Path) -> None:
     )
     assert (protected_skill / "SKILL.md").is_file()
 
-    # Claude frontmatter 的标准分隔也在 mutation 前验证，失败不能留下半安装状态。
-    invalid_upstream = create_installer_upstream(
-        root=tmp_path / "invalid-frontmatter-upstream"
-    )
-    invalid_skill = invalid_upstream / "zh/skills/workflow-docs-sync/SKILL.md"
-    invalid_skill.write_text(data="# Missing frontmatter\n", encoding="utf-8")
-    commit_all(repo=invalid_upstream, message="invalid frontmatter")
-    invalid_home = tmp_path / "invalid-frontmatter-home"
-    invalid_home.mkdir()
-    assert_user_install_failure_unchanged(
-        upstream=invalid_upstream,
-        home=invalid_home,
-        expected_error="SKILL.md 缺少标准 YAML frontmatter",
-    )
+    # 标准分隔在 mutation 前验证，避免行内伪分隔产生不可加载副本。
+    for case_name, skill_text in (
+        ("missing", "# Missing frontmatter\n"),
+        ("inline-opening", "---name: workflow-docs-sync\n---\n# Body\n"),
+        ("inline-closing", "---\nname: workflow-docs-sync\n---# Body\n"),
+    ):
+        invalid_upstream = create_installer_upstream(
+            root=tmp_path / f"{case_name}-frontmatter-upstream"
+        )
+        invalid_skill = (
+            invalid_upstream / "zh/skills/workflow-docs-sync/SKILL.md"
+        )
+        invalid_skill.write_text(data=skill_text, encoding="utf-8")
+        commit_all(repo=invalid_upstream, message=f"{case_name} frontmatter")
+        invalid_home = tmp_path / f"{case_name}-frontmatter-home"
+        invalid_home.mkdir()
+        assert_user_install_failure_unchanged(
+            upstream=invalid_upstream,
+            home=invalid_home,
+            expected_error="SKILL.md 缺少标准 YAML frontmatter",
+        )
 
     # 普通 status 看不到 ignored source；会被复制的 residue 必须在
     # 四种安装 mutation 前失败。

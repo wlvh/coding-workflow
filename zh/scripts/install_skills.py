@@ -57,12 +57,24 @@ def require_clean_repo(*, value: str, label: str) -> Path:
 
 def claude_text(*, text: str) -> str:
     """为 Claude 副本添加禁止隐式调用的 frontmatter 标记。"""
-    parts = text.split("---", 2)
-    if len(parts) != 3 or parts[0] != "":
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0].rstrip("\r\n") != "---":
         raise InstallError("SKILL.md 缺少标准 YAML frontmatter")
-    lines = parts[1].strip("\n").splitlines()
-    lines.append("disable-model-invocation: true")
-    return "---\n" + "\n".join(lines) + "\n---" + parts[2]
+    closing_index = next(
+        (
+            index
+            for index, line in enumerate(lines[1:], start=1)
+            if line.rstrip("\r\n") == "---"
+        ),
+        None,
+    )
+    if closing_index is None:
+        raise InstallError("SKILL.md 缺少标准 YAML frontmatter")
+    frontmatter = "".join(lines[1:closing_index]).rstrip("\r\n")
+    body = "".join(lines[closing_index + 1 :])
+    return (
+        f"---\n{frontmatter}\ndisable-model-invocation: true\n---\n{body}"
+    )
 
 
 def remove_path(*, path: Path) -> bool:
