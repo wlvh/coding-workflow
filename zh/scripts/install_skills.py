@@ -144,7 +144,7 @@ def validate_source(*, upstream_root: Path, source: Path) -> None:
         raise InstallError(
             f"canonical Skill 包含会被安装的 ignored path：{unsafe_ignored}"
         )
-    # Claude 转换可能失败；先验证 frontmatter，防止另一平台已写入。
+    # Claude 转换可能失败；先验证标准分隔，防止另一平台已写入。
     claude_text(text=(source / "SKILL.md").read_text(encoding="utf-8"))
 
 

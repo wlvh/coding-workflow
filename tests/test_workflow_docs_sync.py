@@ -1226,7 +1226,7 @@ def test_scenario_4_installer_end_to_end(tmp_path: Path) -> None:
     )
     assert (protected_skill / "SKILL.md").is_file()
 
-    # Claude frontmatter 也在 mutation 前验证，失败不能留下半安装状态。
+    # Claude frontmatter 的标准分隔也在 mutation 前验证，失败不能留下半安装状态。
     invalid_upstream = create_installer_upstream(
         root=tmp_path / "invalid-frontmatter-upstream"
     )

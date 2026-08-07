@@ -74,8 +74,8 @@ external shallow clone, then pins target HEAD and upstream SHA for the entire ru
   an index deletion or rename source followed by an untracked or ignored recreation at that path. It removes
   two publication candidates rather than running a second whitespace check.
 - Before any removal or copy, the installer validates source and destination ancestors, source symlinks,
-  Claude frontmatter, and ignored source residue that would be copied. It only removes the exact obsolete
-  reviewer Skill and stores no install state or source receipt.
+  standard delimiters around Claude frontmatter, and ignored source residue that would be copied. It only
+  removes the exact obsolete reviewer Skill and stores no install state or source receipt.
 - Keep temporary PR body Markdown outside the repository. Commit, push, and draft-PR creation occur through
   general GitHub publishing capability only after successful checks and only when the user asks.
 
