@@ -97,10 +97,14 @@ Stable IDs, first-seen evidence, REOPENED events, and candidate/evidence states 
 maintenance and canonical Skill/eval evidence contract. Downstream templates defer review records,
 actionable feedback, rechecks, and open decisions to target-project policy instead of fixing this vocabulary.
 
-With the same target base, upstream candidate, language, and round-one document bytes, Case A round two passes
-only as `PASS_NOOP`; an added valid correction is `ROUND1_INCOMPLETE`, and unsupported prose drift is
-`ROUND2_DRIFT`. Either failure restarts both rounds from a clean target. This decision adds no parser, ledger,
-receipt, run state, installer behavior, or `sync_docs.py` / CLI feature.
+Case A preregisters the selected target and known-stale claims before starting a blind executor. Target code,
+configuration, tests, other committed artifacts, upstream candidate, and language stay fixed; round one
+commits only its final nine documents, and round two starts from that `second_target_sha` in a new clean
+checkout. A zero document diff with no staged, untracked, or ignored residue is `PASS_NOOP`; an added valid
+correction is `ROUND1_INCOMPLETE`, and unsupported prose drift is `ROUND2_DRIFT`. Alignment runs directly on
+the committed second target instead of a derived test-only identity. Either failure restarts both rounds from
+a clean target. This decision adds no parser, ledger, receipt, run state, installer behavior, or
+`sync_docs.py` / CLI feature.
 
 Key implementation files:
 

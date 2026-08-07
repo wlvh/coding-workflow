@@ -2,6 +2,8 @@
 
 本仓库发布双语下游工作流模板、canonical `workflow-docs-sync` Skill 和安装器。
 
+新增 marker、alias、parser 或其他控制机制前，先按 DEC-006 证明独立风险、真实消费者和可复现失败路径；否则保持零 diff。
+
 - `zh/` 是中文语义源；`en/` 是从中文派生的模板与说明。
 - 根 `.github/` 是本仓库 CI 与 GitHub 基础设施；`zh/.github/`、`en/.github/` 是下游模板源。
 - 修改模板：先改 `zh/` 对应九份核心文件，再同步 `en/`。

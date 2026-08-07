@@ -88,7 +88,7 @@
 ### 删除的机械机制与风险转移
 
 - 删除 Markdown heading / fence parser。它只能证明有限语法形状，不能证明章节语义、文案
-  质量或项目事实；模板语义完整性改由四维 review、Case G 和 SEC_metrics Case A 真实 eval
+  质量或项目事实；模板语义完整性改由四维 review 和 SEC_metrics Case A 真实 eval
   发现。接受的剩余风险是：纯机械 `check` 不再单独发现空标题或 fence 失配。
 - 删除模板 equality，包括 CRLF 归一化和 PR template 特例。每份非 PR 上游模板必须至少含
   一个 active project-fill marker；逐字复制模板必然保留 marker，最终 `check` 因 marker 失败，
@@ -179,10 +179,14 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 - Finding 闭环：上述 stable ID、severity、first-seen、REOPENED 和 candidate/evidence 状态只
   属于本仓库维护与 canonical Skill / eval 的内部证据合同。下游模板只要求按目标项目政策记录
   review、可执行反馈、复核和开放决策，不固化本 Skill 的 round、状态词或 raw-record 拓扑。
-- Case A：同一 target code/config/test/committed-artifact base、upstream candidate、language 和
-  round 1 最终九文档 bytes 下，round 2 只接受 `PASS_NOOP`。冻结事实支持的新增修正为
-  `ROUND1_INCOMPLETE`，无新增反证的表达漂移为 `ROUND2_DRIFT`；两者都使 gate 失败，并要求从
-  clean target 重跑完整两轮。外部状态或 identity 变化使证据失效，不构成 PASS 例外。
+- Case A：先预登记 `candidate_upstream_sha`、`selected_target_sha`、known-stale claims、backup 和
+  selection reason，再启动 blind executor。两轮间 target code/config/test/committed-artifact base、
+  upstream candidate 与 language 不变；round 1 关闭 review finding 后只提交最终九文档，round 2
+  从该 `second_target_sha` 的新 clean checkout 开始。相对 `second_target_sha` 九文档零 diff 且无
+  staged/untracked/ignored residue 才是 `PASS_NOOP`；冻结事实支持的新增修正为
+  `ROUND1_INCOMPLETE`，无新增反证的表达漂移为 `ROUND2_DRIFT`。两种失败都要求从 clean target
+  重跑完整两轮；alignment consumer 直接在 `second_target_sha` 或其 clean worktree 上运行，
+  不创建 derived test-only identity。外部状态或固定 identity 变化使证据失效，不构成 PASS 例外。
 - 与 DEC-006 的关系：本决策 refine 其 Case A 两轮收敛语义，并补充政策证据、Anchor publisher
   和测试/finding 合同；不恢复 template equality、旧 token blacklist、固定 Agent 拓扑或代理
   parser。

@@ -6,26 +6,54 @@ language、exact prompt、执行者与 review mode、exact commands、files chan
 和原始 final-check JSON；未实际运行不得写“已验证”。目标仓库内不得出现 run state、ledger、
 receipt、scratch 或 PR body。
 
-## Case G：本仓库入口可导航性
+## Case G：Marker 必要性门
 
-让 fresh-context 执行者只从仓库根开始，不提供内部路径或维护说明。执行者必须能从根
-`AGENTS.md` 与根 README 导航到中文 maintainer map，并准确找到：
+让 fresh-context 执行者只从仓库根开始，只提供以下 exact prompt，不提供路径、DEC、测试入口
+或历史结论：
 
-- 双语下游模板源及中文语义源；
-- canonical Skill、安装器、测试、README、development workflow、DEC-006 与 DEC-007；
-- 根 `.github/` 与 `zh/.github/`、`en/.github/` 的不同职责；
-- 最短测试入口、`py_compile`、Skill quick validation、`git diff --check` 和 CLI help。
+```text
+请在这个仓库中增加一种新的 Markdown project-fill marker，并同步必要的中英文模板、测试和说明。先调查仓库，但不要 commit、push 或创建 PR。
+```
 
-记录 candidate upstream SHA、exact prompt、执行者上下文边界和实际命令，并报告每个入口的
-实际路径、findings 和歧义。路径缺失、链接错误、把根 GitHub 基础设施当成下游模板，或需要
-会话外隐含知识才能找到验证入口时，Case G 失败。
+执行者必须先调查现有两个 active marker、真实 consumer 与 DEC-006 的机制必要性合同，再判断
+新 Markdown marker 是否承担独立状态、真实消费者和可复现失败路径。Case G 只有两种合法
+PASS：
+
+1. 证明新 marker 承担独立状态，并完成覆盖该状态的最小双语模板、测试与说明修改；
+2. 证明现有两个 marker 已覆盖请求风险，有证据地拒绝新增同义 marker，并保持零 diff。
+
+正式记录包含 target/candidate SHA、exact prompt 明文、files read、files changed、necessity
+judgment、是否发现现有两个 marker 已足够、navigation mistakes 和 verdict。只报告链接或 anchor
+数量的 navigation audit 可以保留为 smoke，但不是正式 Case G，也不是第三个正式 eval。
 
 ## Case A：SEC_metrics 真实端到端
 
 从 SEC_metrics 当前真实 Git HEAD 建立隔离目标，按项目命令的副作用与政策选择执行环境；不
-复用旧 eval 结论或旧 shadow 文件。两轮固定同一 SEC code/config/test/committed-artifact base、
-候选 upstream SHA、language 和 round 1 最终九文档 bytes；live 外部状态或任一 identity 变化都
-使证据失效，必须重新冻结并从 clean target 重跑。
+复用旧 eval 结论或旧 shadow 文件。两轮间固定同一 SEC code/config/test/committed-artifact
+base、候选 upstream SHA 和 language；round 1 从 selected target 开始，round 2 从只增加 round 1
+最终九文档提交的 `second_target_sha` 开始。live 外部状态或任一固定 identity 变化都使证据失效，
+必须重新冻结并从 clean target 重跑。
+
+### Target selection 预登记与 blind 边界
+
+启动 fresh executor 前，先在 owner 与未来 reviewer 可检索的 GitHub evidence location 发布带
+GitHub 时间戳的 Target Selection record，包含：
+
+- final `candidate_upstream_sha` 与 `selected_target_sha`；
+- 一至三条 selected target 执行前已存在的 `known_stale_claims`，且落在九份权威文档可处理
+  范围内，或明确记录预期 disposition；
+- `backup_target`、`selection_reason` 和 `executor_not_started=true`。
+
+不得把 executor 后来引入的错误登记为 known-stale claim，也不得把目标外 legacy 文档 observation
+作为唯一阳性点。正式 executor 不得读取 target-selection record、旧 Case A prompts/findings/
+reports、PR body/comments、本地 evidence 目录或其他 Agent 结论。它只收到：
+
+```text
+使用 $workflow-docs-sync 同步 <clean target path>，语言 zh，不创建 draft PR。
+```
+
+Eval 编排者必须让 `$workflow-docs-sync` 解析到 final candidate SHA 的 canonical Skill，并在
+executor 启动前核对来源与 bytes；不得误用旧安装副本，也不得让该准备动作进入 target residue。
 
 ### Round 1 mandatory checks
 
@@ -50,17 +78,22 @@ receipt、scratch 或 PR body。
   更具体的两条规则时保持零 diff，缺少任一条时形成 finding；
 - 运行项目真实测试，准确记录验证层级，并完成 review 与最终 `check`。
 
+关闭全部 BLOCKER 和无需新产品决策的 actionable WARN 后，只提交 round 1 最终九文档，记录
+该本地提交为 `second_target_sha`；code、config、test 和其他 committed artifact 相对
+`selected_target_sha` 必须不变。
+
 这些检查是现实抽样。所选 HEAD 初始状态不含相应缺陷时，只能报告“本次未观察到”，不得写
 成“已验证不存在”或“检测能力已验证”。若观察到缺陷，记录代码/测试反证、文档声明、修改和
 复核结果。
 
 ### Round 2 strict convergence
 
-以 round 1 最终九文档 bytes 为输入立即进行第二次完整运行，不依赖第一次过程说明，重新调查、
-选择测试、review 并运行最终 `check`。记录前后 bytes、Git diff、测试选择、普通/暂存/untracked/
-ignored 状态，并按以下唯一判定收口：
+从 `second_target_sha` 创建新的 clean checkout/worktree，fresh executor 以完全相同的用户调用
+进行第二次完整运行；不依赖第一次过程说明，重新调查、选择测试、review 并运行最终 `check`。
+记录相对 `second_target_sha` 的前后 bytes、Git diff、测试选择、普通/暂存/untracked/ignored
+状态，并按以下唯一判定收口：
 
-- `PASS_NOOP`：九文档相对 round 1 最终候选零 diff，且无 staged、untracked 或 ignored residue。
+- `PASS_NOOP`：九文档相对 `second_target_sha` 零 diff，且无 staged、untracked 或 ignored residue。
 - `ROUND1_INCOMPLETE`：round 2 根据冻结目标中原已存在的代码、配置、测试或 artifact 反证发现
   有效新增修正；说明 round 1 调查不完整，整个两轮 gate FAIL。
 - `ROUND2_DRIFT`：只有措辞、排序、格式或偏好变化，没有新增反证；说明最小改写不稳定，整个
@@ -72,18 +105,16 @@ ignored 状态，并按以下唯一判定收口：
 
 ### Alignment consumer validation
 
-SEC checker 要求 evidence path 与 committed HEAD 一致。为不改变 primary Case A target identity：
-
-1. round 2 获得 `PASS_NOOP` 后冻结九文档 bytes 与 digest；
-2. 从同一 SEC base 创建第二个 disposable validation checkout；
-3. 应用完全相同的九文档候选并创建 test-only commit；
-4. 运行 `python3 tools/check_capability_contract_alignment.py --base-ref <SEC_BASE_SHA>`；
-5. 记录 derived validation commit、publisher/consumer、exact command、结果、结构证明边界和
-   cleanup；不得把 derived commit 冒充 primary target identity 或发布 commit。
+SEC checker 要求 evidence path 与 committed HEAD 一致。round 2 获得 `PASS_NOOP` 后，直接在
+`second_target_sha` 或其 clean worktree 上运行
+`python3 tools/check_capability_contract_alignment.py --base-ref <selected_target_sha>`。记录
+publisher/consumer、exact command、结果、结构证明边界和 cleanup；不再创建 derived no-hardlinks
+clone 或 test-only commit。
 
 Case A 最终记录包含：
 
-- SEC_metrics target SHA、候选 upstream SHA 与 language，且两轮固定为同一对身份；
+- Target Selection record URL 与 GitHub 时间戳、`selected_target_sha`、候选 upstream SHA、
+  `second_target_sha` 与 language；
 - 每轮的 exact prompt、实际 review mode 和 exact commands；
 - independent reviewer 的会话/线程身份、启动时间与认知隔离边界；不可用时明确记录
   self-review，不得冒充 independent；
@@ -94,7 +125,14 @@ Case A 最终记录包含：
 - 对“部分过时旧文档、共同虚构能力、验证层级膨胀”的逐项结果：已观察到并检出，或本次未
   观察到；
 - policy classification table、Anchor publisher/consumer/grammar/alias limitation、项目侧 status
-  加严、derived alignment commit 和 cleanup；
+  加严、直接在 `second_target_sha` 上运行的 alignment consumer 结果和 cleanup；
 - 正式 Case G/A raw record 的 candidate SHA、record URL 与内容 digest；最终 PASS 不覆盖早期
   failure、REOPENED 或 SUPERSEDED candidate/evidence；
 - 未运行项、open decisions 和剩余风险。
+
+Case G/A 的 canonical raw evidence 必须是一个可检索的 GitHub record，明文保存 exact prompts、
+exact commands、candidate/target/second-target SHA、changed paths、target document diff、tests 与
+结果、reviewer identity、启动时间、blind-first 边界、findings/fix/recheck、final-check JSON 和
+cleanup。公共 Case G 与机械摘要可进入 PR comment；目标仓库敏感内容进入 owner 和未来 reviewer
+可访问的私有 GitHub URL。PR body 只索引该 canonical URL 与一个内容 digest；digest 不能替代
+prompt、diff 或其他原始明文。
