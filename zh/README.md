@@ -5,12 +5,61 @@
 本目录提供真正跨语言、跨框架、跨项目的中文核心模板、开发工作流和 canonical
 `workflow-docs-sync` Skill。
 
+## Skill 安装
+
+### 用户级安装（首次试用推荐）
+
+用户级安装不改动目标项目，适合先在本机的 Codex 或 Claude 中试用。克隆 canonical 仓库后，
+先确认 checkout clean，再运行默认的 user scope 安装：
+
+```bash
+git clone --depth 1 https://github.com/wlvh/coding-workflow.git
+cd coding-workflow
+
+git status --porcelain=v1 --untracked-files=all
+python3 zh/scripts/install_skills.py --upstream-dir "$PWD"
+```
+
+`git status` 应无输出；如果有输出，停止安装并先检查 checkout。安装成功时，命令以一行
+`"status":"passed"` JSON 结束，并同时写入
+`~/.agents/skills/workflow-docs-sync/` 与 `~/.claude/skills/workflow-docs-sync/`。
+
+### 仓库级安装
+
+需要把 Skill 作为目标项目的一部分审查和共享时，在上述 canonical checkout 根目录运行：
+
+```bash
+python3 zh/scripts/install_skills.py \
+  --scope repo \
+  --target-repo "/目标仓库绝对路径" \
+  --upstream-dir "$PWD"
+```
+
+目标路径必须恰好是 clean Git 根目录。安装结果位于目标仓库的
+`.agents/skills/workflow-docs-sync/` 与 `.claude/skills/workflow-docs-sync/`；审查生成的 Git diff
+后，再按目标项目政策提交。
+
+两种 scope 都只复制 canonical `workflow-docs-sync`，不保存来源状态或自动更新。安装器会覆盖
+两端已有的同名 Skill，并精确移除废弃的 `workflow-docs-sync-review`；如果同名目录含本地定制，
+先自行备份。Studio 也可直接加载 canonical `zh/skills/workflow-docs-sync/`。
+
 ## Quick Start
+
+安装只复制 Skill，不会同步任何目标文档。安装成功后，必须在 Codex 或 Claude 会话中用对应
+入口显式调用；该 Skill 不允许隐式调用。
 
 用户只调用一次 Skill，只提供目标 Git 仓库、`zh` 或 `en`，以及成功后是否创建 draft PR：
 
+Codex：
+
 ```text
 使用 $workflow-docs-sync 同步 /目标仓库绝对路径，语言 zh，结束后不要创建 draft PR。
+```
+
+Claude：
+
+```text
+/workflow-docs-sync 同步 /目标仓库绝对路径，语言 zh，结束后不要创建 draft PR。
 ```
 
 Skill 固定目标 HEAD 与上游 SHA，从当前代码、配置、测试、committed artifacts、可重复运行
@@ -23,18 +72,6 @@ Architecture、Capability / User Behavior、Testing、Governance 是覆盖维度
 复核优先使用 fresh-context、blind-first independent reviewer。平台不能提供认知隔离时，
 最终结果诚实标记 self-review。确定性 checker 只验证最终仓库状态，不证明调查、测试或复核
 历史。
-
-## Skill 安装
-
-Studio 可直接加载 canonical `zh/skills/workflow-docs-sync/`。个人或团队安装只复制这一个
-Skill，不保存来源状态；安装器会在任何目标 mutation 前拒绝 symlink、缺少标准分隔的
-frontmatter 和会被复制的 ignored source residue：
-
-```bash
-python3 zh/scripts/install_skills.py --upstream-dir <clean-canonical-checkout>
-python3 zh/scripts/install_skills.py --scope repo \
-  --target-repo <目标仓库> --upstream-dir <clean-canonical-checkout>
-```
 
 ## Template Contract
 

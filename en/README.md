@@ -6,14 +6,65 @@ This directory provides English templates derived from the Chinese semantic sour
 language-, framework-, and project-neutral. The canonical `workflow-docs-sync` Skill remains under
 `zh/skills/workflow-docs-sync/` and reads English templates from the pinned upstream commit.
 
+## Skill Installation
+
+### User-level installation (recommended for a first trial)
+
+A user-level installation does not modify a target project, so it is the recommended way to try the Skill
+locally in Codex or Claude. Clone the canonical repository, verify that the checkout is clean, and run the
+default user-scope installation:
+
+```bash
+git clone --depth 1 https://github.com/wlvh/coding-workflow.git
+cd coding-workflow
+
+git status --porcelain=v1 --untracked-files=all
+python3 zh/scripts/install_skills.py --upstream-dir "$PWD"
+```
+
+`git status` should print nothing. If it prints any entry, stop and inspect the checkout before installing.
+On success, the command ends with one line of JSON containing `"status":"passed"` and writes both
+`~/.agents/skills/workflow-docs-sync/` and `~/.claude/skills/workflow-docs-sync/`.
+
+### Repository-level installation
+
+To review and share the Skill as part of a target project, run this from the canonical checkout root above:
+
+```bash
+python3 zh/scripts/install_skills.py \
+  --scope repo \
+  --target-repo "/absolute/path/to/target-repository" \
+  --upstream-dir "$PWD"
+```
+
+The target path must be exactly a clean Git repository root. The installation is written to
+`.agents/skills/workflow-docs-sync/` and `.claude/skills/workflow-docs-sync/` in that repository. Review the
+resulting Git diff, then commit it according to the target project's policy.
+
+Both scopes copy only the canonical `workflow-docs-sync`; they store no source state and do not update it
+automatically. The installer replaces any existing Skill with the same name in both locations and removes
+only the obsolete `workflow-docs-sync-review`. Back up local customizations in those directories first.
+Studio can also load the canonical `zh/skills/workflow-docs-sync/` directly.
+
 ## Quick Start
+
+Installation only copies the Skill; it does not synchronize any target documents. After installation, use
+the matching explicit entrypoint in a Codex or Claude session. The Skill does not allow implicit invocation.
 
 Invoke the Skill once with the target Git repository, `zh` or `en`, and whether to create a draft PR after
 success:
 
+Codex:
+
 ```text
 Use $workflow-docs-sync for /absolute/path/to/repository in English.
 Do not create a draft PR.
+```
+
+Claude:
+
+```text
+/workflow-docs-sync Sync /absolute/path/to/repository in English. Do not create a draft PR.
 ```
 
 The Skill pins target HEAD and upstream SHA, reconstructs facts from current code, configuration, tests,
@@ -27,10 +78,6 @@ commands, side effects, CI capabilities, and project policy.
 Review prefers a fresh-context, blind-first independent reviewer. When cognitive isolation is unavailable,
 the result is reported honestly as self-review. The deterministic checker proves final repository state
 only, not investigation, test, or review history.
-
-The installer copies only the canonical Skill. Before any target mutation it rejects symlinks, frontmatter
-without standard delimiters, and ignored source residue that would otherwise be copied; it stores no source
-receipt.
 
 ## Template Contract
 
