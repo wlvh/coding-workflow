@@ -45,9 +45,9 @@ maintenance value.
 
 ## 3. Capability Contract Alignment
 
-An alignment test belongs to the target project's test suite, not the documentation sync checker. It
-should recursively collect stable `anchor_id` values from every object in `capability_contract.json` and
-use the protocol defined by the contract rules to check uniqueness and Markdown references without
+A project's alignment test should recursively collect stable `anchor_id` values from every object in
+`capability_contract.json`. It should use the protocol defined by the contract rules to check uniqueness
+and Markdown references without
 hardcoding buckets, JSON paths, array positions, or requiring every contract entry to appear in the
 business guide.
 

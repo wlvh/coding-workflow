@@ -18,7 +18,7 @@
 
 ## 4. Documentation Impact
 
-<!-- 列出实际更新的文档和证据。未更新的受影响候选文档写真实 no-update reason；不要求全部文档都有 diff。 -->
+<!-- 列出实际更新的文档和证据；确受影响但保持不变的权威文档写明当前事实依据。 -->
 
 ## 5. User-visible and Architecture Impact
 
@@ -34,7 +34,7 @@
 
 ## 7. Review / Fix Record
 
-<!-- 每个 finding 记录 stable ID、severity、first-seen round/source、证据、判断、修复和复核结果；状态使用 OPEN / CLOSED / DEFERRED。REOPENED 是事件而非状态，保留原 ID 并追加证据。CURRENT / SUPERSEDED 只描述 candidate/evidence，不覆盖 finding 状态或早期失败。上一轮漏检原因必须 evidence-backed、标为 hypothesis，或写 unknown。正式 raw record 可放在 comments，body 保留索引。记录 Promoted reusable rule: <authority / None>。没有 finding 时列出已核对的高风险点；不要增加重复 reconciliation ledger。 -->
+<!-- 按本项目交付政策记录实际 review、可执行反馈、处理与复核结果，以及仍开放的决策或限制；格式和证据位置遵循项目政策。 -->
 
 ## 8. Known Limits, Open Decisions, and Rollback
 
@@ -45,5 +45,5 @@
 - [ ] Actual Change Scope 与真实 diff 一致。
 - [ ] 测试命令、范围、结果和未运行原因准确。
 - [ ] 用户可见与架构影响已核对对应权威文档。
-- [ ] BLOCKER 与 actionable WARN 已关闭；open decisions 未被伪装为完成。
-- [ ] PR body 不含历史草稿、未落地计划、错误 base/head 或仓库内临时 body 路径。
+- [ ] 项目要求的可执行 review feedback 已处理，或已明确记录为开放项。
+- [ ] PR body 不含历史草稿、未落地计划或错误 base/head。

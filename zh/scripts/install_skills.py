@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import os
 import shutil
@@ -15,6 +16,7 @@ from pathlib import Path
 SKILL_NAME = "workflow-docs-sync"
 OBSOLETE_SKILL_NAME = "workflow-docs-sync-review"
 PLATFORM_ROOTS = {"codex": Path(".agents/skills"), "claude": Path(".claude/skills")}
+SOURCE_IGNORE_PATTERNS = ("__pycache__", "*.py[cod]", ".DS_Store")
 
 
 class InstallError(RuntimeError):
@@ -55,12 +57,24 @@ def require_clean_repo(*, value: str, label: str) -> Path:
 
 def claude_text(*, text: str) -> str:
     """为 Claude 副本添加禁止隐式调用的 frontmatter 标记。"""
-    parts = text.split("---", 2)
-    if len(parts) != 3 or parts[0] != "":
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0].rstrip("\r\n") != "---":
         raise InstallError("SKILL.md 缺少标准 YAML frontmatter")
-    lines = parts[1].strip("\n").splitlines()
-    lines.append("disable-model-invocation: true")
-    return "---\n" + "\n".join(lines) + "\n---" + parts[2]
+    closing_index = next(
+        (
+            index
+            for index, line in enumerate(lines[1:], start=1)
+            if line.rstrip("\r\n") == "---"
+        ),
+        None,
+    )
+    if closing_index is None:
+        raise InstallError("SKILL.md 缺少标准 YAML frontmatter")
+    frontmatter = "".join(lines[1:closing_index]).rstrip("\r\n")
+    body = "".join(lines[closing_index + 1 :])
+    return (
+        f"---\n{frontmatter}\ndisable-model-invocation: true\n---\n{body}"
+    )
 
 
 def remove_path(*, path: Path) -> bool:
@@ -75,17 +89,101 @@ def remove_path(*, path: Path) -> bool:
     return True
 
 
+def is_source_copy_ignored(*, relative_path: Path) -> bool:
+    """判断 source entry 是否属于安装器明确不会复制的缓存。"""
+    return any(
+        fnmatch.fnmatchcase(name, pattern)
+        for name in relative_path.parts
+        for pattern in SOURCE_IGNORE_PATTERNS
+    )
+
+
+def validate_source(*, upstream_root: Path, source: Path) -> None:
+    """在任何安装写入前验证 canonical Skill 可安全复制。"""
+    # 从 Git 根逐层检查，避免 zh/ 或 skills/ symlink 隐藏仓库外 source。
+    current = upstream_root
+    for part in source.relative_to(upstream_root).parts:
+        current /= part
+        if current.is_symlink():
+            raise InstallError(
+                "canonical Skill 路径不能包含符号链接："
+                f"{current.relative_to(upstream_root).as_posix()}"
+            )
+        if not current.is_dir():
+            raise InstallError(f"canonical Skill 不完整：{source}")
+    if (source / "SKILL.md").is_symlink() or not (
+        source / "SKILL.md"
+    ).is_file():
+        raise InstallError(f"canonical Skill 不完整：{source}")
+    # 拒绝 tracked symlink，避免 copytree 跟随链接读取仓库外 bytes。
+    symlinks = sorted(
+        path.relative_to(source).as_posix()
+        for path in source.rglob("*")
+        if path.is_symlink()
+    )
+    if symlinks:
+        raise InstallError(f"canonical Skill 不能包含符号链接：{symlinks}")
+    # 普通 status 看不到 ignored residue；拒绝任何会进入安装结果的
+    # 此类文件。
+    source_relative = source.relative_to(upstream_root)
+    ignored = git(
+        repo_root=upstream_root,
+        args=[
+            "ls-files",
+            "-z",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+            "--directory",
+            "--",
+            source_relative.as_posix(),
+        ],
+    )
+    if ignored.returncode != 0:
+        raise InstallError(
+            ignored.stderr.strip() or "无法检查 canonical Skill ignored path"
+        )
+    unsafe_ignored = sorted(
+        path.relative_to(source_relative).as_posix()
+        for value in ignored.stdout.split("\0")
+        if value
+        for path in (Path(value),)
+        if not is_source_copy_ignored(
+            relative_path=path.relative_to(source_relative)
+        )
+    )
+    if unsafe_ignored:
+        raise InstallError(
+            f"canonical Skill 包含会被安装的 ignored path：{unsafe_ignored}"
+        )
+    # Claude 转换可能失败；先验证标准分隔，防止另一平台已写入。
+    claude_text(text=(source / "SKILL.md").read_text(encoding="utf-8"))
+
+
+def validate_install_parents(*, install_root: Path) -> None:
+    """在任何删除前拒绝越出安装根的父路径 symlink 或非目录。"""
+    for platform_root in PLATFORM_ROOTS.values():
+        current = install_root
+        for part in platform_root.parts:
+            current /= part
+            relative_path = current.relative_to(install_root).as_posix()
+            if current.is_symlink():
+                raise InstallError(
+                    f"安装路径父级不能是符号链接：{relative_path}"
+                )
+            if current.exists() and not current.is_dir():
+                raise InstallError(f"安装路径父级不是目录：{relative_path}")
+
+
 def copy_skill(*, source: Path, destination: Path, platform: str) -> None:
     """覆盖一个明确目录并复制 canonical 单 Skill。"""
-    if not source.is_dir() or not (source / "SKILL.md").is_file():
-        raise InstallError(f"canonical Skill 不完整：{source}")
     remove_path(path=destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(
         src=source,
         dst=destination,
         symlinks=False,
-        ignore=shutil.ignore_patterns("__pycache__", "*.py[cod]", ".DS_Store"),
+        ignore=shutil.ignore_patterns(*SOURCE_IGNORE_PATTERNS),
     )
     if platform == "claude":
         skill_path = destination / "SKILL.md"
@@ -115,6 +213,9 @@ def execute() -> dict[str, object]:
         else Path.home().resolve()
     )
     source = upstream / "zh/skills" / SKILL_NAME
+    # 两个平台和 Claude 转换全部预检后才 mutation，避免半安装状态。
+    validate_source(upstream_root=upstream, source=source)
+    validate_install_parents(install_root=install_root)
     actions, removed_obsolete = [], []
     for platform, platform_root in PLATFORM_ROOTS.items():
         obsolete = install_root / platform_root / OBSOLETE_SKILL_NAME

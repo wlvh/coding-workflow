@@ -27,7 +27,8 @@ Architecture、Capability / User Behavior、Testing、Governance 是覆盖维度
 ## Skill 安装
 
 Studio 可直接加载 canonical `zh/skills/workflow-docs-sync/`。个人或团队安装只复制这一个
-Skill，不保存来源状态：
+Skill，不保存来源状态；安装器会在任何目标 mutation 前拒绝 symlink、缺少标准分隔的
+frontmatter 和会被复制的 ignored source residue：
 
 ```bash
 python3 zh/scripts/install_skills.py --upstream-dir <clean-canonical-checkout>

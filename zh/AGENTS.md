@@ -42,8 +42,7 @@
 - 能力边界变化时，先更新或确认 `capability_contract.json`，再检查 `interact.md` 和 business
   guide；用户可观察行为变化时，先更新或确认 `interact.md`。
 - 测试仍是事实证据；具体命令、fixture、层级和隔离要求只在 `TESTING.md` 维护。
-- 不要求每次修改全部文档。未更新受影响候选文档时，在交付说明中给出基于当前事实的
-  no-update reason。
+- 不要求每次修改全部文档。确受影响但保持不变的权威文档，应在交付说明中写明当前事实依据。
 - 编码、lint、formatter、build 和类型规则必须从仓库真实配置提取，不从本模板推断。
 
 ## Collaboration
@@ -69,8 +68,8 @@
 
 ## SOP
 
-执行标准流程时读取 `SOP.md` 的对应入口。执行 checklist 保留在当前会话，不创建仓库内
-运行状态、receipt 或临时流程文档。
+执行标准流程时读取 `SOP.md` 的对应入口。执行记录是否保存、保存位置与保留期限遵循本项目
+真实的审计、可恢复性和交付政策。
 
 ## PR Delivery
 

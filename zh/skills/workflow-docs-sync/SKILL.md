@@ -104,6 +104,10 @@ policy 的保留、修改或 no-update reason 必须记录 authority source、sc
 目标 `TESTING.md` 要求多个解释器时，分别运行并记录每个解释器的命令和结果；不能运行时分别
 记录 not-run reason。一个解释器的结果不能替代另一个解释器。
 
+分别核对 bug-first 与 no-test-diff：前者要求可复现行为缺陷先建立失败证据；后者要求没有
+test diff 时指出具体已有测试如何覆盖本次新风险并提供重跑证据。新增测试的判据、按变更类型
+选测试或泛称“已有高层测试”都不能代替 no-test-diff 责任；目标缺少等价规则时登记 finding。
+
 验证层级不得膨胀。Unit、contract、scenario、golden、report build、repair validation、light
 review、full validation 和 live test 只能按实际覆盖范围表述；未运行不得报告为通过。
 
@@ -143,7 +147,9 @@ Reviewer 使用同一受控 severity。每个 finding 包含唯一 ID、severity
 
 主 Agent 修复全部 BLOCKER 和无需新产品决策的 actionable WARN，请 reviewer 复核 finding
 对应修改及直接跨文档影响，并重跑受影响测试。不得用新增状态文件、额外 Agent、词表或代理
-指标代替本应覆盖该风险的场景、review 或真实 eval。
+指标代替本应覆盖该风险的场景、review 或真实 eval。恢复或新增 marker、alias、机器状态、
+parser、兼容入口或其他控制机制前，finding 必须证明它承担独立风险，存在真实消费者与可复现
+失败路径，并说明现有高层机制为何不足；能最小扩展现有机制时不得另造同义入口。
 
 ## 最终检查与报告
 
@@ -164,7 +170,9 @@ contract，再验证目标 HEAD、dirty allowlist、editable path 无 index/work
 final bytes 的 whitespace 检查在临时非 Git 目录以固定 Git 规则运行，不继承目标仓库
 attributes、用户 global attributes 或 system attributes。它不解析 Markdown 标题或 fence，
 不判断文案质量、capability 真实性、测试层级或业务指南可读性，也不证明调查、测试或 review
-曾执行。
+曾执行。该单一路径的覆盖依赖同步范围外 dirty path 始终被拒绝；若未来放宽 dirty allowlist，
+必须重新评估 whitespace 覆盖。index/worktree 分叉拒绝只消除两个发布候选，不执行第二套
+whitespace 检查。
 
 最终报告必须包含：
 

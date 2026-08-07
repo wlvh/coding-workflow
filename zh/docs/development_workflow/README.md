@@ -224,7 +224,13 @@ E. 输出风格约束
   HEAD、dirty 范围、editable path 无 index/worktree 分叉、九份普通 UTF-8 非空文件、JSON
   object、active marker，以及存在时为 UTF-8 的 `.gitignore`。最终 bytes 的 whitespace 使用
   临时非 Git 目录和固定 Git 规则，不继承目标仓库 attributes。Checker 不解析 Markdown，也不
-  验证目标项目 capability、测试层级或文案质量。
+  验证目标项目 capability、测试层级或文案质量。单一 final-bytes 路径依赖同步范围外 dirty
+  path 始终被拒绝；若未来放宽 allowlist，必须重新评估 whitespace 覆盖。index/worktree 分叉
+  拒绝按 path 聚合两侧 status，并覆盖 index 删除或 rename source 后同路径 untracked / ignored
+  重建；它消除的是两个发布候选，不是第二套 whitespace 检查。
+- 安装器在任何删除或复制前验证 source/目标祖先、source symlink、Claude frontmatter 的标准
+  分隔和会被复制的 ignored source residue；只精确清理废弃 reviewer Skill，不保存安装状态或
+  来源 receipt。
 - PR body 临时 Markdown 始终位于仓库外。commit、push 和 draft PR 创建只在用户要求且检查
   成功后，由通用 GitHub 发布能力完成。
 - 最终机械检查只证明最终仓库状态，不证明调查、测试或复核执行历史。

@@ -68,7 +68,14 @@ external shallow clone, then pins target HEAD and upstream SHA for the entire ru
   source and validates final HEAD, dirty scope, no index/worktree split on editable paths, nine regular UTF-8
   nonempty files, a JSON object, active markers, and an existing `.gitignore` as UTF-8. Final-byte whitespace
   runs with fixed Git rules from a temporary non-repository directory, independent of target attributes. It
-  does not parse Markdown or validate capability truth, test levels, prose quality, or execution history.
+  does not parse Markdown or validate capability truth, test levels, prose quality, or execution history. The
+  single final-byte path depends on rejecting every dirty path outside the allowlist; relaxing that allowlist
+  requires reevaluating whitespace coverage. Split detection aggregates both status sides by path and covers
+  an index deletion or rename source followed by an untracked or ignored recreation at that path. It removes
+  two publication candidates rather than running a second whitespace check.
+- Before any removal or copy, the installer validates source and destination ancestors, source symlinks,
+  standard delimiters around Claude frontmatter, and ignored source residue that would be copied. It only
+  removes the exact obsolete reviewer Skill and stores no install state or source receipt.
 - Keep temporary PR body Markdown outside the repository. Commit, push, and draft-PR creation occur through
   general GitHub publishing capability only after successful checks and only when the user asks.
 
@@ -86,13 +93,18 @@ not promise exhaustive alias detection, and structural references do not prove c
 does not raise `schema_version` from `0.1.0`. TESTING defines minimum evidence for escaped bugs, public
 contracts, no-test diffs, refactors, and documentation-only gates, while the checklist enforces the
 add-or-not-add test decision.
-Findings keep stable IDs and first-seen evidence; REOPENED is an event, CURRENT / SUPERSEDED applies only to
-candidates or evidence, and prior misses are evidence-backed, labeled hypothesis, or recorded as unknown.
+Stable IDs, first-seen evidence, REOPENED events, and candidate/evidence states belong to this repository's
+maintenance and canonical Skill/eval evidence contract. Downstream templates defer review records,
+actionable feedback, rechecks, and open decisions to target-project policy instead of fixing this vocabulary.
 
-With the same target base, upstream candidate, language, and round-one document bytes, Case A round two passes
-only as `PASS_NOOP`; an added valid correction is `ROUND1_INCOMPLETE`, and unsupported prose drift is
-`ROUND2_DRIFT`. Either failure restarts both rounds from a clean target. This decision adds no parser, ledger,
-receipt, run state, installer behavior, or `sync_docs.py` / CLI feature.
+Case A preregisters the selected target and known-stale claims before starting a blind executor. Target code,
+configuration, tests, other committed artifacts, upstream candidate, and language stay fixed; round one
+commits only its final nine documents, and round two starts from that `second_target_sha` in a new clean
+checkout. A zero document diff with no staged, untracked, or ignored residue is `PASS_NOOP`; an added valid
+correction is `ROUND1_INCOMPLETE`, and unsupported prose drift is `ROUND2_DRIFT`. Alignment runs directly on
+the committed second target instead of a derived test-only identity. Either failure restarts both rounds from
+a clean target. This decision adds no parser, ledger, receipt, run state, installer behavior, or
+`sync_docs.py` / CLI feature.
 
 Key implementation files:
 

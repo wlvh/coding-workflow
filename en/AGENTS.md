@@ -43,8 +43,8 @@ Describe stable modules, entrypoints, and responsibilities. Do not permanently m
   and the business guide. For user-visible behavior changes, update or confirm `interact.md` first.
 - Tests remain factual evidence; keep exact commands, fixtures, layers, and isolation details in
   `TESTING.md` only.
-- Not every change requires every document to change. Give a current, evidence-based no-update reason for
-  each affected candidate document left unchanged.
+- Not every change requires every document to change. For an affected authority left unchanged, state the
+  current factual basis in the delivery record.
 - Derive encoding, lint, formatter, build, and type rules from real repository configuration, not this
   template.
 
@@ -78,8 +78,8 @@ verified before execution.
 
 ## SOP
 
-Read the corresponding `SOP.md` entry for a standard process. Keep execution checklists in the current
-session; do not create repository run state, receipts, or temporary process documents.
+Read the corresponding `SOP.md` entry for a standard process. Follow this project's actual audit,
+recoverability, and delivery policy for whether execution records are stored, where, and for how long.
 
 ## PR Delivery
 

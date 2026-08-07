@@ -31,8 +31,8 @@ explicitly requests it.
 ## Documentation and Contracts
 
 - [ ] Check `AGENTS.md`, `architecture.md`, `capability_contract.json`, `interact.md`, the business guide,
-  `TESTING.md`, and `SOP.md` according to actual impact. Give a real no-update reason for affected candidates
-  left unchanged; do not edit every document merely for completeness.
+  `TESTING.md`, and `SOP.md` according to actual impact. State the current factual basis for affected
+  authorities left unchanged; do not edit every document merely for completeness.
 - [ ] Keep the authority direction `capability_contract.json → interact.md → business_user_guide.md` for
   capability changes. User-visible claims have current implementation or test evidence and stable anchors.
 - [ ] Reference Markdown anchors through the capability contract's contract-defined protocol without copying
@@ -45,14 +45,8 @@ explicitly requests it.
 
 - [ ] Complete the review gate required by this project's test and delivery policy, and accurately record
   reviewer identity, scope, and limitations.
-- [ ] Fix every BLOCKER and actionable WARN that does not require a new product decision. Keep remaining
-  issues in open decisions with evidence and impact.
-- [ ] Preserve material rounds, REOPENED findings, and SUPERSEDED candidates or evidence. Reopening keeps the
-  original finding ID, and finding state is not confused with evidence state.
-- [ ] Support a prior miss explanation with evidence or label it `hypothesis` / `unknown`; never invent cause
-  merely to fill a field.
-- [ ] Evaluate every material finding for promotion to a long-term rule or automated gate, and record why when
-  it is not promoted.
+- [ ] Handle actionable review feedback according to this project's policy. Keep recheck evidence for resolved
+  items and record the impact and required decision for anything left open.
 - [ ] Rerun affected tests and mechanical checks after fixes, then recheck the final diff and Git state.
 
 ## PR Delivery

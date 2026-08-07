@@ -211,15 +211,47 @@ def require_editable_dirty(*, repo_root: Path) -> list[StatusEntry]:
     })
     if outside:
         raise SyncError(error="存在同步范围外的 dirty path", detail=", ".join(outside))
-    split = sorted({
-        f"{entry.code} {path}"
-        for entry in entries
-        if entry.code not in {"??", "!!"}
-        and entry.code[0] != " "
-        and entry.code[1] != " "
-        for path in entry.paths
-        if path in EDITABLE_PATHS
-    })
+    indexed_paths = set(
+        git_output(
+            repo_root=repo_root,
+            args=[
+                "ls-files",
+                "-z",
+                "--cached",
+                "--",
+                *sorted(EDITABLE_PATHS),
+            ],
+            purpose="无法读取 editable path index",
+        ).split("\0")
+    )
+    indexed_paths.discard("")
+    split: list[str] = []
+    for path in sorted(EDITABLE_PATHS):
+        relevant = [entry for entry in entries if path in entry.paths]
+        index_dirty = any(
+            entry.code not in {"??", "!!"} and entry.code[0] != " "
+            for entry in relevant
+        )
+        worktree_dirty = any(
+            entry.code == "??"
+            or (entry.code != "!!" and entry.code[1] != " ")
+            for entry in relevant
+        )
+        # An index-side removal can hide a recreated ignored file from
+        # ordinary status.
+        recreated_index_absence = (
+            index_dirty
+            and path not in indexed_paths
+            and (
+                (repo_root / path).exists()
+                or (repo_root / path).is_symlink()
+            )
+        )
+        if index_dirty and (worktree_dirty or recreated_index_absence):
+            evidence = [f"{entry.code} {path}" for entry in relevant]
+            if recreated_index_absence and not worktree_dirty:
+                evidence.append(f"worktree path exists {path}")
+            split.append(" + ".join(evidence))
     if split:
         raise SyncError(
             error="editable path 存在 index/worktree 分叉",
@@ -271,16 +303,8 @@ def read_templates(
 def validate_source_templates(
     *, templates: dict[str, str], language: str, upstream_sha: str
 ) -> None:
-    """验证固定 object 的九份 source path 和非 PR active-marker 承重不变量。"""
-    actual_paths = set(templates)
-    expected_paths = set(CORE_FILES)
-    if actual_paths != expected_paths:
-        missing = sorted(expected_paths - actual_paths)
-        unknown = sorted(actual_paths - expected_paths)
-        raise SyncError(
-            error="固定上游模板集合无效",
-            detail=f"missing={missing}, unknown={unknown}",
-        )
+    """验证固定 object 的非 PR active-marker 承重不变量。"""
+    # read_templates 已逐个读取 CORE_FILES；这里仅保留无法由读取过程覆盖的 marker 风险。
     markerless = [
         f"{language}/{relative_path}"
         for relative_path in CORE_FILES
@@ -299,7 +323,7 @@ def validate_source_templates(
 
 
 def inspect_destinations(*, target_root: Path) -> tuple[list[str], list[str]]:
-    """区分缺失和已有目标文件，并在写入前拒绝目录冲突。"""
+    """逐层拒绝路径逃逸或目录冲突，并区分缺失和已有目标文件。"""
     missing: list[str] = []
     existing: list[str] = []
     for relative_path in CORE_FILES:
@@ -389,9 +413,6 @@ def content_failures(*, target_root: Path) -> list[str]:
     failures: list[str] = []
     for relative_path in CORE_FILES:
         path = target_root / relative_path
-        if path.is_symlink():
-            failures.append(f"核心文档不能是符号链接: {relative_path}")
-            continue
         if not path.is_file():
             failures.append(f"缺少必需文件: {relative_path}")
             continue
@@ -484,6 +505,8 @@ def check(
             detail=f"期望 {expected_head}，实际 {target.head}",
         )
     entries = require_editable_dirty(repo_root=target.root)
+    # 复用 prepare 的逐层预检，防止已提交父目录 symlink 把核心文件解析到仓库外。
+    inspect_destinations(target_root=target.root)
     failures = content_failures(target_root=target.root)
     failures.extend(file_whitespace_failures(target_root=target.root))
     if failures:

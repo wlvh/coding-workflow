@@ -3,8 +3,8 @@
 ## Purpose and Authority
 
 `SOP.md` 只保存稳定流程入口，不复制易漂移的命令、测试清单或发布细节。发生冲突时，以
-当前代码、配置、测试、契约以及 `TESTING.md`、`PR_Checklist.md` 等专项权威为准。执行中的
-checklist 只存在于当前会话，不落盘为 run state、receipt 或临时 SOP。
+当前代码、配置、测试、契约以及 `TESTING.md`、`PR_Checklist.md` 等专项权威为准。执行记录的
+保存方式与保留期限遵循本项目真实的审计、可恢复性和交付政策。
 
 ## Available SOPs
 
