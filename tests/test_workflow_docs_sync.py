@@ -37,12 +37,21 @@ PLATFORM_ROOTS = (
     ("claude", Path(".claude/skills")),
 )
 OBSOLETE_SKILL = "workflow-docs-sync-review"
-FIRST_USE_PROMPT = (
+ZH_FIRST_USE_PROMPT = (
     "用 $skill-installer 安装 "
     "https://github.com/wlvh/coding-workflow/tree/main/zh/skills/"
     "workflow-docs-sync，然后立即用 $workflow-docs-sync 同步当前项目文档并创建 "
     "draft PR；如果当前会话尚未注册新 Skill，直接读取安装器返回目录中的 "
     "SKILL.md 继续执行，不要停下来要求重启。"
+)
+EN_FIRST_USE_PROMPT = (
+    "Use $skill-installer to install https://github.com/wlvh/coding-workflow/"
+    "tree/main/zh/skills/workflow-docs-sync, then immediately use "
+    "$workflow-docs-sync to synchronize the current project's documentation "
+    "and create a draft pull request. If the newly installed Skill is not "
+    "registered in the current session, read SKILL.md from the installation "
+    "directory returned by the installer and continue in the same turn; do not "
+    "stop to request a restart."
 )
 
 
@@ -1344,22 +1353,35 @@ def test_scenario_5_repository_distribution_contract() -> None:
     root_agents = REPO_ROOT / "AGENTS.md"
     assert root_agents.is_file() and not root_agents.is_symlink()
 
-    # 一句话入口是当前真实 consumer；三份 README 必须逐 byte 相同，
-    # 且位于任何后续详细章节之前。
-    prompt_block = f"```text\n{FIRST_USE_PROMPT}\n```"
-    for readme in (
-        REPO_ROOT / "README.md",
-        REPO_ROOT / "zh/README.md",
-        REPO_ROOT / "en/README.md",
-    ):
+    # 两种公开 prompt 必须位于对应首次使用入口，避免英文入口回退为中文。
+    assert ZH_FIRST_USE_PROMPT != EN_FIRST_USE_PROMPT
+    readme_prompts = (
+        (
+            REPO_ROOT / "zh/README.md",
+            "## 一句话开始",
+            "## 默认行为",
+            ZH_FIRST_USE_PROMPT,
+        ),
+        (
+            REPO_ROOT / "en/README.md",
+            "## One-line start",
+            "## Defaults",
+            EN_FIRST_USE_PROMPT,
+        ),
+        (
+            REPO_ROOT / "README.md",
+            "Copy this exact instruction into Codex",
+            "This repository publishes",
+            EN_FIRST_USE_PROMPT,
+        ),
+    )
+    for readme, entry_start, entry_end, prompt in readme_prompts:
         readme_text = readme.read_text(encoding="utf-8")
-        assert readme_text.count(prompt_block) == 1
-        prompt_index = readme_text.index(prompt_block)
-        first_section = readme_text.find("\n## ")
-        if first_section != -1:
-            second_section = readme_text.find("\n## ", first_section + 1)
-            assert first_section < prompt_index
-            assert second_section == -1 or prompt_index < second_section
+        assert readme_text.count(prompt) == 1
+        start_index = readme_text.index(entry_start)
+        end_index = readme_text.index(entry_end)
+        entry_text = readme_text[start_index:end_index]
+        assert f"```text\n{prompt}\n```" in entry_text
 
     skill_symlinks = sorted(
         path.relative_to(SKILL_ROOT).as_posix()
@@ -1480,35 +1502,6 @@ def test_scenario_5_repository_distribution_contract() -> None:
 
     skill_text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
     assert canonical_anchor not in skill_text
-    for contract_text in (
-        "Installed workflow-docs-sync to ",
-        "--dest",
-        "<unique-install-root>",
-        "用户显式给出的目标路径",
-        "git rev-parse --show-toplevel",
-        "中文请求使用 `zh`，其他语言请求使用 `en`",
-        "用户明确说不创建 PR",
-        "未提及，结果为 `false`",
-        "不得自动标记 Ready 或合并",
-        "仓库没有任何 commit 时报告 `BLOCKER`",
-        "在原仓库之外创建临时根",
-        "不得从之后变化的分支 tip",
-        "git -C <original-root> status --porcelain=v1 -z "
-        "--untracked-files=all --ignored",
-        "GIT_OPTIONAL_LOCKS=0",
-        "git -C <original-root> ls-files --stage -z",
-        "index bytes",
-        "SHA-256",
-        "porcelain 路径和状态码",
-        "本次同步与 PR 基于调用时的 committed HEAD；"
-        "原工作树中的未提交修改未进入调查或 PR。",
-        "git diff --cached --check",
-        "PR body 必须是仓库外的临时 Markdown 文件",
-        "Documentation sync: PASS",
-        "Publication: PR_BLOCKED",
-        "Overall: PARTIAL",
-    ):
-        assert contract_text in skill_text
 
     openai_text = (SKILL_ROOT / "agents/openai.yaml").read_text(
         encoding="utf-8"

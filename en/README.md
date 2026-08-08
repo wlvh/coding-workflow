@@ -11,8 +11,10 @@ language-, framework-, and project-neutral. The canonical `workflow-docs-sync` S
 Copy this exact instruction into Codex while it is open in the target project:
 
 ```text
-用 $skill-installer 安装 https://github.com/wlvh/coding-workflow/tree/main/zh/skills/workflow-docs-sync，然后立即用 $workflow-docs-sync 同步当前项目文档并创建 draft PR；如果当前会话尚未注册新 Skill，直接读取安装器返回目录中的 SKILL.md 继续执行，不要停下来要求重启。
+Use $skill-installer to install https://github.com/wlvh/coding-workflow/tree/main/zh/skills/workflow-docs-sync, then immediately use $workflow-docs-sync to synchronize the current project's documentation and create a draft pull request. If the newly installed Skill is not registered in the current session, read SKILL.md from the installation directory returned by the installer and continue in the same turn; do not stop to request a restart.
 ```
+
+The instruction above is for first-time installation; once the Skill is installed, in another project directly ask `$workflow-docs-sync` to synchronize the current project's documentation and create a draft pull request.
 
 The user does not provide an absolute target path, `zh` / `en`, a branch name, upstream SHA, or installation
 path, and does not need to clean the target worktree first. A successful system `$skill-installer` run prints
@@ -30,10 +32,13 @@ turn.
 - PR: an explicit request not to create a PR selects false. Mentioning PR, opening, creating, or submitting a
   pull request selects true. No mention selects false. The Skill never marks a PR Ready or merges it.
 - Worktree: when a PR is requested, always create an external clean worktree and a unique branch from the
-  committed HEAD captured at invocation. Ordinary, staged, untracked, and ignored state in the original
-  worktree remains unchanged; the Skill does not stash, clean, commit, or overwrite user changes there.
-  Before the final report, it compares status, raw index bytes, and a full-worktree content-digest manifest,
-  rather than relying only on paths and status codes.
+  committed HEAD captured at invocation. The Skill does not change ordinary, staged, untracked, or ignored
+  content in the original worktree, or stash, clean, commit, or overwrite user changes there.
+  Before the final report, it compares the captured NUL-delimited status and staged entries, then rechecks
+  type, mode, regular-file SHA-256, or symlink target only for non-clean paths enumerated by the invocation-time
+  status and ignored-path snapshot. It does not hash the whole repository or compare raw Git index-file bytes.
+  New ignored paths created concurrently are outside the original set; any other difference proves concurrent
+  change, not that the Agent caused it.
 
 The final report states that the sync and PR use the invocation-time committed HEAD and exclude uncommitted
 changes from the original worktree.

@@ -74,27 +74,29 @@ git -C <original-root> rev-parse --verify 'HEAD^{commit}'
 1. 在仓库外建立原工作树调用前快照。对原工作树的 Git 读取设置
    `GIT_OPTIONAL_LOCKS=0`，避免只读检查刷新 index。快照必须同时包含：
 
-   - 以下两条命令的 NUL 分隔原始输出：
+   - 以下三条命令的 NUL 分隔原始输出：
 
      ```bash
-     git -C <original-root> status --porcelain=v1 -z --untracked-files=all --ignored
+     git -C <original-root> status --porcelain=v1 -z --untracked-files=all
      git -C <original-root> ls-files --stage -z
+     git -C <original-root> ls-files --others --ignored --exclude-standard -z
      ```
 
-   - `git -C <original-root> rev-parse --git-path index` 解析路径的原始 index bytes；
-     index 不存在时记录明确的 missing sentinel。
-   - 原 Git 根下除顶层 `.git` 管理入口外每个文件系统 entry 的 NUL-safe manifest：
-     记录相对路径、类型、权限/可执行位，对普通文件记录原始 bytes 的 SHA-256，对
-     symlink 记录 link target。不跟随 symlink，不保存文件内容副本。
+   - 取 status 的全部 pathname（rename/copy 的两个 pathname 均计入）与 ignored 输出的并集，
+     固定为调用前保护集合。只对该集合逐项使用不跟随 symlink 的 `lstat`，记录相对路径、类型和
+     mode；对普通文件记录原始 bytes 的 SHA-256，对 symlink 记录 link target，不存在则记录
+     missing sentinel。不保存文件内容副本，不枚举或 hash 整棵仓库。
 
 2. 在原仓库之外创建临时根，从调用时 `HEAD` 创建唯一、有意义的新分支和 clean linked
    worktree。不得从之后变化的分支 tip、`main` 或 `origin/main` 重建起点。
 3. 只在外部 worktree 中调查、编辑、测试、stage、commit 和发布。除上述不可逆内容摘要用于
    隔离证明外，不得读取或复制原工作树的 dirty bytes；摘要和 metadata 不得作为项目事实
    证据或进入 PR。不得在原工作树 stash、clean、reset、commit、覆盖或运行 `prepare`。
-4. 任何最终报告前（包括发布失败时）用同一算法重建全部快照，分别比较 status、
-   staged entries、index bytes 和文件系统 manifest。任一差异都登记 `BLOCKER`；不得仅用
-   porcelain 路径和状态码宣称原工作树未变。
+4. 任何最终报告前（包括发布失败时），对调用前保护集合用同一算法复核，并重新运行、逐 byte
+   比较 status 与 `ls-files --stage` 的 NUL 分隔输出。调用前 clean 的 tracked 路径变化与新增
+   非 ignored 路径由最终 status 检出；预先存在的 dirty、untracked、ignored 内容变化由定向复核
+   检出。不要重新全量比较 ignored 枚举，因此调用期间新增的无关 ignored 路径不误报。检测到
+   差异时登记 `BLOCKER` 并报告边界变化，不得在没有证据时归因于 Agent、用户、IDE 或其他进程。
 
 最终报告必须原样包含：
 
@@ -333,5 +335,5 @@ Overall: PARTIAL
 
 同时输出基于已解析 worktree、remote、repo、base、head 和 body 路径的可直接执行 push 与
 draft PR 创建命令。无法解析的外部身份必须在命令中明确标为 required blocker，不得猜测 URL、
-repo 或权限，也不得声称 PR 已创建。只有 PR 创建成功、远端读回一致且原工作树快照逐 byte
-不变后，才可以移除外部 worktree；publication blocked 时必须保留。
+repo 或权限，也不得声称 PR 已创建。只有 PR 创建成功、远端读回一致且原工作树定向保护集合、
+status 与 staged entries 复核通过后，才可以移除外部 worktree；publication blocked 时必须保留。

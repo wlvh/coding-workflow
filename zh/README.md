@@ -13,6 +13,8 @@
 用 $skill-installer 安装 https://github.com/wlvh/coding-workflow/tree/main/zh/skills/workflow-docs-sync，然后立即用 $workflow-docs-sync 同步当前项目文档并创建 draft PR；如果当前会话尚未注册新 Skill，直接读取安装器返回目录中的 SKILL.md 继续执行，不要停下来要求重启。
 ```
 
+上述指令用于首次安装；已经安装后，在其他项目中直接要求 `$workflow-docs-sync` 同步当前项目文档并创建 draft PR。
+
 用户不需要提供目标绝对路径、`zh` / `en`、分支名、上游 SHA 或安装路径，也不需要预先清理
 目标工作树。系统 `$skill-installer` 成功时输出
 `Installed workflow-docs-sync to <installed-skill-root>`；当前会话尚未注册 Skill 时，以该次成功
@@ -26,9 +28,11 @@
 - PR：明确说不创建 PR 时不创建；提到 PR、提 PR、创建/提交 PR 或 open/create pull request 时
   创建 draft PR；未提及则不创建。永不自动标记 Ready 或合并。
 - 工作树：请求 PR 时，无论原工作树是否 clean，都从调用时 committed HEAD 在仓库外创建 clean
-  worktree 和唯一新分支。原工作树中的普通、staged、untracked 和 ignored 状态保持不变，不会
-  stash、clean、commit 或覆盖用户修改；最终报告前会比较 status、index bytes 和全工作树
-  文件内容摘要 manifest，不只比较路径与状态码。
+  worktree 和唯一新分支。Skill 不改动原工作树中的普通、staged、untracked 或 ignored 内容，也不
+  stash、clean、commit 或覆盖用户修改；最终报告前会重新比较 NUL 分隔的 status 与 staged
+  entries，并只对调用前 status/ignored 枚举出的非 clean 路径复核类型、mode、普通文件 SHA-256
+  或 symlink target，不扫描整棵仓库，也不比较原始 Git index 文件。调用期间新增的 ignored 路径
+  不在原集合内；其他差异只证明发生了并发变化，不归因于 Agent。
 
 最终报告会明确写：
 

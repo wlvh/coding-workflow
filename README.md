@@ -5,7 +5,7 @@
 Copy this exact instruction into Codex while it is open in the target project:
 
 ```text
-用 $skill-installer 安装 https://github.com/wlvh/coding-workflow/tree/main/zh/skills/workflow-docs-sync，然后立即用 $workflow-docs-sync 同步当前项目文档并创建 draft PR；如果当前会话尚未注册新 Skill，直接读取安装器返回目录中的 SKILL.md 继续执行，不要停下来要求重启。
+Use $skill-installer to install https://github.com/wlvh/coding-workflow/tree/main/zh/skills/workflow-docs-sync, then immediately use $workflow-docs-sync to synchronize the current project's documentation and create a draft pull request. If the newly installed Skill is not registered in the current session, read SKILL.md from the installation directory returned by the installer and continue in the same turn; do not stop to request a restart.
 ```
 
 It infers the current Git root and request language, preserves an unclean original worktree through an
