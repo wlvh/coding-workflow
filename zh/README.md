@@ -5,36 +5,87 @@
 本目录提供真正跨语言、跨框架、跨项目的中文核心模板、开发工作流和 canonical
 `workflow-docs-sync` Skill。
 
-## Quick Start
+## 一句话开始
 
-用户只调用一次 Skill，只提供目标 Git 仓库、`zh` 或 `en`，以及成功后是否创建 draft PR：
+在目标项目的 Codex 中复制这一句：
 
 ```text
-使用 $workflow-docs-sync 同步 /目标仓库绝对路径，语言 zh，结束后不要创建 draft PR。
+用 $skill-installer 安装 https://github.com/wlvh/coding-workflow/tree/main/zh/skills/workflow-docs-sync，然后立即用 $workflow-docs-sync 同步当前项目文档并创建 draft PR；如果当前会话尚未注册新 Skill，直接读取安装器返回目录中的 SKILL.md 继续执行，不要停下来要求重启。
 ```
+
+上述指令用于首次安装；已经安装后，在其他项目中直接要求 `$workflow-docs-sync` 同步当前项目文档并创建 draft PR。
+
+用户不需要提供目标绝对路径、`zh` / `en`、分支名、上游 SHA 或安装路径，也不需要预先清理
+目标工作树。系统 `$skill-installer` 成功时输出
+`Installed workflow-docs-sync to <installed-skill-root>`；当前会话尚未注册 Skill 时，以该次成功
+输出中的真实目录为准，完整读取其中的 `SKILL.md`，从同一目录解析脚本并在本轮继续。不要猜测
+固定安装目录，也不要等待下一轮。
+
+## 默认行为
+
+- 目标仓库：默认使用 Codex 当前工作目录所属的 Git 根；只有当前目录不在 Git 仓库中时才询问。
+- 语言：显式 `zh` / `en` 优先；否则中文请求使用 `zh`，其他语言请求使用 `en`。
+- PR：明确说不创建 PR 时不创建；提到 PR、提 PR、创建/提交 PR 或 open/create pull request 时
+  创建 draft PR；未提及则不创建。永不自动标记 Ready 或合并。
+- 工作树：请求 PR 时，无论原工作树是否 clean，都从调用时 committed HEAD 在仓库外创建 clean
+  worktree 和唯一新分支。Skill 不改动原工作树中的普通、staged、untracked 或 ignored 内容，也不
+  stash、clean、commit 或覆盖用户修改；最终报告前会重新比较 NUL 分隔的 status 与 staged
+  entries，并只对调用前 status/ignored 枚举出的非 clean 路径复核类型、mode、普通文件 SHA-256
+  或 symlink target，不扫描整棵仓库，也不比较原始 Git index 文件。调用期间新增的 ignored 路径
+  不在原集合内；其他差异只证明发生了并发变化，不归因于 Agent。
+
+最终报告会明确写：
+
+```text
+本次同步与 PR 基于调用时的 committed HEAD；原工作树中的未提交修改未进入调查或 PR。
+```
+
+仓库没有 commit 时会报告 `BLOCKER`。同步已经通过、但 remote、认证、push 权限或 PR 创建
+失败时，保留外部 worktree、分支、commit 和仓库外 PR body，并报告
+`Documentation sync: PASS`、`Publication: PR_BLOCKED`、`Overall: PARTIAL`，不会谎称 PR 已创建。
+
+## 仓库自带安装器（可选）
+
+以下是维护者或需要同时安装 Codex / Claude 副本时的可选路径，不是上述一句话入口。先克隆
+canonical 仓库并确认这个上游 checkout clean；这里的 clean 要求不适用于待同步的目标项目：
+
+```bash
+git clone --depth 1 https://github.com/wlvh/coding-workflow.git
+cd coding-workflow
+
+git status --porcelain=v1 --untracked-files=all
+python3 zh/scripts/install_skills.py --upstream-dir "$PWD"
+```
+
+`git status` 应无输出；如果有输出，停止安装并先检查 canonical checkout。成功 JSON 同时列出
+`~/.agents/skills/workflow-docs-sync/` 与 `~/.claude/skills/workflow-docs-sync/` 两项 action。
+
+需要把 Skill 作为目标项目的一部分审查和共享时，在 canonical checkout 根目录运行：
+
+```bash
+python3 zh/scripts/install_skills.py \
+  --scope repo \
+  --target-repo "/目标仓库绝对路径" \
+  --upstream-dir "$PWD"
+```
+
+repo scope 的目标路径必须恰好是 clean Git 根目录；审查生成的 Git diff 后，再按目标项目政策
+提交。两种 scope 都会覆盖已有同名 Skill，并精确移除废弃的 `workflow-docs-sync-review`，不会
+保存来源状态或自动更新。Studio 也可直接加载 canonical `zh/skills/workflow-docs-sync/`。
+
+## 同步边界
 
 Skill 固定目标 HEAD 与上游 SHA，从当前代码、配置、测试、committed artifacts、可重复运行
 结果和必要 Git 历史全量重建事实，再只做事实要求的最小文档改写。现有文档与上游模板都是
 hypotheses，不是证据。
 
 Architecture、Capability / User Behavior、Testing、Governance 是覆盖维度，不是固定 Agent
-拓扑。主 Agent 是目标工作区唯一写入者；测试环境由项目命令、副作用、CI 和项目政策决定。
+拓扑。主 Agent 是执行 worktree 的唯一写入者；测试环境由项目命令、副作用、CI 和项目政策
+决定。
 
 复核优先使用 fresh-context、blind-first independent reviewer。平台不能提供认知隔离时，
 最终结果诚实标记 self-review。确定性 checker 只验证最终仓库状态，不证明调查、测试或复核
 历史。
-
-## Skill 安装
-
-Studio 可直接加载 canonical `zh/skills/workflow-docs-sync/`。个人或团队安装只复制这一个
-Skill，不保存来源状态；安装器会在任何目标 mutation 前拒绝 symlink、缺少标准分隔的
-frontmatter 和会被复制的 ignored source residue：
-
-```bash
-python3 zh/scripts/install_skills.py --upstream-dir <clean-canonical-checkout>
-python3 zh/scripts/install_skills.py --scope repo \
-  --target-repo <目标仓库> --upstream-dir <clean-canonical-checkout>
-```
 
 ## Template Contract
 

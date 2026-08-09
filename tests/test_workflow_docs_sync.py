@@ -37,6 +37,22 @@ PLATFORM_ROOTS = (
     ("claude", Path(".claude/skills")),
 )
 OBSOLETE_SKILL = "workflow-docs-sync-review"
+ZH_FIRST_USE_PROMPT = (
+    "用 $skill-installer 安装 "
+    "https://github.com/wlvh/coding-workflow/tree/main/zh/skills/"
+    "workflow-docs-sync，然后立即用 $workflow-docs-sync 同步当前项目文档并创建 "
+    "draft PR；如果当前会话尚未注册新 Skill，直接读取安装器返回目录中的 "
+    "SKILL.md 继续执行，不要停下来要求重启。"
+)
+EN_FIRST_USE_PROMPT = (
+    "Use $skill-installer to install https://github.com/wlvh/coding-workflow/"
+    "tree/main/zh/skills/workflow-docs-sync, then immediately use "
+    "$workflow-docs-sync to synchronize the current project's documentation "
+    "and create a draft pull request. If the newly installed Skill is not "
+    "registered in the current session, read SKILL.md from the installation "
+    "directory returned by the installer and continue in the same turn; do not "
+    "stop to request a restart."
+)
 
 
 def run_command(
@@ -1337,6 +1353,36 @@ def test_scenario_5_repository_distribution_contract() -> None:
     root_agents = REPO_ROOT / "AGENTS.md"
     assert root_agents.is_file() and not root_agents.is_symlink()
 
+    # 两种公开 prompt 必须位于对应首次使用入口，避免英文入口回退为中文。
+    assert ZH_FIRST_USE_PROMPT != EN_FIRST_USE_PROMPT
+    readme_prompts = (
+        (
+            REPO_ROOT / "zh/README.md",
+            "## 一句话开始",
+            "## 默认行为",
+            ZH_FIRST_USE_PROMPT,
+        ),
+        (
+            REPO_ROOT / "en/README.md",
+            "## One-line start",
+            "## Defaults",
+            EN_FIRST_USE_PROMPT,
+        ),
+        (
+            REPO_ROOT / "README.md",
+            "Copy this exact instruction into Codex",
+            "This repository publishes",
+            EN_FIRST_USE_PROMPT,
+        ),
+    )
+    for readme, entry_start, entry_end, prompt in readme_prompts:
+        readme_text = readme.read_text(encoding="utf-8")
+        assert readme_text.count(prompt) == 1
+        start_index = readme_text.index(entry_start)
+        end_index = readme_text.index(entry_end)
+        entry_text = readme_text[start_index:end_index]
+        assert f"```text\n{prompt}\n```" in entry_text
+
     skill_symlinks = sorted(
         path.relative_to(SKILL_ROOT).as_posix()
         for path in SKILL_ROOT.rglob("*")
@@ -1457,6 +1503,15 @@ def test_scenario_5_repository_distribution_contract() -> None:
     skill_text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
     assert canonical_anchor not in skill_text
 
+    openai_text = (SKILL_ROOT / "agents/openai.yaml").read_text(
+        encoding="utf-8"
+    )
+    assert openai_text.count("allow_implicit_invocation: false") == 1
+    assert "allow_implicit_invocation: true" not in openai_text
+    assert "当前 Git 根" in openai_text
+    assert "按当前请求语言选择 zh 或 en" in openai_text
+    assert "只有用户明确要求时才创建 draft PR" in openai_text
+
     # 机械兜底只覆盖本次真实误植过的八份下游模板与五个精确 token。
     internal_context_tokens = (
         "disposable clone",
@@ -1538,3 +1593,13 @@ def test_scenario_5_repository_distribution_contract() -> None:
         "finish-submit",
     ):
         assert removed_command not in help_result.stdout
+
+    # 默认推断留在 Agent 合同；公开机械 CLI 继续要求显式目标和语言。
+    prepare_help = run_command(
+        args=[sys.executable, str(SYNC_SCRIPT), "prepare", "--help"],
+        cwd=REPO_ROOT,
+        environment=None,
+    )
+    assert prepare_help.returncode == 0
+    for option in ("--target-repo", "--upstream-dir", "--language {zh,en}"):
+        assert option in prepare_help.stdout

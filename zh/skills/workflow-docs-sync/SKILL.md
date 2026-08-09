@@ -1,6 +1,6 @@
 ---
 name: workflow-docs-sync
-description: 从目标 Git 仓库的代码、配置、测试和 committed artifacts 重建事实，最小必要改写 wlvh/coding-workflow 的九份核心工作流文档，运行项目真实测试，并以 fresh-context independent review 或诚实 self-review 收口。用户要求同步、补齐或核对 architecture、capability、interact、business guide、testing 或 governance 文档时使用；一次调用只接收目标仓库、zh/en 语言和成功后是否创建 draft PR。
+description: 从当前或用户显式指定的 Git 根重建项目事实，按请求语言默认选择 zh/en，最小必要改写 wlvh/coding-workflow 的九份核心工作流文档并运行真实测试；只有用户明确要求 PR 时，才基于调用时 committed HEAD 在仓库外 clean worktree 创建 draft PR。用户要求同步、补齐或核对 architecture、capability、interact、business guide、testing 或 governance 文档时使用。
 ---
 
 # Workflow Docs Sync
@@ -8,17 +8,120 @@ description: 从目标 Git 仓库的代码、配置、测试和 committed artifa
 一次调用完成事实重建、必要文档改写、真实测试、复核和机械检查。现有文档与上游模板都是
 待验证声明，不是项目事实来源。主 Agent 是目标工作区唯一写入者。
 
-## 输入与固定边界
+## 安装后同轮继续
 
-- 要求目标仓库的 Git 根目录。
-- 语言必须由用户选择，且仅允许 `zh` 或 `en`。
-- 只有用户明确要求时，才在全部 gate 成功后创建 draft PR。
-- 不要求用户提供上游 checkout、SHA、内部命令、Agent 数量或执行顺序。
+当用户在同一条指令中先用 `$skill-installer` 安装本 Skill，再要求立即同步时：
 
-按以下方式准备：
+1. 运行安装器 helper。如果它只因默认目标已存在而失败，不覆盖或删除旧目录；用 `--dest
+   <unique-install-root>` 在原 Git 根和任何执行 worktree 外的唯一新目录重试。
+2. 只消费 helper 本次成功输出。对本 Skill，固定前缀是 `Installed workflow-docs-sync to `；
+   其后整段文本是安装根。相对路径按安装命令的工作目录立即解析为绝对路径。
+3. 当前会话若已经注册这次返回目录对应的 `$workflow-docs-sync`，显式调用它；否则完整读取安装根中的
+   `SKILL.md`，把该文件所在目录作为 `<skill-root>`，从该目录解析 `scripts/sync_docs.py`，并在
+   当前轮继续执行本文件全部流程。
+4. 不得猜测 `~/.codex`、`$CODEX_HOME` 或其他固定安装路径，也不得要求重启、打开新会话或等待
+   下一轮。只有重试后仍得不到本次成功输出及其可验证 Skill 根时才报告 `BLOCKER`；不得把
+   错误中的候选路径冒充本次成功安装结果。
+
+## 默认推断，不追问
+
+### 目标仓库
+
+按以下优先级解析：
+
+1. 用户显式给出的目标路径；用 `git -C <path> rev-parse --show-toplevel` 归一化为 Git 根。
+2. 否则在当前工作目录执行 `git rev-parse --show-toplevel`，使用其所属 Git 根。
+
+只有当前工作目录不在 Git 仓库中，且用户也未提供可解析路径时，才允许询问目标路径。
+
+### 语言
+
+按以下优先级解析：
+
+1. 用户显式指定的 `zh` 或 `en`。
+2. 否则由 Agent 按当前请求的自然语言判断：中文请求使用 `zh`，其他语言请求使用 `en`。
+
+不得新增语言探测脚本、配置、marker 或状态文件。`sync_docs.py --language` 仍是必填参数，由
+Agent 将上述结果显式传入。
+
+### PR 意图
+
+按以下优先级解析：
+
+1. 用户明确说不创建 PR，结果为 `false`。
+2. 否则用户提到 PR、提 PR、创建 PR、提交 PR、`open pull request` 或
+   `create pull request`，结果为 `true`。
+3. 未提及，结果为 `false`。
+
+`true` 只允许在全部 gate 成功后创建 draft PR；不得自动标记 Ready 或合并。除真正不可恢复的
+`BLOCKER` 外，不得要求用户补充目标绝对路径、语言、分支名、上游 SHA、安装路径、内部命令、
+Agent 数量或执行顺序。
+
+## 选择执行工作树
+
+先固定解析后的原 Git 根和调用时提交：
+
+```bash
+git -C <original-root> rev-parse --verify 'HEAD^{commit}'
+```
+
+仓库没有任何 commit 时报告 `BLOCKER`，不得要求用户先 commit 或 stash。
+
+### PR 意图为 true
+
+无论原工作树是否 clean，都必须：
+
+1. 在仓库外建立原工作树调用前快照。对原工作树的 Git 读取设置
+   `GIT_OPTIONAL_LOCKS=0`，避免只读检查刷新 index。快照必须同时包含：
+
+   - 以下三条命令的 NUL 分隔原始输出：
+
+     ```bash
+     git -C <original-root> status --porcelain=v1 -z --untracked-files=all
+     git -C <original-root> ls-files --stage -z
+     git -C <original-root> ls-files --others --ignored --exclude-standard -z
+     ```
+
+   - 取 status 的全部 pathname（rename/copy 的两个 pathname 均计入）与 ignored 输出的并集，
+     固定为调用前保护集合。只对该集合逐项使用不跟随 symlink 的 `lstat`，记录相对路径、类型和
+     mode；对普通文件记录原始 bytes 的 SHA-256，对 symlink 记录 link target，不存在则记录
+     missing sentinel。不保存文件内容副本，不枚举或 hash 整棵仓库。
+
+2. 在原仓库之外创建临时根，从调用时 `HEAD` 创建唯一、有意义的新分支和 clean linked
+   worktree。不得从之后变化的分支 tip、`main` 或 `origin/main` 重建起点。
+3. 只在外部 worktree 中调查、编辑、测试、stage、commit 和发布。除上述不可逆内容摘要用于
+   隔离证明外，不得读取或复制原工作树的 dirty bytes；摘要和 metadata 不得作为项目事实
+   证据或进入 PR。不得在原工作树 stash、clean、reset、commit、覆盖或运行 `prepare`。
+4. 任何最终报告前（包括发布失败时），对调用前保护集合用同一算法复核，并重新运行、逐 byte
+   比较 status 与 `ls-files --stage` 的 NUL 分隔输出。调用前 clean 的 tracked 路径变化与新增
+   非 ignored 路径由最终 status 检出；预先存在的 dirty、untracked、ignored 内容变化由定向复核
+   检出。不要重新全量比较 ignored 枚举，因此调用期间新增的无关 ignored 路径不误报。检测到
+   差异时登记 `BLOCKER` 并报告边界变化，不得在没有证据时归因于 Agent、用户、IDE 或其他进程。
+
+最终报告必须原样包含：
+
+```text
+本次同步与 PR 基于调用时的 committed HEAD；原工作树中的未提交修改未进入调查或 PR。
+```
+
+### PR 意图为 false
+
+当前工作树满足 `prepare` 的 dirty allowlist，且后续编辑不会制造 editable path 的
+index/worktree 分叉时，可以直接运行。若 `prepare` 因同步范围外 dirty path 或 editable path
+分叉拒绝，或预期编辑会制造分叉，则不追问用户清理；从同一调用时 committed HEAD 在仓库外
+创建 clean worktree 并完整重跑。`prepare` 的此类前置失败不得改变原工作树；其他失败按实际
+证据登记 `BLOCKER`，不得一概用 worktree 掩盖。
+
+只要使用外部 worktree，事实调查就只能消费其中的 committed HEAD，不得混入原工作树的未提交
+内容。
+
+## 固定上游并准备
+
+选定 `<target>` 后，按以下方式准备：
 
 1. 如果当前 Skill 位于 canonical `wlvh/coding-workflow` Git 根目录，复用该 checkout。
-2. 否则在目标仓库外临时 shallow clone `https://github.com/wlvh/coding-workflow.git`；网络失败
+2. 否则在目标仓库和外部执行 worktree 之外临时 shallow clone
+   `https://github.com/wlvh/coding-workflow.git`；网络失败
    时停止，不回退到缓存模板。
 3. 调用：
 
@@ -180,7 +283,57 @@ whitespace 检查。
 - 修改文档及代码、配置、测试或 artifact 证据；
 - 每条测试的 exact command、scope、result、not-run reason、环境与隔离方式；
 - review finding、修复、复核结果和 open decisions；
-- mechanical check 结果，并明确它只证明最终状态。
+- mechanical check 结果，并明确它只证明最终状态；
+- 使用外部 worktree 时的调用时 committed HEAD 和原工作树快照比较结果。
 
-用户要求 draft PR 时，只有上述流程成功后才使用仓库外临时 Markdown body；commit、push 和
-draft PR 创建交给通用 GitHub 发布能力，同步脚本不参与发布。
+`check` 必须在 commit 前通过；不得用 commit 后的新 HEAD 绕过固定的 `expected_target_head`。
+
+## Draft PR 发布
+
+PR 意图为 `false` 时不 commit、push 或创建 PR，最终把 publication 标记为 `NOT_REQUESTED`。
+
+PR 意图为 `true` 时，只有调查、测试、review、原工作树状态边界和上述 `check` 全部通过后，
+才按顺序执行：
+
+1. 从最终 diff 得到本轮实际修改的九份核心文档子集，用显式路径逐个 stage；不得使用
+   `git add -A`，不得包含代码、配置、测试残留、PR body 或其他非权威路径。
+2. 用 `git diff --cached --name-only` 读回 staged 路径，确认精确等于预期子集，再运行：
+
+   ```bash
+   git diff --cached --check
+   ```
+
+3. 创建一个有意义的 commit；没有文档 diff 时不得制造空 commit 或虚假 PR。
+4. 解析真实 remote、远端默认 base 和唯一 head branch，push 该新分支。
+5. 只创建 draft PR，不标记 Ready、不合并。创建后从远端读回 PR number、base、head、head SHA、
+   Draft 状态和 changed files；任一不一致都登记 `BLOCKER`。
+
+PR body 必须是仓库外的临时 Markdown 文件，并准确记录：
+
+- base/head 与调用时 committed HEAD；
+- changed files；
+- findings、修复与 open decisions；
+- exact tests 及 PASS、FAIL、`NOT_RUN` 或 `BLOCKED`；
+- 真实 review mode 和 reviewer 证据；
+- final `check` 结果及其机械证明边界；
+- 以下原工作树边界原句：
+
+  ```text
+  本次同步与 PR 基于调用时的 committed HEAD；原工作树中的未提交修改未进入调查或 PR。
+  ```
+
+commit、push 和 draft PR 创建交给通用 GitHub 发布能力，`sync_docs.py` 不参与发布。
+
+若无 remote、无认证、无 push 权限或 PR 创建失败，保留外部 worktree、branch、commit 和仓库外
+PR body，不反问用户，不删除可恢复现场。最终状态必须原样写：
+
+```text
+Documentation sync: PASS
+Publication: PR_BLOCKED
+Overall: PARTIAL
+```
+
+同时输出基于已解析 worktree、remote、repo、base、head 和 body 路径的可直接执行 push 与
+draft PR 创建命令。无法解析的外部身份必须在命令中明确标为 required blocker，不得猜测 URL、
+repo 或权限，也不得声称 PR 已创建。只有 PR 创建成功、远端读回一致且原工作树定向保护集合、
+status 与 staged entries 复核通过后，才可以移除外部 worktree；publication blocked 时必须保留。
