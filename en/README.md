@@ -141,3 +141,16 @@ the remaining path, including `.github/`.
 
 Chinese is the semantic source and English is derived. Bilingual content changed by a PR closes in that PR;
 translation status in unchanged historical decisions remains a historical record.
+
+## Related Work
+
+This repository covers the **producer** side: how an agent reconstructs repository facts from committed
+code, config, tests, and artifacts, keeps changes to the minimum necessary, and delivers a reviewable
+draft PR from an isolated clean worktree.
+
+[acceptance-agent](https://github.com/wlvh/acceptance-agent) covers the **acceptor** side: how an
+independent verifier decides `accept` / `reject` / `request_evidence` from the specification, the final
+artifact, and the test evidence — while being deliberately denied the builder's implementation
+conversation, so it cannot inherit the builder's framing.
+
+Author: [github.com/wlvh](https://github.com/wlvh) · [huaweidata.com](https://huaweidata.com)

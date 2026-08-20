@@ -156,3 +156,14 @@ fi
 
 中文是语义锚点，英文是派生层。本 PR 新增或修改的双语模板、README 和 development
 workflow 必须同一 PR 闭合；未触及历史决策的既有翻译状态不要求顺手改变。
+
+## 相关项目
+
+本仓库负责**生产者侧**：Agent 如何从 committed code、config、tests 和 artifacts 重建仓库事实，
+把改动限制在最小必要范围，并从隔离 clean worktree 交付可审核的 draft PR。
+
+[acceptance-agent](https://github.com/wlvh/acceptance-agent) 负责**验收者侧**：一个独立验收方
+如何仅凭规格、最终产物和测试证据做出 `accept` / `reject` / `request_evidence` 判断——它被有意
+禁止读取 builder 的实现对话，因此无法继承 builder 的 framing。
+
+作者：[github.com/wlvh](https://github.com/wlvh) · [huaweidata.com](https://huaweidata.com)
