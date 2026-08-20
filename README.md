@@ -20,3 +20,15 @@ Detailed behavior and optional repository installation are in the [中文指南]
 
 For source ownership, edit locations, and validation commands, use the
 [Chinese maintainer map](zh/README.md#维护者地图).
+
+## Related work
+
+This repository covers the **producer** side: how an agent reconstructs repository facts, keeps
+changes minimal, and delivers a reviewable draft PR from an isolated worktree.
+
+[acceptance-agent](https://github.com/wlvh/acceptance-agent) covers the **acceptor** side: how a
+separate verifier decides `accept` / `reject` / `request_evidence` from the spec, the final artifact,
+and the test evidence — while being deliberately denied the builder's implementation conversation,
+so it cannot inherit the builder's framing.
+
+Author: [github.com/wlvh](https://github.com/wlvh) · [huaweidata.com](https://huaweidata.com)
