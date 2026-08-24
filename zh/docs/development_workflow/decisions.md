@@ -182,7 +182,7 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 - Case A：先预登记 `candidate_upstream_sha`、`selected_target_sha`、known-stale claims、backup 和
   selection reason，再启动 blind executor。两轮间 target code/config/test/committed-artifact base、
   upstream candidate 与 language 不变；round 1 关闭 review finding 后只提交最终九文档，round 2
-  从该 `second_target_sha` 的新 clean checkout 开始。相对 `second_target_sha` 九文档零 diff 且无
+  从该 `second_target_sha` 的新 clean checkout 开始。相对 `second_target_sha` 九文档零 diff且无
   staged/untracked/ignored residue 才是 `PASS_NOOP`；冻结事实支持的新增修正为
   `ROUND1_INCOMPLETE`，无新增反证的表达漂移为 `ROUND2_DRIFT`。两种失败都要求从 clean target
   重跑完整两轮；alignment consumer 直接在 `second_target_sha` 或其 clean worktree 上运行，
@@ -204,10 +204,10 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 - 复杂度守恒：任何新增或扩展的步骤、prompt 章节、gate、状态、长期产物、角色或机器机制，
   必须说明它改变谁的下一步动作、承担什么独立风险、现有机制为何不足，以及它替代、合并、
   缩小或删除什么。不能改变下一步动作的机制不得加入；能扩展现有机制时不建立平行机制。
-- 诚实记账：本次改造是经 owner 明确接受的净复杂度增加。删除“分歧后以模型身份裁决”、缩短
-  合并后总结和移除已停用主流程项，只抵消部分新增量；剩余净增用于处理已观察到的多轮同类
-  finding、局部修复继续制造状态与恢复分支、owner 决策缺少合法取证路径，以及审核覆盖被
-  沉默当作已验证等失效。
+- 诚实记账：本次改造是经 owner 明确接受的净复杂度增加。删除“分歧后以模型身份裁决”和移除
+  已停用主流程项，只抵消部分新增量；编码前 Readback 与合并后真实实现解读 / 用户验收承担
+  不同职责，不作为互相抵消。剩余净增用于处理已观察到的多轮同类 finding、局部修复继续制造
+  状态与恢复分支、owner 决策缺少合法取证路径，以及审核覆盖被沉默当作已验证等失效。
 - 双模型边界：Issue 阶段保留双模型合意，但使用需求完成 / 验收与工程量 / 最小充分两个
   blind-first 镜头；Finding 阶段保留双模型验证，但事实复现者不读历史，系统性判断者先固定
   当前分类、再读取历史。模型共识不是证据，不再使用“若干轮后以 Codex 为准”。
@@ -220,8 +220,9 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 - Owner Decision：必须同时说明所需证据、证据能否合法取得、阻塞与不阻塞范围以及安全默认；
   没有合法取证路径时转为规格修订，而不是把无法作出的决定丢给 owner。
 - Issue Readback：仅在不可逆副作用、跨模块状态 / 持久化 / 重试 / 恢复 / 并发，或实际存在
-  owner 取舍时强制；批准绑定当时 Issue 修订，实质变化后失效。已执行 Readback 的项目在合并
-  后只做实现偏差 delta，不重复完整机制解读。
+  owner 取舍时强制；批准绑定当时 Issue 修订，实质变化后失效。编码前 Readback 解释的是计划，
+  不替代合并后基于最终代码的 Tech Lead 机制解读、用户可感知变化与文档检查、用户视角验收
+  计划及必要时的实际执行。
 - 测试复杂度：优先复用、参数化和扩展 scenario；只有复现已确认缺陷、保护已登记不变量或
   覆盖现有测试无法到达的真实边界时，才把对抗探针晋升为长期测试。
 

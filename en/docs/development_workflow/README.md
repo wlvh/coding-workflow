@@ -3,50 +3,33 @@
 This is the English overview of the repository's human-in-the-loop coding workflow. The Chinese workflow
 is the semantic source; this file closes the English meaning for the workflow content changed in this PR.
 
-## Workflow Complexity Conservation
-
-Any added or expanded step, prompt section, gate, state, long-lived artifact, role, or mechanical control must
-state whose next action it changes, the independent risk it controls, why current mechanisms are insufficient,
-and what it replaces, merges, narrows, or removes. A mechanism that does not change an actor's next action
-must not be added. Extend an existing mechanism instead of creating a parallel one when possible. Prescribe a
-fixed output structure only when a machine consumer or a specific downstream decision depends on it; otherwise
-state the behavioral obligation without mandatory headings or checklists.
-
-Evidence-backed net complexity growth is allowed when the owner explicitly accepts it, but it must be recorded
-honestly and carry observable review and retirement conditions. See
-[DEC-008](../../../zh/docs/development_workflow/decisions.md#dec-008开发工作流采用复杂度守恒与可退役实验机制).
+See
+[DEC-008](../../../zh/docs/development_workflow/decisions.md#dec-008开发工作流采用复杂度守恒与可退役实验机制)
+for workflow complexity conservation and the review and retirement rules for experimental mechanisms.
 
 ## Main Flow
 
 1. Define the requirement.
-2. Draft the black-box `FSD Core Contract` with the Pro web model when direct repository exploration is
-   unavailable.
+2. Draft the black-box `FSD Core Contract` with the Pro web model.
 3. Compare the FSD, current repository code, and authoritative documents to produce the `Repo Impact
    Forecast` and `Target State Bridge`.
-4. Turn the FSD, forecast, and bridge into one executable issue contract. Owner decisions must remain explicit
-   and state what is being decided, whether the evidence required to decide can be obtained legally, the local
-   blocking scope, and the safe default.
-5. Review the issue through two blind-first, orthogonal lenses before implementation. One model checks
-   requirement closure and acceptance decidability; the other checks engineering volume, whether roughly half
-   the work can be removed, whether the proposal creates problems that require more machinery, and whether
-   tests can be reused or parameterized. The Issue Agent from step 4 owns the edit; the two lenses advise and
-   do not edit the issue directly. They exchange challenges once; model agreement is not evidence, and product
-   tradeoffs remain with the owner.
-6. Run an issue readback before coding only when the issue involves irreversible side effects, cross-module
-   state / persistence / retry / recovery / concurrency, or an unresolved owner tradeoff. The readback explains
-   the runtime chain, necessary work packages, long-term complexity, a half-size alternative, test composition,
-   and owner choices. Owner approval binds the issue revision that was actually read; material changes to scope,
-   acceptance, work-package boundaries, failure semantics, or owner decisions invalidate approval.
+4. Turn the FSD, forecast, and bridge into one executable issue contract. Owner decisions must remain explicit.
+5. Review the issue through two orthogonal lenses before implementation: requirement and acceptance closure,
+   and engineering volume and minimal sufficiency. The Issue Agent from step 4 owns the final edit; the lenses
+   advise and do not edit the issue in parallel.
+6. Run an issue readback before coding for high-risk issues. It explains the planned runtime chain, necessary
+   work packages, long-term complexity, a half-size alternative, test composition, and owner choices. After the
+   readback, the owner explicitly approves the current issue; material changes require renewed approval before
+   implementation.
 7. Implement the approved issue after reading `AGENTS.md`, `SOP.md`, `TESTING.md`, `PR_Checklist.md`,
    `interact.md`, and project capability or business-user documents. Map each Spec Unit to code, tests, and
    documentation, and state which tests are reused, parameterized, or used as the real cross-module scenario.
-8. Self-review the patch and deliver a draft PR using the repository's commit policy and the tracked PR
-   template. The PR body remains outside the target worktree and records actual scope, evidence, review/fix
-   history, open decisions, and limits.
-9. Independently review the current exact head blind-first. Freeze the current findings before reading the
-   previous two review reports. Review judgments must distinguish reproduced behavior, code-derived inference,
-   and unreviewed claims; environment or permission limits are reasons for unreviewed coverage. Material missing
-   coverage returns `REQUEST_EVIDENCE`, not PASS or an instruction to modify code.
+8. Self-review the patch and deliver a draft PR using the repository's commit policy and tracked PR template.
+   The PR body remains outside the target worktree and records actual scope, evidence, review/fix history, open
+   decisions, and limits.
+9. Independently review the current exact head before using historical review framing. Review judgments must
+   distinguish reproduced behavior, code-derived inference, and unreviewed claims. Material missing coverage
+   returns `REQUEST_EVIDENCE`, not PASS or an instruction to modify code.
 10. Verify each finding through two orthogonal lenses. The fact verifier does not read history and decides
     `CONFIRMED`, `REFUTED`, or `REQUEST_EVIDENCE`. The systemic verifier first classifies the current state
     owner, persistence protocol, and side-effect chain, then reads history to decide `LOCAL_FIX`,
@@ -60,9 +43,11 @@ honestly and carry observable review and retirement conditions. See
     a repair round. The final review outcome is exactly one of `PASS`, `REWORK_REQUIRED`,
     `SPEC_REVISION_REQUIRED`, `OWNER_DECISION_REQUIRED`, or `REQUEST_EVIDENCE`.
 12. Merge under the target project's acceptance policy after PASS. Existing merge-readiness and issue-closure
-    tools remain optional rather than universal main-flow steps. When an issue readback already happened,
-    post-merge explanation is limited to implementation deltas, changed tradeoffs, residual risk, and follow-up
-    issues instead of repeating the full mechanism walkthrough.
+    tools remain optional rather than universal main-flow steps. After merge, explain the actual implementation
+    from final code evidence, assess user-visible changes and whether `AGENTS.md` and linked documents provide
+    sufficient guidance, then create a user-view acceptance plan and execute it with tools such as Playwright
+    when useful. Store these results in the PR conversation. The pre-coding issue readback explains the plan and
+    does not replace post-merge understanding or acceptance of the delivered implementation.
 
 ## Core Artifacts
 
@@ -72,10 +57,10 @@ honestly and carry observable review and retirement conditions. See
   scoped state-space redesign after `SPEC_REVISION_REQUIRED`.
 - `Issue`: the single executable development contract, including explicit owner decisions and work-package
   blocking scope.
-- Conditional issue readback: owner-facing understanding and revision-bound approval for high-risk issues; it
-  is not a second authority source.
-- External PR body Markdown: temporary review and publishing input derived from the tracked PR template;
-  it never enters the target worktree or commit.
+- Conditional issue readback: owner-facing understanding and approval for high-risk issues; it is not a second
+  authority source and does not replace post-merge explanation or user-view acceptance.
+- External PR body Markdown: temporary review and publishing input derived from the tracked PR template; it
+  never enters the target worktree or commit.
 - `Workflow Docs Sync`: one invocation for full fact reconstruction, minimal necessary document changes,
   real tests, fresh-context independent review or honest self-review, and deterministic final checks.
 
@@ -156,7 +141,8 @@ principles to the development workflow itself. It records this change as accepte
 than claiming neutrality. Issue and finding cross-checks remain dual-model but use orthogonal lenses; evidence
 replaces model identity as the disagreement authority. Review must not treat unreviewed claims as verified. A
 divergence gate returns systemic gaps to the Bridge, while owner decisions must include a legal evidence path
-and local blocking scope.
+and local blocking scope. Pre-coding readback and post-merge explanation serve different decisions and remain
+complementary.
 
 The divergence gate, conditional issue readback, and owner-decision contract are experimental. Each is reviewed
 after three applicable PRs, with `PROMOTE`, `MODIFY`, or `RETIRE` as the only outcomes. A mechanism that never
