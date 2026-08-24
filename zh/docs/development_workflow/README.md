@@ -36,7 +36,6 @@
    从需求完成和验收可判定的角度审核当前 Issue。
 
    重点判断：核心用户目标是否闭合；Scope / Non-goals 是否明确；成功、失败、拒绝、降级和人工升级是否可判定；Acceptance Checklist 是否能明确判断完成；是否有本应由 owner 决定的事项被工程方案静默拍板。
-
    ```
 
    **工程量 / 最小充分镜头：**
@@ -45,7 +44,6 @@
    从工程量、长期复杂度和最小充分性的角度审核当前 Issue。
 
    重点判断：是否可以减少约一半开发量而仍保留核心价值；是否在为方案自己制造的问题继续写代码；测试能否复用，能够构建端到端的测试体系。有没有脱裤子放屁的开发。
-
    ```
 
    由第 4 步的 Issue Agent 执笔更新 Issue；两个镜头只提供意见，不直接编辑 Issue。
@@ -71,17 +69,14 @@
    本解读不是新的产品或工程权威。发现歧义时必须回写 Issue，不得只在解读中形成新要求。
    ```
 
-   Readback 完成后，由 owner 明确批准当前 Issue；未批准，或 Issue 的 Scope / Non-goals、Acceptance Checklist、工作包边界、核心失败 / 恢复语义、Owner Decisions 发生实质变化时，不得进入第 7 步。
-
-7. **Coding Agent 按批准的 Issue 开发**
+7. **Coding Agent 按 Issue 开发**
 
    ```text
-   按照当前已批准 Issue 完成本次开发。
+   按照当前 Issue 完成本次开发。
    1. 读取 AGENTS.md / SOP.md / TESTING.md / PR_Checklist.md / interact.md；如果项目存在 capability_contract.json / docs/business_user_guide.md，也必须按 AGENTS.md 的文档关系检查。
    2. 从 Issue 提取 Spec Unit，生成 SU -> 代码改动 -> 测试 -> 文档 的 todo list。
    3. 测试策略与测试证据记录方式以 TESTING.md 为准。
    4. 在 todo list 中说明哪些测试复用、哪些参数化扩展，以及哪一条 scenario 证明跨模块组合路径；不得机械地为每个 SU 或 finding 新增独立测试。
-   5. 若发现批准后的 Issue 已发生实质变化，停止并要求重新批准，不得自行解释为仍获授权。
    ```
 
 8. **Coding Agent 自审并提交 Draft PR**
@@ -97,65 +92,73 @@
    要求：
    1. 遵守 PR_Checklist.md。
    2. 遵守仓库当前 commit 策略；单 commit 只是可替换的团队默认。
-   3. 每轮 review / 修复都更新 PR body 的 Review / Fix Record；但发散闸门不依赖作者 body 才能工作。
+   3. 每轮 review / 修复都更新 PR body 的 Review / Fix Record。
    4. 根据 `.github/pull_request_template.md` 在仓库外创建临时 Markdown body，并覆盖已有 PR 和本地全部修改内容。
    5. 测试策略与测试证据记录方式以 TESTING.md 为准。
 
    临时 PR body 位于仓库外，不进入目标工作树或 commit。
    ```
 
-9. **独立 PR Review：先审核当前 exact head，再判断历史模式**
+9. **Codex 负责代码审核**
 
-   Reviewer 先 blind-first 读取当前 exact head、Issue、仓库权威、完整 diff、测试与 artifact，形成并冻结本轮初始 findings；之后才读取前两轮审核报告或 GitHub review comments，判断是否重复根因或发散。作者总结和 PR body 只是证据之一，不能替代当前事实，也不是发散闸门的唯一地基。
+   正式审核系统 prompt：[prompts/pr_review_system.md](../../prompts/pr_review_system.md)
 
-   Reviewer 必须在结论中区分实测复现、读码推断和未检查；环境或权限阻塞属于未检查的原因。未检查内容若可能改变 P0/P1、`SPEC_GAP` 或授权结论，不得 PASS，必须输出 `REQUEST_EVIDENCE`。
-
-10. **Finding 由两个正交镜头验证；根据证据选择修复、退回规格或提交 owner**
-
-   **模型 A：事实 / 复现镜头。** 它不读取历史审核或作者修复叙事，只读取当前 exact head、当前 finding、Issue 和仓库权威。
+   正式审核任务短 prompt：
 
    ```text
-   只判断当前 finding 是否真实成立。确认现实可达入口、前置条件、调用链、最小复现或定向测试、实际后果、现有测试为何未拦截和严重度。
+   对 XX 项目的 PR XX（最新 head XX）进行严格详细全面的代码审查。在评估代码时不但要评估开发是否符合 issue，还要评估有没有过度开发，是否可以在架构层级精简（功能可以提前开发，但是不允许有脱裤子放屁的冗余）。切记不要去优化或修复一个本不应该存在的问题！仓库外临时 PR body Markdown 是重要参考材料，你需要检查有没有重复开发和修补，如果有，分析其原因。重要问题需要实际运行代码来验证你的猜想，没有调查就没有发言权。
 
-   输出只能是：CONFIRMED / REFUTED / REQUEST_EVIDENCE。
-   不要设计大范围修复。
+   并检查是否遵守:
+   * .github/pull_request_template.md
+   * docs/business_user_guide.md
+   * AGENTS.md
+   * architecture.md
+   * capability_contract.json
+   * interact.md
+   * PR_Checklist.md
+   * SOP.md
+   * TESTING.md
+
+   对应issue：《》
+   PR审核指南：《》
+   你的职责不单是分析目前的pr有没有符合issue，有没有bug，也要分析这些代码的复杂度是不是必要的。切记不要去优化或修复一个本不应该存在的问题！
    ```
 
-   **模型 B：实例 / 系统性镜头。** 它先不读历史，固定当前责任边界、state owner、持久化协议和副作用链的初始分类；随后才读取前两轮审核报告判断是否成类或发散。
+   审核完成后的追问：按照 PR 审核指南，面向不熟悉本项目底层代码的程序员详细介绍你的发现。
+
+10. **如果 review 有问题，先验证问题是否真实存在，再决定是否修**
+
+   给 Codex 和 Claude Code 的共同 prompt：
 
    ```text
-   假设 finding 成立，判断它是孤立实例还是系统性失效。检查上游、当前模块与下游影响面；同类入口或相邻状态；当前建议是在修根因还是只修样例；最小闭合边界；能否扩展已有机制；测试应复用还是参数化；是否属于规格缺口或 owner decision。
+   先不动代码，先检查实习生给出的问题是否真实存在。重要问题需要通过代码阅读、最小复现、定向测试或接近真实使用路径的验证来确认；没有调查就没有发言权。
 
-   输出只能是：LOCAL_FIX / SYSTEMIC_FIX / SPEC_REVISION_REQUIRED / OWNER_DECISION_REQUIRED。
+   如果问题存在，请先输出分析，不要直接修复。分析必须包含：
+
+   1. 检测：去对应 PR 描述检查是否之前修复过类似问题，如果有，如何制定一个端到端的验收计划来杜绝重复返工。
+   2. 影响面：这个问题的上游输入、当前模块、下游调用方是否受影响；是否存在同类入口或相邻场景也需要一起检查。
+   3. 同步项：判断是否需要同步测试说明、用户文档、架构/流程文档、PR 描述或 Review / 修复记录；如果不需要，也要说明原因。
+   4. 在评估代码时不但要评估开发是否符合 issue，还要评估有没有过度开发，是否可以在架构层级精简（功能可以提前开发，但是不允许有脱裤子放屁的冗余）。
+   5. 你的职责不单是分析目前的 PR 有没有符合 issue、有没有 bug，也要分析这些代码的复杂度是不是必要的。切记不要去优化或修复一个本不应该存在的问题！
+
+   实习生的发现：《》
    ```
 
-   两种走向与直觉相反，必须遵守：`SPEC_REVISION_REQUIRED` 时停止改代码、退回 Bridge；`OWNER_DECISION_REQUIRED` 时只停止受阻工作包，未受阻部分继续。其余组合按 token 字面执行。
+   Codex 重点确认问题是否成立、触发路径、最小复现和严重度；Claude Code 重点检查影响面、同类入口、是否只是一个实例，以及最小充分的修复方式。两者意见交叉核对后由 Codex 输出综合分析；分歧由代码、测试、可复现证据和 owner 决策处理，不以模型身份裁决。
 
-   删除“若干轮后以 Codex 为准”。分歧由可复现行为、代码 / 配置 / 测试 / artifact、已冻结 Issue 和 owner 决策裁决；双方都无可复现证据时保留 `REQUEST_EVIDENCE`，不强行裁定。
+   本轮最终结论只能是：
 
-   **发散闸门：**满足任一条件时停止逐 finding 补丁，并输出 `SPEC_REVISION_REQUIRED`：
+   - `PASS`：没有 P0/P1 问题；
+   - `REWORK_REQUIRED`：存在需要修复或补证据的问题；
+   - `OWNER_DECISION_REQUIRED`：下一步需要 owner 决定，并说明阻塞和不阻塞哪些工作。
 
-   1. 上一轮修复直接制造本轮新的 P0/P1；
-   2. 连续两轮新增 P0/P1 落在同一 runtime entrypoint、state owner、persistence protocol 或 external side-effect execution chain；
-   3. 同一执行链完成一轮修复后，下一轮仍需新增 durable state、checkpoint、持久化 artifact、recovery branch 或 terminal semantics。
+   修复后继续复用“PR 提交短 prompt”，再新开 Codex 对话进行 PR 审核，直到没有 P0/P1 问题为止；P2 问题可以接受。
 
-   触发后返回 Bridge 完整枚举受影响执行链。
+   Finding 闭合：在既有 PR review / fix record 和 GitHub thread 中保留来源 ID、判断与关闭证据；不得让未解决 finding 静默消失，也不另建一套重复 reconciliation ledger。
 
-   **Owner Decision 输出契约：**必须说清要决定什么、作出决定所需证据能否在当前权限 / 安全 / 成本约束下合法取得、阻塞哪些工作包与不阻塞哪些，以及 owner 未决前的安全默认。若证据无法合法取得，结论是 `SPEC_REVISION_REQUIRED`。
+11. **PR 合并后，用网页端 GPT 的 apps 功能做 Tech Lead 总结**
 
-   最终出口只能是：
-
-   - `PASS`；
-   - `REWORK_REQUIRED`；
-   - `SPEC_REVISION_REQUIRED`；
-   - `OWNER_DECISION_REQUIRED`；
-   - `REQUEST_EVIDENCE`。
-
-11. **终验、合并、合并后解读与用户验收**
-
-   `PASS` 后按目标项目的独立验收与合并政策执行。仓库中的 `/claude-merge-check` 和 Issue closure FSD acceptance 可以作为可选工具使用，但不再列为当前通用主流程或核心产物。
-
-   **合并后 Tech Lead 机制解读**
+   总结短 prompt：
 
    ```text
    当前 PR XX （对应issue XX） 已经完成。请站在 tech lead 视角详细评估，但你的目标不是写一篇“好看的评审总结”，而是让我真正理解这个 PR 是怎么工作的。
@@ -189,15 +192,21 @@
    - 不要只写结论，要写证据链
    ```
 
-   **用户可感知变化与文档检查**
+   追问短 prompt：
 
    ```text
    这个PR合并入主干后用户有什么可感知的变化吗，用户如何利用这次PR的开发成果，以AGENTS.md为首的文档提供了很好的指引吗？AGENTS.md 及其内联的文档有没有需要更新的地方？综合评估当前代码分支这个 PR 以什么方式完成了什么任务，给这个项目带来了什么改变和影响，下一步的未来展望是什么？
    ```
 
-   上述两份解读存档在 PR 评论区。编码前 Issue Readback 解释的是计划，不替代这里基于最终代码和真实交付结果的解读。
+   存档在 PR 评论区。
 
-   **用户视角验收计划**
+12. **Issue 关闭前，再从主干代码检查 FSD 是否真正开发完成**（这个环节暂时放弃，因为通过率 100%，而且第 13 步以用户角度验收能发现更精准的问题）
+
+   使用长 prompt：[prompts/issue_closure_fsd_acceptance.md](../../prompts/issue_closure_fsd_acceptance.md)
+
+   目的：从主干代码倒查 Issue 中的每个 `Spec Unit` 是否已实现，并强制输出 `Updates to FSD`（如有偏差）。
+
+13. **从用户视角验收这次 PR**
 
    验收计划需要 GPT 网页版和 Claude Code 达成合意。
 
@@ -205,11 +214,11 @@
    针对这个issue和pr，制定一个验收计划，如何以用户体验的角度来验收这次的PR
    ```
 
-   将验收计划存档在 PR 评论区，并交给 Codex；必要时结合 Playwright 等交互工具实际执行。该验收可能直接产生新的开发计划。
+   存档在 PR 评论区。下一步把这份用户视角验收建议交给 Codex，必要时结合 Playwright 等交互工具，真的走一遍验收。该步骤经常可能直接产生新的开发计划。
 
 ## 实验机制重审
 
-发散闸门、条件性 Issue Readback 和 Owner Decision 输出契约先作为实验机制。每项累计 3 个适用 PR 后，按 [DEC-008](decisions.md#实验机制重审与退役) 分别输出 `PROMOTE`、`MODIFY` 或 `RETIRE`；从未触发，或触发后没有改变任何参与者下一步动作的机制，默认退役，除非有新的具体风险证据。
+条件性 Issue Readback 和 Owner Decision 输出契约先作为实验机制。每项累计 3 个适用 PR 后，按 [DEC-008](decisions.md#实验机制重审与退役) 分别输出 `PROMOTE`、`MODIFY` 或 `RETIRE`；从未触发，或触发后没有改变任何参与者下一步动作的机制，默认退役，除非有新的具体风险证据。
 
 ## 核心产物
 
@@ -217,8 +226,9 @@
 - `Repo Impact Forecast`：预测 FSD 与当前仓库的真实触点、风险、文档和测试影响。
 - `Target State Bridge`：定义开发完成后用户 / 调用方应该看到什么状态，以及如何验证。
 - `Issue`：把契约、范围、任务拆解、文档更新预测、测试更新预测、验收条件和 Owner Decisions 固化。
-- 条件性 Issue Readback：帮助 owner 在编码前理解并批准具体 Issue 修订；不是第二套权威。
+- 条件性 Issue Readback：帮助 owner 在编码前理解高风险 Issue；不是第二套权威。
 - 仓库外 PR body Markdown：由 `.github/pull_request_template.md` 派生，不进入目标工作树或 commit；是 review 和通用 GitHub 发布能力的输入。
+- `FSD 完备性验收报告`：Issue 关闭前从主干代码倒查 Spec Unit 与 FSD 偏差的报告。
 - `Workflow Docs Sync`：用户一次调用完成全量事实重建、最小必要改写、真实测试、
   fresh-context independent review 或诚实 self-review，以及最终仓库检查。
 

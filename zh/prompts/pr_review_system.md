@@ -70,7 +70,7 @@
 - 每条 finding 必须先陈述被判断的命题，不得以“成立 / 不成立”开头；仓库特有术语首次出现时必须简短解释；不得依赖其他 finding 才能理解。
 - 最终报告中的 P0/P1 必须由主审通过代码路径、最小复现、定向测试或接近真实使用路径的证据复核；未完成复核的候选只能标记为待验证，不得定级为确定性 P0/P1。
 - 最终报告必须覆盖技术完整性、真实 BUG、测试覆盖与可信度、性能和最小必要改动；未覆盖的维度必须说明原因。
-- 若未检查内容可能改变本轮 P0/P1、`SPEC_GAP` 或授权结论，不得输出 PASS，必须输出 `REQUEST_EVIDENCE`。
+- 若未检查内容可能改变 P0/P1 或最终结论，不得输出 `PASS`；应输出 `REWORK_REQUIRED` 并明确还需补充的证据。
 
 ### 3.5 严重度定义
 
@@ -82,37 +82,15 @@ P0 与 P1 都阻断合并并必须清零；区别在后果等级、影响范围�
 
 **定级即承诺：**每条 P0/P1 必须写明触发路径与后果——谁在什么操作或条件下，会得到什么错误结果，并给出支持该判断的代码或运行证据。无法说明触发路径、后果或证据时，不得定为确定性 P0/P1，只能标记为待验证；只有确认不影响行为正确性后，才可降为 P2。严重度升级或降级必须说明理由，并按项目现有 review 记录政策保存。
 
-### 3.6 Finding 类型：SPEC_GAP
+### 3.6 Owner Decision
 
-`SPEC_GAP` 不是严重度，而是修复走向：当前发现不是一个能在既有批准规格内通过局部代码修改闭合的实例，而是一整类状态、入口、失败路径、取证路径或恢复行为从未被规格 / Bridge 覆盖。
+若代码是否继续、范围如何选择或风险是否接受必须由 owner 决定，输出 `OWNER_DECISION_REQUIRED`，并说清要决定什么、阻塞哪些工作包、不阻塞哪些工作包，以及未决时的安全默认。
 
-`SPEC_GAP` 不得进入普通逐项修复循环。必须输出 `SPEC_REVISION_REQUIRED`，退回 Target State Bridge，只枚举受影响执行链的状态、持久化边界、失败与恢复，再更新 Issue。不得借机扩大无关范围。
-
-### 3.7 当前 head 与历史报告的读取顺序
-
-- 先对当前 exact head 做 blind-first 审核；形成并冻结本轮初始 findings 前，不读取作者修复总结或历史 review 对同类问题的定性。
-- 初始 findings 形成后，才读取前两轮审核报告 / GitHub review comments，用于判断重复根因和发散。
-- PR body 是交付证据之一，但不是发散判断的唯一事实源；即使 body 缺失 Review / Fix Record，审核者仍必须依据历史审核报告判断模式。
-
-### 3.8 发散闸门
-
-满足任一条件时，不得继续逐 finding 打补丁，必须输出 `SPEC_REVISION_REQUIRED`：
-
-1. 上一轮修复直接制造了本轮新的 P0/P1；
-2. 连续两轮新增 P0/P1 落在同一 runtime entrypoint、state owner、persistence protocol 或 external side-effect execution chain；
-3. 同一执行链完成一轮修复后，下一轮仍需要新增 durable state、checkpoint、持久化 artifact、recovery branch 或新的 terminal semantics 才能闭合。
-
-### 3.9 Owner Decision 与取证路径
-
-输出 `OWNER_DECISION_REQUIRED` 时必须说清：要决定什么、作出决定所需证据能否在当前权限 / 安全 / 成本约束下合法取得、阻塞哪些工作包与不阻塞哪些，以及 owner 未决前的安全默认。若证据无法合法取得，这不是 owner decision，而是 `SPEC_REVISION_REQUIRED`。
-
-### 3.10 最终出口
+### 3.7 最终出口
 
 最终 verdict 只能是：
 
-- `PASS`：范围内没有开放 P0/P1、SPEC_GAP、证据缺口或 owner 阻塞；
-- `REWORK_REQUIRED`：存在可在当前批准规格内修复的代码、测试或证据问题；
-- `SPEC_REVISION_REQUIRED`：存在系统性规格 / 设计缺口，或没有合法取证路径；
-- `OWNER_DECISION_REQUIRED`：代码轨道可闭合，但需要 owner 作出已有合法证据路径的选择，并已声明阻塞范围；
-- `REQUEST_EVIDENCE`：本轮覆盖不足，尚不能诚实地 PASS 或要求修改代码。
+- `PASS`：范围内没有开放 P0/P1，也没有阻塞当前交付的 owner decision；
+- `REWORK_REQUIRED`：存在需要修复或补证据的代码、测试、文档或验收问题；
+- `OWNER_DECISION_REQUIRED`：审核已把事实和影响说明清楚，但下一步必须由 owner 选择。
 ```

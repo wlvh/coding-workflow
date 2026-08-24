@@ -32,9 +32,5 @@
 - Unblocked work：哪些部分可以继续；
 - Safe default：未决定时采用什么 fail-closed 默认。
 
-若决定所需证据在当前规格下无法合法取得，不得伪装成普通 Owner Decision；必须标记为 `SPEC_REVISION_REQUIRED`。
-
-## Issue 修订与批准
-
-Issue 进入实现前的 owner 批准只对当时的正文修订有效。Scope / Non-goals、Acceptance Checklist、工作包边界、核心失败或恢复语义、Owner Decisions 发生实质变化时，原批准失效；不得用只改评论的方式形成新要求。
+若决定所需证据在当前约束下无法合法取得，必须把这个限制和需要 owner 选择的下一步写进 Issue，不得静默继续实现。
 ```

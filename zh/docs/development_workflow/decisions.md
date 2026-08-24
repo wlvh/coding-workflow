@@ -182,7 +182,7 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 - Case A：先预登记 `candidate_upstream_sha`、`selected_target_sha`、known-stale claims、backup 和
   selection reason，再启动 blind executor。两轮间 target code/config/test/committed-artifact base、
   upstream candidate 与 language 不变；round 1 关闭 review finding 后只提交最终九文档，round 2
-  从该 `second_target_sha` 的新 clean checkout 开始。相对 `second_target_sha` 九文档零 diff且无
+  从该 `second_target_sha` 的新 clean checkout 开始。相对 `second_target_sha` 九文档零 diff 且无
   staged/untracked/ignored residue 才是 `PASS_NOOP`；冻结事实支持的新增修正为
   `ROUND1_INCOMPLETE`，无新增反证的表达漂移为 `ROUND2_DRIFT`。两种失败都要求从 clean target
   重跑完整两轮；alignment consumer 直接在 `second_target_sha` 或其 clean worktree 上运行，
@@ -196,50 +196,41 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 
 ## DEC-008：开发工作流采用复杂度守恒与可退役实验机制
 
-- 状态：accepted；其中发散闸门、条件性 Issue Readback 和 Owner Decision 输出契约为
-  `experimental`。
+- 状态：accepted；其中条件性 Issue Readback 和 Owner Decision 输出契约为 `experimental`。
 - 日期：2026-08-24 UTC
 - 适用范围：`zh/docs/development_workflow/README.md` 及其引用的 prompts、双语模板与开发审核
   规则；不改变 `workflow-docs-sync` 的运行时、CLI 或发布边界。
-- 复杂度守恒：任何新增或扩展的步骤、prompt 章节、gate、状态、长期产物、角色或机器机制，
-  必须说明它改变谁的下一步动作、承担什么独立风险、现有机制为何不足，以及它替代、合并、
-  缩小或删除什么。不能改变下一步动作的机制不得加入；能扩展现有机制时不建立平行机制。
-- 诚实记账：本次改造是经 owner 明确接受的净复杂度增加。删除“分歧后以模型身份裁决”和移除
-  已停用主流程项，只抵消部分新增量；编码前 Readback 与合并后真实实现解读 / 用户验收承担
-  不同职责，不作为互相抵消。剩余净增用于处理已观察到的多轮同类 finding、局部修复继续制造
-  状态与恢复分支、owner 决策缺少合法取证路径，以及审核覆盖被沉默当作已验证等失效。
-- 双模型边界：Issue 阶段保留双模型合意，但使用需求完成 / 验收与工程量 / 最小充分两个
-  blind-first 镜头；Finding 阶段保留双模型验证，但事实复现者不读历史，系统性判断者先固定
-  当前分类、再读取历史。模型共识不是证据，不再使用“若干轮后以 Codex 为准”。
-- 发散走向：上一轮修复制造新 P0/P1、连续两轮落在同一入口 / state owner / persistence
-  protocol / side-effect chain，或同一执行链修复一轮后仍需新增 durable state、checkpoint、
-  artifact、recovery branch 或 terminal semantics 时，停止逐项补丁，返回 Target State Bridge。
-- 证据与出口：审核必须区分实测、读码推断、未检查和环境阻塞；关键覆盖不足时输出
-  `REQUEST_EVIDENCE`。最终出口区分 `PASS`、`REWORK_REQUIRED`、
-  `SPEC_REVISION_REQUIRED`、`OWNER_DECISION_REQUIRED` 和 `REQUEST_EVIDENCE`。
-- Owner Decision：必须同时说明所需证据、证据能否合法取得、阻塞与不阻塞范围以及安全默认；
-  没有合法取证路径时转为规格修订，而不是把无法作出的决定丢给 owner。
-- Issue Readback：仅在不可逆副作用、跨模块状态 / 持久化 / 重试 / 恢复 / 并发，或实际存在
-  owner 取舍时强制；批准绑定当时 Issue 修订，实质变化后失效。编码前 Readback 解释的是计划，
-  不替代合并后基于最终代码的 Tech Lead 机制解读、用户可感知变化与文档检查、用户视角验收
-  计划及必要时的实际执行。
+- 复杂度守恒：新增或扩展工作流机制时，必须说明它改变谁的下一步动作、承担什么独立风险、
+  现有机制为何不足，以及它替代、合并、缩小或删除什么；能扩展现有机制时不建立平行机制。
+- 诚实记账：本次改造是经 owner 接受的净复杂度增加。它保留双模型协作并改变分工，恢复正式
+  详细 PR 审核、合并后实现解读、文档检查、FSD 完备性验收和用户视角验收，同时增加条件性
+  Issue Readback、显式 Owner Decisions 和测试复用规则。
+- 双模型边界：Issue 阶段使用需求完成 / 验收与工程量 / 最小充分两个镜头，由 Issue Agent
+  统一执笔；正式 PR 审核仍是独立的详细步骤。Finding 阶段由 Codex 重点核实事实与复现，
+  Claude Code 重点判断影响面、同类入口和最小充分修复。模型身份不是争议裁决依据。
+- 审核出口：最终只使用 `PASS`、`REWORK_REQUIRED` 和 `OWNER_DECISION_REQUIRED`。证据不足但
+  可能改变结论时归入 `REWORK_REQUIRED` 并说明待补证据；不再增加平行的规格或证据状态词。
+- Owner Decision：必须说明要决定什么、阻塞与不阻塞哪些工作，以及未决时的安全默认。取证
+  路径受限时必须明确告诉 owner，由 owner 决定是否调整范围、权限或继续保持安全默认。
+- Issue Readback：用于编码前理解高风险 Issue，不形成第二套权威，也不设置额外批准状态。
+  它不替代合并后基于最终代码的 Tech Lead 机制解读、用户可感知变化与文档检查、FSD 完备性
+  验收、用户视角验收计划及必要时的实际执行。
 - 测试复杂度：优先复用、参数化和扩展 scenario；只有复现已确认缺陷、保护已登记不变量或
   覆盖现有测试无法到达的真实边界时，才把对抗探针晋升为长期测试。
 
 ### 实验机制重审与退役
 
-每项实验机制累计 3 个“适用 PR”后单独复盘，不用简单 PR 充数：
+每项实验机制累计 3 个适用 PR 后单独复盘：
 
-- 发散闸门的适用 PR：至少经历两轮审核且产生新增 P0/P1；
-- Issue Readback 的适用 PR：满足其强制触发条件；
+- Issue Readback 的适用 PR：实际执行了编码前 Readback；
 - Owner Decision 契约的适用 PR：实际出现需要 owner 作出的选择。
 
-复盘只判断：是否实际改变下一步动作；是否阻止无效修复、错误实施或不可作出的决策；误触发
-与额外成本是否高于收益。结论只能为 `PROMOTE`、`MODIFY` 或 `RETIRE`。从未触发，或触发后未
-改变任何参与者下一步动作的机制，默认退役；继续保留必须提供新的具体风险证据。
+复盘判断机制是否改变下一步动作、是否降低错误实施或无效等待，以及额外成本是否高于收益。
+结论只能为 `PROMOTE`、`MODIFY` 或 `RETIRE`。从未触发或触发后未改变下一步动作的机制默认
+退役；继续保留必须有新的具体风险证据。
 
-- 与 DEC-006 / DEC-007 的关系：把直接风险覆盖、非代理约束和可退役知识的原则应用到开发
-  工作流自身；不改变两项决策对 `workflow-docs-sync` 与下游模板的既有语义。
+- 与 DEC-006 / DEC-007 的关系：把直接风险覆盖和可退役知识原则应用到开发工作流自身；不改变
+  两项决策对 `workflow-docs-sync` 与下游模板的既有语义。
 - 实现边界：本轮只修改现有文档和 prompt，不新增 prompt 文件、ledger、run state、自动化
   workflow 或机器 parser。
 - 英文状态：对外语义摘要同步到英文 development workflow；中文决策文件继续是权威。

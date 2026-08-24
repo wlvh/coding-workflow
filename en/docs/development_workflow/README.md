@@ -16,51 +16,47 @@ for workflow complexity conservation and the review and retirement rules for exp
 4. Turn the FSD, forecast, and bridge into one executable issue contract. Owner decisions must remain explicit.
 5. Review the issue through two orthogonal lenses before implementation: requirement and acceptance closure,
    and engineering volume and minimal sufficiency. The Issue Agent from step 4 owns the final edit; the lenses
-   advise and do not edit the issue in parallel.
+   advise rather than editing the issue in parallel.
 6. Run an issue readback before coding for high-risk issues. It explains the planned runtime chain, necessary
-   work packages, long-term complexity, a half-size alternative, test composition, and owner choices. After the
-   readback, the owner explicitly approves the current issue; material changes require renewed approval before
-   implementation.
-7. Implement the approved issue after reading `AGENTS.md`, `SOP.md`, `TESTING.md`, `PR_Checklist.md`,
-   `interact.md`, and project capability or business-user documents. Map each Spec Unit to code, tests, and
-   documentation, and state which tests are reused, parameterized, or used as the real cross-module scenario.
+   work packages, long-term complexity, a half-size alternative, test composition, and owner choices. It is an
+   owner-understanding step rather than a second specification source.
+7. Implement the issue after reading `AGENTS.md`, `SOP.md`, `TESTING.md`, `PR_Checklist.md`, `interact.md`,
+   and project capability or business-user documents. Map each Spec Unit to code, tests, and documentation,
+   and state which tests are reused, parameterized, or used as the real cross-module scenario.
 8. Self-review the patch and deliver a draft PR using the repository's commit policy and tracked PR template.
    The PR body remains outside the target worktree and records actual scope, evidence, review/fix history, open
    decisions, and limits.
-9. Independently review the current exact head before using historical review framing. Review judgments must
-   distinguish reproduced behavior, code-derived inference, and unreviewed claims. Material missing coverage
-   returns `REQUEST_EVIDENCE`, not PASS or an instruction to modify code.
-10. Verify each finding through two orthogonal lenses. The fact verifier does not read history and decides
-    `CONFIRMED`, `REFUTED`, or `REQUEST_EVIDENCE`. The systemic verifier first classifies the current state
-    owner, persistence protocol, and side-effect chain, then reads history to decide `LOCAL_FIX`,
-    `SYSTEMIC_FIX`, `SPEC_REVISION_REQUIRED`, or `OWNER_DECISION_REQUIRED`. Reproducible evidence,
-    repository authority, and the owner decide disagreements; model identity does not. Two counterintuitive
-    actions are mandatory: `SPEC_REVISION_REQUIRED` stops code changes and returns to the Bridge, while
-    `OWNER_DECISION_REQUIRED` pauses only the blocked work and lets unblocked work continue.
-11. Stop patch-by-patch repair and return to the Bridge when the prior fix creates the new P0/P1, two rounds
-    hit the same entrypoint / state owner / persistence protocol / side-effect chain, or the same chain still
-    needs new durable state, checkpoints, persistent artifacts, recovery branches, or terminal semantics after
-    a repair round. The final review outcome is exactly one of `PASS`, `REWORK_REQUIRED`,
-    `SPEC_REVISION_REQUIRED`, `OWNER_DECISION_REQUIRED`, or `REQUEST_EVIDENCE`.
-12. Merge under the target project's acceptance policy after PASS. Existing merge-readiness and issue-closure
-    tools remain optional rather than universal main-flow steps. After merge, explain the actual implementation
-    from final code evidence, assess user-visible changes and whether `AGENTS.md` and linked documents provide
-    sufficient guidance, then create a user-view acceptance plan and execute it with tools such as Playwright
-    when useful. Store these results in the PR conversation. The pre-coding issue readback explains the plan and
-    does not replace post-merge understanding or acceptance of the delivered implementation.
+9. Have Codex perform the formal PR review with the full review system and task prompt. It checks Issue
+   compliance, bugs, unnecessary architecture or duplicated repair, the external PR body, repository guidance,
+   and the realism of test evidence; important claims must be investigated through code execution or a close
+   reproduction path.
+10. When review finds a problem, verify it before changing code. Codex focuses on whether the problem is real,
+    its trigger path, reproduction, and severity; Claude Code focuses on impact, adjacent entrypoints, whether
+    the finding is one instance of a broader problem, and the smallest sufficient fix. Evidence and owner
+    decisions resolve disagreement. The only final outcomes are `PASS`, `REWORK_REQUIRED`, and
+    `OWNER_DECISION_REQUIRED`.
+11. After merge, use the full Tech Lead walkthrough to explain the delivered implementation from final code
+    evidence, then assess user-visible changes, how users employ the result, and whether `AGENTS.md` and linked
+    documents provide sufficient guidance. Store both in the PR conversation.
+12. Keep the pre-close FSD acceptance step: inspect main-branch code against every Issue Spec Unit and produce
+    `Updates to FSD` for deviations. The current workflow may pause this step because its observed pass rate was
+    100% and user-view acceptance found more precise issues, but the step and prompt remain documented.
+13. Create a user-view acceptance plan through agreement between the web GPT and Claude Code, archive it in the
+    PR conversation, and hand it to Codex for actual execution with tools such as Playwright when useful. This
+    acceptance may create follow-up development work.
 
 ## Core Artifacts
 
 - `FSD Core Contract`: a requirement contract that can be implemented, tested, and reviewed.
 - `Repo Impact Forecast`: predicted repository touchpoints, risks, documentation, and test impact.
-- `Target State Bridge`: target user- or caller-visible state and its validation method; it also receives a
-  scoped state-space redesign after `SPEC_REVISION_REQUIRED`.
+- `Target State Bridge`: target user- or caller-visible state and its validation method.
 - `Issue`: the single executable development contract, including explicit owner decisions and work-package
   blocking scope.
-- Conditional issue readback: owner-facing understanding and approval for high-risk issues; it is not a second
-  authority source and does not replace post-merge explanation or user-view acceptance.
+- Conditional issue readback: owner-facing understanding for high-risk issues; it is not a second authority
+  source and does not replace post-merge implementation explanation or user-view acceptance.
 - External PR body Markdown: temporary review and publishing input derived from the tracked PR template; it
   never enters the target worktree or commit.
+- `FSD Completeness Acceptance Report`: the pre-close main-branch check of Spec Units and FSD deviations.
 - `Workflow Docs Sync`: one invocation for full fact reconstruction, minimal necessary document changes,
   real tests, fresh-context independent review or honest self-review, and deterministic final checks.
 
@@ -137,17 +133,14 @@ a clean target. This decision adds no parser, ledger, receipt, run state, instal
 ### DEC-008 Summary
 
 [DEC-008](../../../zh/docs/development_workflow/decisions.md) applies direct-risk and mechanism-necessity
-principles to the development workflow itself. It records this change as accepted net complexity growth rather
-than claiming neutrality. Issue and finding cross-checks remain dual-model but use orthogonal lenses; evidence
-replaces model identity as the disagreement authority. Review must not treat unreviewed claims as verified. A
-divergence gate returns systemic gaps to the Bridge, while owner decisions must include a legal evidence path
-and local blocking scope. Pre-coding readback and post-merge explanation serve different decisions and remain
-complementary.
+principles to the development workflow itself. It records the change as accepted net complexity growth rather
+than claiming neutrality. Issue and finding cross-checks remain dual-model but use different lenses, while
+formal PR review remains a separate, detailed step. Model identity is not the disagreement authority. The
+review loop uses only `PASS`, `REWORK_REQUIRED`, and `OWNER_DECISION_REQUIRED` as final outcomes.
 
-The divergence gate, conditional issue readback, and owner-decision contract are experimental. Each is reviewed
-after three applicable PRs, with `PROMOTE`, `MODIFY`, or `RETIRE` as the only outcomes. A mechanism that never
-fires or fires without changing the next action retires by default unless new concrete risk evidence supports
-retention.
+Conditional issue readback and the owner-decision contract are experimental and reviewed after three applicable
+PRs with `PROMOTE`, `MODIFY`, or `RETIRE` as the outcomes. Pre-coding readback complements rather than replaces
+post-merge implementation explanation, documentation review, FSD closure checking, and user-view acceptance.
 
 Key implementation files:
 

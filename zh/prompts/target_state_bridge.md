@@ -53,21 +53,7 @@
   TS / AC -> 测试目录 -> Stage
 - 不得擅自拍板关键失败路径；需要人类决定的失败路径要显式标注。
 
-## C. 从 SPEC_REVISION_REQUIRED 返回时
-
-如果本轮由 `SPEC_REVISION_REQUIRED` 返回 Target State Bridge，必须只针对被指出的执行链或失效类别，完整枚举：
-
-- 真实入口与调用链；
-- state owner；
-- 持久化步骤和 durable boundary；
-- 外部副作用；
-- 可达终态；
-- 每个中断点的恢复动作、是否允许重试以及 UNKNOWN 处理；
-- 应由现有测试复用、参数化或 scenario 覆盖的组合。
-
-不得只为已经发现的具体实例追加一条例外，也不得借机重做无关模块。
-
-## D. Owner Decision 可执行性
+## C. Owner Decision 可执行性
 
 每项需要 owner 判断的事项必须同时写清：
 
@@ -78,6 +64,6 @@
 - Unblocked work；
 - Safe default。
 
-若没有合法取证路径，结论不是普通 `OWNER_DECISION_REQUIRED`，而是 `SPEC_REVISION_REQUIRED`：先补齐如何取得决策证据的规格。局部 decision 不得默认阻塞整个 Issue。
+若没有合法取证路径，必须明确告诉 owner 当前为何无法决定，以及需要修改范围、授权取证还是继续保持安全默认。局部 decision 不得默认阻塞整个 Issue。
 
 ```
