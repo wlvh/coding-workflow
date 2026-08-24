@@ -1,18 +1,6 @@
 # 编程工作流
 
-## 工作流复杂度守恒
-
-任何新增或扩展的步骤、prompt 章节、gate、状态、长期产物、角色或机器机制，必须同时说明：
-
-1. 它会改变哪个参与者或 Agent 的下一步动作；
-2. 它控制的独立风险是什么；
-3. 现有机制为什么不能覆盖；
-4. 它替代、合并、缩小或删除了什么。
-
-不能改变下一步动作的机制不得加入。能最小扩展现有机制时，不建立平行机制。固定输出格式只在
-存在机器消费者，或明确影响后续决策 / 执行时才值得加入；否则只规定行为义务，不规定标题、
-清单或排版。减少步骤名称但增加必答问题、产物和状态，不视为流程精简。允许有证据支持、由
-owner 明确接受的净复杂度增加，但必须设置可观察的重审与退役条件。完整决策见
+完整决策见
 [DEC-008](decisions.md#dec-008开发工作流采用复杂度守恒与可退役实验机制)。
 
 ## 主流程
@@ -21,7 +9,6 @@ owner 明确接受的净复杂度增加，但必须设置可观察的重审与�
 
 2. **网页端 Pro 模型制定 `FSD Core Contract`**
    使用长 prompt：[prompts/fsd_core_contract.md](../../prompts/fsd_core_contract.md)
-   备注：当前默认前提是 GPT Pro 不能自由探索本地代码和 GitHub，所以 FSD 先做黑盒契约。本阶段可以给 AGENTS.md 及其内链文档，但不能直连代码仓库。
    权威文档列表：
    * .github/pull_request_template.md
    * docs/business_user_guide.md
@@ -34,7 +21,7 @@ owner 明确接受的净复杂度增加，但必须设置可观察的重审与�
    * TESTING.md
 
 3. **Target State Bridge Agent 根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`**
-   * 如果网页端 Pro 模型可以访问当前代码或 GitHub，也可由它产出。
+   * Pro 模型产出。
    * 使用长 prompt：[prompts/target_state_bridge.md](../../prompts/target_state_bridge.md)
 
 4. **Issue Agent 写 Issue**
@@ -43,8 +30,6 @@ owner 明确接受的净复杂度增加，但必须设置可观察的重审与�
 
 5. **Codex 与 Claude Code 从正交镜头审核 Issue，再形成一份合意 Issue**
 
-   两个模型先 blind-first 独立分析，不得收到同一份问题清单，也不得在初始意见形成前阅读对方结论。
-
    **需求完成 / 验收镜头：**
 
    ```text
@@ -52,7 +37,6 @@ owner 明确接受的净复杂度增加，但必须设置可观察的重审与�
 
    重点判断：核心用户目标是否闭合；Scope / Non-goals 是否明确；成功、失败、拒绝、降级和人工升级是否可判定；Acceptance Checklist 是否能明确判断完成；是否有本应由 owner 决定的事项被工程方案静默拍板。
 
-   不要评价工程实现是否过重，也不要提出重构方案。
    ```
 
    **工程量 / 最小充分镜头：**
@@ -60,22 +44,15 @@ owner 明确接受的净复杂度增加，但必须设置可观察的重审与�
    ```text
    从工程量、长期复杂度和最小充分性的角度审核当前 Issue。
 
-   重点判断：是否可以减少约一半开发量而仍保留核心价值；是否在为方案自己制造的问题继续写代码；是否可以扩展已有机制而不是新增状态、ledger、schema、runner 或兼容层；哪些内容可以推迟；测试能否复用、参数化或由一条端到端 scenario 统筹。
+   重点判断：是否可以减少约一半开发量而仍保留核心价值；是否在为方案自己制造的问题继续写代码；测试能否复用，能够构建端到端的测试体系。有没有脱裤子放屁的开发。
 
-   必须给出一个更小的替代方案，明确放弃什么、增加什么风险；不得降低 FSD 已钉死的核心用户目标。
    ```
 
-   由第 4 步的 Issue Agent 执笔更新 Issue；两个镜头只提供意见，不直接编辑 Issue。两者只进行一次交叉质询：需求镜头判断最小方案是否仍保留核心目标，工程镜头判断被坚持的每项内容是否确属当前范围。事实回到代码、测试和契约；产品取舍保留给 owner。最终只更新一份 Issue，不创建第二套合意文档。合意不是证据，无法由证据裁决的分歧不得被强制抹平。
+   由第 4 步的 Issue Agent 执笔更新 Issue；两个镜头只提供意见，不直接编辑 Issue。
 
-6. **高风险 Issue 在 Coding 前执行 Issue Readback，并由 owner 批准**
+6. **高风险 Issue 在 Coding 前执行 Issue Readback**
 
-   满足任一条件时强制 Readback：
-
-   - 涉及付费、外发、发布、删除、迁移或其他不可安全重复的副作用；
-   - 涉及跨模块状态、持久化、重试、恢复、并发或 UNKNOWN outcome；
-   - 存在尚未由 owner 选择的范围、成本、风险或权限取舍。
-
-   其他普通 Issue 可选。Readback 使用现有 Tech Lead 解释能力，不成为新权威：
+   Readback 使用现有 Tech Lead 解释能力，不成为新权威：
 
    ```text
    当前 Issue 尚未开始编码。请站在 Tech Lead 视角详细解读，目标是让我真正理解它将如何工作，而不是复述原文。
@@ -93,8 +70,6 @@ owner 明确接受的净复杂度增加，但必须设置可观察的重审与�
 
    本解读不是新的产品或工程权威。发现歧义时必须回写 Issue，不得只在解读中形成新要求。
    ```
-
-   Owner 输出 `APPROVE_ISSUE` 或 `REQUEST_ISSUE_REVISION`。批准必须绑定当时的 Issue number 与正文 `updated_at` 或内容 SHA-256。Scope / Non-goals、Acceptance Checklist、工作包边界、核心失败 / 恢复语义或 Owner Decisions 实质变化后，原批准失效并重新 Readback；纯措辞和链接修正不重跑。
 
 7. **Coding Agent 按批准的 Issue 开发**
 
