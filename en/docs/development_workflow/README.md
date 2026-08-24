@@ -8,7 +8,9 @@ is the semantic source; this file closes the English meaning for the workflow co
 Any added or expanded step, prompt section, gate, state, long-lived artifact, role, or mechanical control must
 state whose next action it changes, the independent risk it controls, why current mechanisms are insufficient,
 and what it replaces, merges, narrows, or removes. A mechanism that does not change an actor's next action
-must not be added. Extend an existing mechanism instead of creating a parallel one when possible.
+must not be added. Extend an existing mechanism instead of creating a parallel one when possible. Prescribe a
+fixed output structure only when a machine consumer or a specific downstream decision depends on it; otherwise
+state the behavioral obligation without mandatory headings or checklists.
 
 Evidence-backed net complexity growth is allowed when the owner explicitly accepts it, but it must be recorded
 honestly and carry observable review and retirement conditions. See
@@ -20,16 +22,16 @@ honestly and carry observable review and retirement conditions. See
 2. Draft the black-box `FSD Core Contract` with the Pro web model when direct repository exploration is
    unavailable.
 3. Compare the FSD, current repository code, and authoritative documents to produce the `Repo Impact
-   Forecast` and `Target State Bridge`. Ordinary work does not pay a universal state-matrix tax. When a
-   review returns `SPEC_REVISION_REQUIRED`, the Bridge must fully enumerate only the affected execution
-   chain's states, durable boundaries, failures, and recovery behavior.
+   Forecast` and `Target State Bridge`.
 4. Turn the FSD, forecast, and bridge into one executable issue contract. Owner decisions must remain explicit
-   with the evidence needed, a legal evidence path, blocked and unblocked work, and a safe default.
+   and state what is being decided, whether the evidence required to decide can be obtained legally, the local
+   blocking scope, and the safe default.
 5. Review the issue through two blind-first, orthogonal lenses before implementation. One model checks
    requirement closure and acceptance decidability; the other checks engineering volume, whether roughly half
    the work can be removed, whether the proposal creates problems that require more machinery, and whether
-   tests can be reused or parameterized. They exchange challenges once and update one issue; model agreement
-   is not evidence, and product tradeoffs remain with the owner.
+   tests can be reused or parameterized. The Issue Agent from step 4 owns the edit; the two lenses advise and
+   do not edit the issue directly. They exchange challenges once; model agreement is not evidence, and product
+   tradeoffs remain with the owner.
 6. Run an issue readback before coding only when the issue involves irreversible side effects, cross-module
    state / persistence / retry / recovery / concurrency, or an unresolved owner tradeoff. The readback explains
    the runtime chain, necessary work packages, long-term complexity, a half-size alternative, test composition,
@@ -42,14 +44,16 @@ honestly and carry observable review and retirement conditions. See
    template. The PR body remains outside the target worktree and records actual scope, evidence, review/fix
    history, open decisions, and limits.
 9. Independently review the current exact head blind-first. Freeze the current findings before reading the
-   previous two review reports. Every final report distinguishes reproduced behavior, code-derived inference,
-   unreviewed claims, and environment or permission blockers. Material missing coverage returns
-   `REQUEST_EVIDENCE`, not PASS or an instruction to modify code.
+   previous two review reports. Review judgments must distinguish reproduced behavior, code-derived inference,
+   and unreviewed claims; environment or permission limits are reasons for unreviewed coverage. Material missing
+   coverage returns `REQUEST_EVIDENCE`, not PASS or an instruction to modify code.
 10. Verify each finding through two orthogonal lenses. The fact verifier does not read history and decides
     `CONFIRMED`, `REFUTED`, or `REQUEST_EVIDENCE`. The systemic verifier first classifies the current state
     owner, persistence protocol, and side-effect chain, then reads history to decide `LOCAL_FIX`,
     `SYSTEMIC_FIX`, `SPEC_REVISION_REQUIRED`, or `OWNER_DECISION_REQUIRED`. Reproducible evidence,
-    repository authority, and the owner decide disagreements; model identity does not.
+    repository authority, and the owner decide disagreements; model identity does not. Two counterintuitive
+    actions are mandatory: `SPEC_REVISION_REQUIRED` stops code changes and returns to the Bridge, while
+    `OWNER_DECISION_REQUIRED` pauses only the blocked work and lets unblocked work continue.
 11. Stop patch-by-patch repair and return to the Bridge when the prior fix creates the new P0/P1, two rounds
     hit the same entrypoint / state owner / persistence protocol / side-effect chain, or the same chain still
     needs new durable state, checkpoints, persistent artifacts, recovery branches, or terminal semantics after
@@ -150,9 +154,9 @@ a clean target. This decision adds no parser, ledger, receipt, run state, instal
 [DEC-008](../../../zh/docs/development_workflow/decisions.md) applies direct-risk and mechanism-necessity
 principles to the development workflow itself. It records this change as accepted net complexity growth rather
 than claiming neutrality. Issue and finding cross-checks remain dual-model but use orthogonal lenses; evidence
-replaces model identity as the disagreement authority. Review coverage must expose what was reproduced,
-inferred, unreviewed, or blocked. A divergence gate returns systemic gaps to the Bridge, while owner decisions
-must include a legal evidence path and local blocking scope.
+replaces model identity as the disagreement authority. Review must not treat unreviewed claims as verified. A
+divergence gate returns systemic gaps to the Bridge, while owner decisions must include a legal evidence path
+and local blocking scope.
 
 The divergence gate, conditional issue readback, and owner-decision contract are experimental. Each is reviewed
 after three applicable PRs, with `PROMOTE`, `MODIFY`, or `RETIRE` as the only outcomes. A mechanism that never

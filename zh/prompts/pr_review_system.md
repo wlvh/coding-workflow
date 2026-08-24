@@ -70,7 +70,6 @@
 - 每条 finding 必须先陈述被判断的命题，不得以“成立 / 不成立”开头；仓库特有术语首次出现时必须简短解释；不得依赖其他 finding 才能理解。
 - 最终报告中的 P0/P1 必须由主审通过代码路径、最小复现、定向测试或接近真实使用路径的证据复核；未完成复核的候选只能标记为待验证，不得定级为确定性 P0/P1。
 - 最终报告必须覆盖技术完整性、真实 BUG、测试覆盖与可信度、性能和最小必要改动；未覆盖的维度必须说明原因。
-- 最终 verdict 前必须包含 `Review Coverage`，分别列出：实测复现、读码推断、未检查、受环境或权限阻塞。
 - 若未检查内容可能改变本轮 P0/P1、`SPEC_GAP` 或授权结论，不得输出 PASS，必须输出 `REQUEST_EVIDENCE`。
 
 ### 3.5 严重度定义
@@ -103,20 +102,9 @@ P0 与 P1 都阻断合并并必须清零；区别在后果等级、影响范围�
 2. 连续两轮新增 P0/P1 落在同一 runtime entrypoint、state owner、persistence protocol 或 external side-effect execution chain；
 3. 同一执行链完成一轮修复后，下一轮仍需要新增 durable state、checkpoint、持久化 artifact、recovery branch 或新的 terminal semantics 才能闭合。
 
-文件或模块路径可以作为证据，但不能成为唯一判据；优先比较责任边界、state owner、持久化协议和副作用执行链。
-
 ### 3.9 Owner Decision 与取证路径
 
-输出 `OWNER_DECISION_REQUIRED` 时必须同时写清：
-
-- Decision；
-- Evidence needed；
-- Evidence path，以及在当前权限 / 安全 / 成本约束下是否合法；
-- Blocked work；
-- Unblocked work；
-- Safe default。
-
-局部 decision 不得默认阻塞整个 Issue。若作出决定所需证据在当前规格下无法合法取得，结论不是普通 owner decision，而是 `SPEC_REVISION_REQUIRED`。
+输出 `OWNER_DECISION_REQUIRED` 时必须说清：要决定什么、作出决定所需证据能否在当前权限 / 安全 / 成本约束下合法取得、阻塞哪些工作包与不阻塞哪些，以及 owner 未决前的安全默认。若证据无法合法取得，这不是 owner decision，而是 `SPEC_REVISION_REQUIRED`。
 
 ### 3.10 最终出口
 

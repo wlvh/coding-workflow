@@ -9,9 +9,10 @@
 3. 现有机制为什么不能覆盖；
 4. 它替代、合并、缩小或删除了什么。
 
-不能改变下一步动作的机制不得加入。能最小扩展现有机制时，不建立平行机制。减少步骤名称但
-增加必答问题、产物和状态，不视为流程精简。允许有证据支持、由 owner 明确接受的净复杂度
-增加，但必须设置可观察的重审与退役条件。完整决策见
+不能改变下一步动作的机制不得加入。能最小扩展现有机制时，不建立平行机制。固定输出格式只在
+存在机器消费者，或明确影响后续决策 / 执行时才值得加入；否则只规定行为义务，不规定标题、
+清单或排版。减少步骤名称但增加必答问题、产物和状态，不视为流程精简。允许有证据支持、由
+owner 明确接受的净复杂度增加，但必须设置可观察的重审与退役条件。完整决策见
 [DEC-008](decisions.md#dec-008开发工作流采用复杂度守恒与可退役实验机制)。
 
 ## 主流程
@@ -35,7 +36,6 @@
 3. **Target State Bridge Agent 根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`**
    * 如果网页端 Pro 模型可以访问当前代码或 GitHub，也可由它产出。
    * 使用长 prompt：[prompts/target_state_bridge.md](../../prompts/target_state_bridge.md)
-   * 普通项目不默认编写内部状态矩阵。只有收到 `SPEC_REVISION_REQUIRED` 时，才针对被指出的执行链完整枚举状态、持久化边界、失败和恢复；不得重做无关模块。
 
 4. **Issue Agent 写 Issue**
    使用长 prompt：[prompts/issue_agent.md](../../prompts/issue_agent.md)
@@ -65,7 +65,7 @@
    必须给出一个更小的替代方案，明确放弃什么、增加什么风险；不得降低 FSD 已钉死的核心用户目标。
    ```
 
-   两者只进行一次交叉质询：需求镜头判断最小方案是否仍保留核心目标，工程镜头判断被坚持的每项内容是否确属当前范围。事实回到代码、测试和契约；产品取舍保留给 owner。最终只更新一份 Issue，不创建第二套合意文档。合意不是证据，无法由证据裁决的分歧不得被强制抹平。
+   由第 4 步的 Issue Agent 执笔更新 Issue；两个镜头只提供意见，不直接编辑 Issue。两者只进行一次交叉质询：需求镜头判断最小方案是否仍保留核心目标，工程镜头判断被坚持的每项内容是否确属当前范围。事实回到代码、测试和契约；产品取舍保留给 owner。最终只更新一份 Issue，不创建第二套合意文档。合意不是证据，无法由证据裁决的分歧不得被强制抹平。
 
 6. **高风险 Issue 在 Coding 前执行 Issue Readback，并由 owner 批准**
 
@@ -131,14 +131,7 @@
 
    Reviewer 先 blind-first 读取当前 exact head、Issue、仓库权威、完整 diff、测试与 artifact，形成并冻结本轮初始 findings；之后才读取前两轮审核报告或 GitHub review comments，判断是否重复根因或发散。作者总结和 PR body 只是证据之一，不能替代当前事实，也不是发散闸门的唯一地基。
 
-   每次最终报告必须明确列出：
-
-   - 实测复现；
-   - 读码推断；
-   - 未检查；
-   - 受环境或权限阻塞。
-
-   未检查内容若可能改变 P0/P1、`SPEC_GAP` 或授权结论，不得 PASS，必须输出 `REQUEST_EVIDENCE`。
+   Reviewer 必须在结论中区分实测复现、读码推断和未检查；环境或权限阻塞属于未检查的原因。未检查内容若可能改变 P0/P1、`SPEC_GAP` 或授权结论，不得 PASS，必须输出 `REQUEST_EVIDENCE`。
 
 10. **Finding 由两个正交镜头验证；根据证据选择修复、退回规格或提交 owner**
 
@@ -159,14 +152,7 @@
    输出只能是：LOCAL_FIX / SYSTEMIC_FIX / SPEC_REVISION_REQUIRED / OWNER_DECISION_REQUIRED。
    ```
 
-   综合动作：
-
-   - `REFUTED`：不修复，记录驳回证据；
-   - `REQUEST_EVIDENCE`：补证据，不要求改代码；
-   - `CONFIRMED + LOCAL_FIX`：最小局部修复；
-   - `CONFIRMED + SYSTEMIC_FIX`：一轮内闭合同类入口与一般测试；
-   - `CONFIRMED + SPEC_REVISION_REQUIRED`：停止编码，返回 Target State Bridge；
-   - `CONFIRMED + OWNER_DECISION_REQUIRED`：只停止受阻工作包，未受阻部分继续。
+   两种走向与直觉相反，必须遵守：`SPEC_REVISION_REQUIRED` 时停止改代码、退回 Bridge；`OWNER_DECISION_REQUIRED` 时只停止受阻工作包，未受阻部分继续。其余组合按 token 字面执行。
 
    删除“若干轮后以 Codex 为准”。分歧由可复现行为、代码 / 配置 / 测试 / artifact、已冻结 Issue 和 owner 决策裁决；双方都无可复现证据时保留 `REQUEST_EVIDENCE`，不强行裁定。
 
@@ -176,9 +162,9 @@
    2. 连续两轮新增 P0/P1 落在同一 runtime entrypoint、state owner、persistence protocol 或 external side-effect execution chain；
    3. 同一执行链完成一轮修复后，下一轮仍需新增 durable state、checkpoint、持久化 artifact、recovery branch 或 terminal semantics。
 
-   触发后返回 Bridge 完整枚举受影响执行链；普通项目和未触发项目不缴状态矩阵成本。
+   触发后返回 Bridge 完整枚举受影响执行链。
 
-   **Owner Decision 输出契约：**必须写明 Decision、Evidence needed、Evidence path、Blocked work、Unblocked work、Safe default。若证据在当前规格下无法合法取得，结论是 `SPEC_REVISION_REQUIRED`，不是把无法作出的决定丢给 owner。局部决策不得默认阻塞整个 Issue。
+   **Owner Decision 输出契约：**必须说清要决定什么、作出决定所需证据能否在当前权限 / 安全 / 成本约束下合法取得、阻塞哪些工作包与不阻塞哪些，以及 owner 未决前的安全默认。若证据无法合法取得，结论是 `SPEC_REVISION_REQUIRED`。
 
    最终出口只能是：
 
