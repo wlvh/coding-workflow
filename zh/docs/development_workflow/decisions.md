@@ -193,3 +193,52 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 - 实现边界：不修改 `sync_docs.py`、installer 或 CLI schema，不新增 anchor/policy/Markdown
   parser、repository ledger、receipt、run state 或 claim-level binding。
 - 英文状态：双语下游模板已等价同步；canonical Skill、eval 与决策继续以中文路径为权威。
+
+## DEC-008：开发工作流采用复杂度守恒与可退役实验机制
+
+- 状态：accepted；其中发散闸门、条件性 Issue Readback 和 Owner Decision 输出契约为
+  `experimental`。
+- 日期：2026-08-24 UTC
+- 适用范围：`zh/docs/development_workflow/README.md` 及其引用的 prompts、双语模板与开发审核
+  规则；不改变 `workflow-docs-sync` 的运行时、CLI 或发布边界。
+- 复杂度守恒：任何新增或扩展的步骤、prompt 章节、gate、状态、长期产物、角色或机器机制，
+  必须说明它改变谁的下一步动作、承担什么独立风险、现有机制为何不足，以及它替代、合并、
+  缩小或删除什么。不能改变下一步动作的机制不得加入；能扩展现有机制时不建立平行机制。
+- 诚实记账：本次改造是经 owner 明确接受的净复杂度增加。删除“分歧后以模型身份裁决”、缩短
+  合并后总结和移除已停用主流程项，只抵消部分新增量；剩余净增用于处理已观察到的多轮同类
+  finding、局部修复继续制造状态与恢复分支、owner 决策缺少合法取证路径，以及审核覆盖被
+  沉默当作已验证等失效。
+- 双模型边界：Issue 阶段保留双模型合意，但使用需求完成 / 验收与工程量 / 最小充分两个
+  blind-first 镜头；Finding 阶段保留双模型验证，但事实复现者不读历史，系统性判断者先固定
+  当前分类、再读取历史。模型共识不是证据，不再使用“若干轮后以 Codex 为准”。
+- 发散走向：上一轮修复制造新 P0/P1、连续两轮落在同一入口 / state owner / persistence
+  protocol / side-effect chain，或同一执行链修复一轮后仍需新增 durable state、checkpoint、
+  artifact、recovery branch 或 terminal semantics 时，停止逐项补丁，返回 Target State Bridge。
+- 证据与出口：审核必须区分实测、读码推断、未检查和环境阻塞；关键覆盖不足时输出
+  `REQUEST_EVIDENCE`。最终出口区分 `PASS`、`REWORK_REQUIRED`、
+  `SPEC_REVISION_REQUIRED`、`OWNER_DECISION_REQUIRED` 和 `REQUEST_EVIDENCE`。
+- Owner Decision：必须同时说明所需证据、证据能否合法取得、阻塞与不阻塞范围以及安全默认；
+  没有合法取证路径时转为规格修订，而不是把无法作出的决定丢给 owner。
+- Issue Readback：仅在不可逆副作用、跨模块状态 / 持久化 / 重试 / 恢复 / 并发，或实际存在
+  owner 取舍时强制；批准绑定当时 Issue 修订，实质变化后失效。已执行 Readback 的项目在合并
+  后只做实现偏差 delta，不重复完整机制解读。
+- 测试复杂度：优先复用、参数化和扩展 scenario；只有复现已确认缺陷、保护已登记不变量或
+  覆盖现有测试无法到达的真实边界时，才把对抗探针晋升为长期测试。
+
+### 实验机制重审与退役
+
+每项实验机制累计 3 个“适用 PR”后单独复盘，不用简单 PR 充数：
+
+- 发散闸门的适用 PR：至少经历两轮审核且产生新增 P0/P1；
+- Issue Readback 的适用 PR：满足其强制触发条件；
+- Owner Decision 契约的适用 PR：实际出现需要 owner 作出的选择。
+
+复盘只判断：是否实际改变下一步动作；是否阻止无效修复、错误实施或不可作出的决策；误触发
+与额外成本是否高于收益。结论只能为 `PROMOTE`、`MODIFY` 或 `RETIRE`。从未触发，或触发后未
+改变任何参与者下一步动作的机制，默认退役；继续保留必须提供新的具体风险证据。
+
+- 与 DEC-006 / DEC-007 的关系：把直接风险覆盖、非代理约束和可退役知识的原则应用到开发
+  工作流自身；不改变两项决策对 `workflow-docs-sync` 与下游模板的既有语义。
+- 实现边界：本轮只修改现有文档和 prompt，不新增 prompt 文件、ledger、run state、自动化
+  workflow 或机器 parser。
+- 英文状态：对外语义摘要同步到英文 development workflow；中文决策文件继续是权威。

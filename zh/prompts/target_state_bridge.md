@@ -9,7 +9,7 @@
 ```text
 仓库权威文档：AGENTS.md / architecture.md / SOP.md / PR_Checklist.md / interact.md / TESTING.md / docs/business_user_guide.md / README.md。
 如果项目存在 capability_contract.json，也必须读取并作为能力边界真相源。
-我敲定了一份 FSD（功能规范说明书），因为 FSD 是在没有实际接触代码的情况下完成的。所以你需要基于《FSD + 当前仓库代码 + 仓库权威文档》来完成 FSD 和实际代码之间 Target State Bridge 的分析。
+我敲定了一份 FSD（功能规范说明书），因为 FSD 是在没有实际接触代码的情况下完成的。所以你需要基于《FSD + 当前仓库代码 + 仓库权威文档》完成 FSD 和实际代码之间的 Target State Bridge 分析。
 
 ## A. Repo Impact Forecast
 目标：
@@ -51,6 +51,33 @@
 - AGENTS.md / architecture.md / TESTING.md / SOP.md / PR_Checklist.md 的影响仍放在 Repo Impact Forecast 的“需要更新的文档”里判断，不进入用户可见层 Delta。
 - 必须输出 Verification Matrix：
   TS / AC -> 测试目录 -> Stage
-- 不得擅自拍板关键失败路径；需要人类决定的失败路径要显式标注
+- 不得擅自拍板关键失败路径；需要人类决定的失败路径要显式标注。
+
+## C. 从 SPEC_REVISION_REQUIRED 返回时
+
+如果本轮由 `SPEC_REVISION_REQUIRED` 返回 Target State Bridge，必须只针对被指出的执行链或失效类别，完整枚举：
+
+- 真实入口与调用链；
+- state owner；
+- 持久化步骤和 durable boundary；
+- 外部副作用；
+- 可达终态；
+- 每个中断点的恢复动作、是否允许重试以及 UNKNOWN 处理；
+- 应由现有测试复用、参数化或 scenario 覆盖的组合。
+
+不得只为已经发现的具体实例追加一条例外，也不得借机重做无关模块。
+
+## D. Owner Decision 可执行性
+
+每项需要 owner 判断的事项必须同时写清：
+
+- Decision；
+- Evidence needed；
+- Evidence path，以及该路径在当前权限 / 安全 / 成本约束下是否合法；
+- Blocked work；
+- Unblocked work；
+- Safe default。
+
+若没有合法取证路径，结论不是普通 `OWNER_DECISION_REQUIRED`，而是 `SPEC_REVISION_REQUIRED`：先补齐如何取得决策证据的规格。局部 decision 不得默认阻塞整个 Issue。
 
 ```

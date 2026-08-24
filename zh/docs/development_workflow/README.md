@@ -1,13 +1,27 @@
 # 编程工作流
 
+## 工作流复杂度守恒
+
+任何新增或扩展的步骤、prompt 章节、gate、状态、长期产物、角色或机器机制，必须同时说明：
+
+1. 它会改变哪个参与者或 Agent 的下一步动作；
+2. 它控制的独立风险是什么；
+3. 现有机制为什么不能覆盖；
+4. 它替代、合并、缩小或删除了什么。
+
+不能改变下一步动作的机制不得加入。能最小扩展现有机制时，不建立平行机制。减少步骤名称但
+增加必答问题、产物和状态，不视为流程精简。允许有证据支持、由 owner 明确接受的净复杂度
+增加，但必须设置可观察的重审与退役条件。完整决策见
+[DEC-008](decisions.md#dec-008开发工作流采用复杂度守恒与可退役实验机制)。
+
 ## 主流程
 
 1. **确定需求**
 
 2. **网页端 Pro 模型制定 `FSD Core Contract`**
    使用长 prompt：[prompts/fsd_core_contract.md](../../prompts/fsd_core_contract.md)
-   备注：当前默认前提是 GPT Pro 不能自由探索本地代码和 GitHub，所以 FSD 先做黑盒契约。本阶段可以给AGENTS.md及其内链的文档，但不能直连代码仓库。
-   权威文档列表（以后需要想个办法防止漂移）：
+   备注：当前默认前提是 GPT Pro 不能自由探索本地代码和 GitHub，所以 FSD 先做黑盒契约。本阶段可以给 AGENTS.md 及其内链文档，但不能直连代码仓库。
+   权威文档列表：
    * .github/pull_request_template.md
    * docs/business_user_guide.md
    * AGENTS.md
@@ -18,171 +32,180 @@
    * SOP.md
    * TESTING.md
 
-4. **Target State Bridge Agent（codex） 根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`**
-  * 如果GPT 5.4 Pro模型可以接触本地代码或GitHub的情况下产出也能由它代为产出
-  * 使用长 prompt：[prompts/target_state_bridge.md](../../prompts/target_state_bridge.md)
+3. **Target State Bridge Agent 根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`**
+   * 如果网页端 Pro 模型可以访问当前代码或 GitHub，也可由它产出。
+   * 使用长 prompt：[prompts/target_state_bridge.md](../../prompts/target_state_bridge.md)
+   * 普通项目不默认编写内部状态矩阵。只有收到 `SPEC_REVISION_REQUIRED` 时，才针对被指出的执行链完整枚举状态、持久化边界、失败和恢复；不得重做无关模块。
 
-5. **Issue Agent （codex）写 issue**
+4. **Issue Agent 写 Issue**
    使用长 prompt：[prompts/issue_agent.md](../../prompts/issue_agent.md)
-   目标：把 `FSD`、`Repo Impact Forecast` 和 `Target State Bridge` 固化成开发契约。
-   完成后让codex和claude code互相讨论到达成合意。
-7. **Coding Agent（codex） 按 issue 开发**
-   短 prompt：
+   目标：把 `FSD`、`Repo Impact Forecast` 和 `Target State Bridge` 固化成唯一实施入口。需要 owner 判断的范围、风险、成本、权限或失败语义必须保持显式，不得在模型合意中静默消失。
+
+5. **Codex 与 Claude Code 从正交镜头审核 Issue，再形成一份合意 Issue**
+
+   两个模型先 blind-first 独立分析，不得收到同一份问题清单，也不得在初始意见形成前阅读对方结论。
+
+   **需求完成 / 验收镜头：**
 
    ```text
-   按照当前 issue 完成本次开发。
+   从需求完成和验收可判定的角度审核当前 Issue。
+
+   重点判断：核心用户目标是否闭合；Scope / Non-goals 是否明确；成功、失败、拒绝、降级和人工升级是否可判定；Acceptance Checklist 是否能明确判断完成；是否有本应由 owner 决定的事项被工程方案静默拍板。
+
+   不要评价工程实现是否过重，也不要提出重构方案。
+   ```
+
+   **工程量 / 最小充分镜头：**
+
+   ```text
+   从工程量、长期复杂度和最小充分性的角度审核当前 Issue。
+
+   重点判断：是否可以减少约一半开发量而仍保留核心价值；是否在为方案自己制造的问题继续写代码；是否可以扩展已有机制而不是新增状态、ledger、schema、runner 或兼容层；哪些内容可以推迟；测试能否复用、参数化或由一条端到端 scenario 统筹。
+
+   必须给出一个更小的替代方案，明确放弃什么、增加什么风险；不得降低 FSD 已钉死的核心用户目标。
+   ```
+
+   两者只进行一次交叉质询：需求镜头判断最小方案是否仍保留核心目标，工程镜头判断被坚持的每项内容是否确属当前范围。事实回到代码、测试和契约；产品取舍保留给 owner。最终只更新一份 Issue，不创建第二套合意文档。合意不是证据，无法由证据裁决的分歧不得被强制抹平。
+
+6. **高风险 Issue 在 Coding 前执行 Issue Readback，并由 owner 批准**
+
+   满足任一条件时强制 Readback：
+
+   - 涉及付费、外发、发布、删除、迁移或其他不可安全重复的副作用；
+   - 涉及跨模块状态、持久化、重试、恢复、并发或 UNKNOWN outcome；
+   - 存在尚未由 owner 选择的范围、成本、风险或权限取舍。
+
+   其他普通 Issue 可选。Readback 使用现有 Tech Lead 解释能力，不成为新权威：
+
+   ```text
+   当前 Issue 尚未开始编码。请站在 Tech Lead 视角详细解读，目标是让我真正理解它将如何工作，而不是复述原文。
+
+   必须说明：
+   1. 一句话目标、核心价值和明确非目标；
+   2. 每个工作包为什么存在，删除后会失去什么；
+   3. 预计运行时因果链；
+   4. 最不直观的三个机制；
+   5. 主要长期复杂度和维护代价；
+   6. 如果减少约 50% 开发量，最小方案是什么；
+   7. 哪些测试复用、哪些参数化，以及哪一条 scenario 覆盖端到端组合；
+   8. 当前仍需要 owner 决定什么；
+   9. 哪些是 Issue / 仓库事实，哪些只是工程推断，哪些尚未验证。
+
+   本解读不是新的产品或工程权威。发现歧义时必须回写 Issue，不得只在解读中形成新要求。
+   ```
+
+   Owner 输出 `APPROVE_ISSUE` 或 `REQUEST_ISSUE_REVISION`。批准必须绑定当时的 Issue number 与正文 `updated_at` 或内容 SHA-256。Scope / Non-goals、Acceptance Checklist、工作包边界、核心失败 / 恢复语义或 Owner Decisions 实质变化后，原批准失效并重新 Readback；纯措辞和链接修正不重跑。
+
+7. **Coding Agent 按批准的 Issue 开发**
+
+   ```text
+   按照当前已批准 Issue 完成本次开发。
    1. 读取 AGENTS.md / SOP.md / TESTING.md / PR_Checklist.md / interact.md；如果项目存在 capability_contract.json / docs/business_user_guide.md，也必须按 AGENTS.md 的文档关系检查。
-   2. 从 issue 中提取 Spec Unit，生成 SU -> 代码改动 -> 测试 -> 文档 的 todo list。
-   3. 测试策略与测试证据记录方式以 `TESTING.md` 为准。
+   2. 从 Issue 提取 Spec Unit，生成 SU -> 代码改动 -> 测试 -> 文档 的 todo list。
+   3. 测试策略与测试证据记录方式以 TESTING.md 为准。
+   4. 在 todo list 中说明哪些测试复用、哪些参数化扩展，以及哪一条 scenario 证明跨模块组合路径；不得机械地为每个 SU 或 finding 新增独立测试。
+   5. 若发现批准后的 Issue 已发生实质变化，停止并要求重新批准，不得自行解释为仍获授权。
    ```
 
-   备注：我在这里没有提FSD/Repo Impact Forecast/Target State Bridge，宪法文件已经转为issue。而且也没有提供编程开发的具体模板，因为我相信llm擅长做这个，issue也能做好制约。
+8. **Coding Agent 自审并提交 Draft PR**
 
-8. ** codex 负责代码审核**
-   预审核短 prompt：
-
-   正式审核系统 prompt：[prompts/pr_review_system.md](../../prompts/pr_review_system.md)
-   正式审核任务短 prompt：
-
-   ```text
-   对 XX 项目的 PR XX（最新 head XX）进行严格详细全面的代码审查。在评估代码时不但要评估开发是否符合 issue，还要评估有没有过度开发，是否可以在架构层级精简（功能可以提前开发，但是不允许有脱裤子放屁的冗余）。切记不要去优化或修复一个本不应该存在的问题！仓库外临时 PR body Markdown 是重要参考材料，你需要检查有没有重复开发和修补，如果有，分析其原因。重要问题需要实际运行代码来验证你的猜想，没有调查就没有发言权。
-   
-   并检查是否遵守:
-   * .github/pull_request_template.md
-   * docs/business_user_guide.md
-   * AGENTS.md
-   * architecture.md
-   * capability_contract.json
-   * interact.md
-   * PR_Checklist.md
-   * SOP.md
-   * TESTING.md
-   
-   对应issue：《》
-   PR审核指南：《》
-   你的职责不单是分析目前的pr有没有符合issue，有没有bug，也要分析这些代码的复杂度是不是必要的。切记不要去优化或修复一个本不应该存在的问题！
-   ```
-   审核完成的后的追问：按照PR审核指南，面向不熟悉本项目底层代码的程序员详细介绍你的发现。
-   
+   正式代码审核系统 prompt：[prompts/pr_review_system.md](../../prompts/pr_review_system.md)
 
    PR 提交短 prompt：
 
    ```text
-   重新以 PR 审核的态度审核你的新增代码，如有问题先验证是否真实存在，再决定是否修复。
-   先判断本地是主干还是分支，如果是主干则先创建分支并。然后在既有分支的既有 PR 上提交本地全部代码，
+   重新以 PR 审核的态度审核你的新增代码；发现问题后先验证是否真实存在，再决定是否修复。
+   先判断本地是主干还是分支；如在主干，则按仓库政策创建分支。然后在既有分支的既有 PR 上提交本地全部目标范围代码。
+
    要求：
    1. 遵守 PR_Checklist.md。
    2. 遵守仓库当前 commit 策略；单 commit 只是可替换的团队默认。
-   3. 每轮 review / 修复都必须更新 PR body 的“Review / 修复记录”。
-   4. 根据 `.github/pull_request_template.md` 在仓库外创建临时 Markdown body，并覆盖已有 PR（如果本次对话才创建分支可以跳过）和本地全部修改内容。
+   3. 每轮 review / 修复都更新 PR body 的 Review / Fix Record；但发散闸门不依赖作者 body 才能工作。
+   4. 根据 `.github/pull_request_template.md` 在仓库外创建临时 Markdown body，并覆盖已有 PR 和本地全部修改内容。
    5. 测试策略与测试证据记录方式以 TESTING.md 为准。
 
-   备注：
-   - 临时 PR body 位于仓库外，不进入目标工作树或 commit。
-   - PR body 是重要的代码审核材料之一，由通用 GitHub 发布能力读取。
-   - PR 审核指南：《》
+   临时 PR body 位于仓库外，不进入目标工作树或 commit。
    ```
 
-9. **如果 review 有问题，先验证问题是否真实存在，再决定是否修**
-   给 Codex 和 claude code 的短 prompt：
+9. **独立 PR Review：先审核当前 exact head，再判断历史模式**
+
+   Reviewer 先 blind-first 读取当前 exact head、Issue、仓库权威、完整 diff、测试与 artifact，形成并冻结本轮初始 findings；之后才读取前两轮审核报告或 GitHub review comments，判断是否重复根因或发散。作者总结和 PR body 只是证据之一，不能替代当前事实，也不是发散闸门的唯一地基。
+
+   每次最终报告必须明确列出：
+
+   - 实测复现；
+   - 读码推断；
+   - 未检查；
+   - 受环境或权限阻塞。
+
+   未检查内容若可能改变 P0/P1、`SPEC_GAP` 或授权结论，不得 PASS，必须输出 `REQUEST_EVIDENCE`。
+
+10. **Finding 由两个正交镜头验证；根据证据选择修复、退回规格或提交 owner**
+
+   **模型 A：事实 / 复现镜头。** 它不读取历史审核或作者修复叙事，只读取当前 exact head、当前 finding、Issue 和仓库权威。
 
    ```text
-   先不动代码，先检查实习生给出的问题是否真实存在。重要问题需要通过代码阅读、最小复现、定向测试或接近真实使用路径的验证来确认；没有调查就没有发言权。
+   只判断当前 finding 是否真实成立。确认现实可达入口、前置条件、调用链、最小复现或定向测试、实际后果、现有测试为何未拦截和严重度。
 
-   如果问题存在，请先输出分析，不要直接修复。分析必须包含：
-
-   1. 检测：去对应PR描述检查是否之前修复过类似问题，如果有，如何制定一个端到端的验收计划来杜绝重复返工。
-   2. 影响面：这个问题的上游输入、当前模块、下游调用方是否受影响；是否存在同类入口或相邻场景也需要一起检查。
-   3. 同步项：判断是否需要同步测试说明、用户文档、架构/流程文档、PR 描述或 Review / 修复记录；如果不需要，也要说明原因。
-   4. 在评估代码时不但要评估开发是否符合issue，还要评估有没有过度开发，是否可以在架构层级精简（功能可以提前开发，但是不允许有脱裤子放屁的冗余）。
-   5. 你的职责不单是分析目前的pr有没有符合issue，有没有bug，也要分析这些代码的复杂度是不是必要的。切记不要去优化或修复一个本不应该存在的问题！
-
-   实习生的发现：《》
+   输出只能是：CONFIRMED / REFUTED / REQUEST_EVIDENCE。
+   不要设计大范围修复。
    ```
 
-   * 执行顺序：先让codex 负责PR的代码审核，如果review 出问题。把问题发给 Codex 和 Opus 分别判断，再把 Opus 的意见发给 Codex 要求出综合分析版本。
-   * 处理分歧：如果双方分歧仍然很大，再把 GPT 5.4 对 Opus 的反驳发给 Opus，让 Opus 重新分析后按自己的方案执行。
-   * 在验证阶段codex和cc经常会有不同意见，在这里交互意见最多三次，然后以codex的意见为准，在codex验证的对话里直接输入‘按照你的观点进行修复‘
-   * 修复后：继续复用“PR 提交短 prompt”。然后新开codex对话进行pr审核，一直到没有P0和P1问题为止。P2问题可以接受。
-   * 备注：同一个 PR 的 patch 不需要每次重新完整粘贴给 GPT，可以在原对话里覆盖最新 patch，避免上下文过时。
-   * 完整顺序：在具体操作中，先让codex 负责PR的代码审核，如果review 有问题，用第8节的prompt分别交给codex（新对话）和claude code验证，这里实习生的发现就是codex审核pr给出的发现。在验证阶段codex和cc经常会有不同意见，在这里交互意见最多三次，然后以codex的意见为准，在codex验证的对话里直接输入‘按照你的观点进行修复‘，然后在这个对话继续‘重新以 PR 审核的态度审核你的新增代码，如有问题先验证是否真实存在，再决定是否修复’这个pr提交环节。然后新开codex对话进行pr审核，一直到没有P0和P1问题为止。P2问题可以接受。
-   * Finding 闭合：在既有 PR review / fix record 和 GitHub thread 中保留来源 ID、判断与关闭证据；不得让未解决 finding 静默消失，也不另建一套重复 reconciliation ledger。
-
-11. **如果 review 没有问题（定义为没有P0/P1级别发现），在 PR 评论区输入 `/claude-merge-check`**（这个环节暂时放弃，反复的PR审查已经足够）
-   自动化文件：[.github/workflows/claude-merge-readiness.yml](../../../.github/workflows/claude-merge-readiness.yml)
-   作用：做 merge-readiness 检查，而不是重复做 code review。
-   通过规则：无问题则在 PR 评论区输入 `/claude-merge-check`，通过后再合入主干。
-
-12. **PR 合并后，用网页端 GPT 的 apps 功能做 tech lead 总结**
-   总结短 prompt：
+   **模型 B：实例 / 系统性镜头。** 它先不读历史，固定当前责任边界、state owner、持久化协议和副作用链的初始分类；随后才读取前两轮审核报告判断是否成类或发散。
 
    ```text
-当前 PR XX （对应issue XX） 已经完成。请站在 tech lead 视角详细评估，但你的目标不是写一篇“好看的评审总结”，而是让我真正理解这个 PR 是怎么工作的。
+   假设 finding 成立，判断它是孤立实例还是系统性失效。检查上游、当前模块与下游影响面；同类入口或相邻状态；当前建议是在修根因还是只修样例；最小闭合边界；能否扩展已有机制；测试应复用还是参数化；是否属于规格缺口或 owner decision。
 
-A. 执行摘要
-- 这个 PR 的一句话定性
-- 它实际完成的 3~5 个关键动作
-
-B. 改动地图
-对每个关键动作都按下面格式展开：
-1. 代码位置（文件 + 函数）
-2. 改动前是什么
-3. 改动后是什么
-4. 运行时因果链（谁调用谁，数据怎么流动）
-5. 为什么这样改能达到目标
-6. 代价/复杂度上升在哪里
-
-C. 非直观点强制拆解
-对回答中最不直观的 3 个点，必须单独做“机制层解释”：
-- 禁止抽象词，必须讲到具体 Python 机制
-- 必须给 before/after 伪代码
-- 必须说清“它影响什么，不影响什么”
-
-D. 证据约束
-- 区分“代码事实”和“你的判断”
-- 没有从代码直接验证到的内容，明确标记为推断
-
-E. 输出风格约束
-- 不要只写评价，要写机制
-- 不要只写价值，要写代价
-- 不要只写结论，要写证据链
+   输出只能是：LOCAL_FIX / SYSTEMIC_FIX / SPEC_REVISION_REQUIRED / OWNER_DECISION_REQUIRED。
    ```
 
-   追问短 prompt：
+   综合动作：
 
-   ```text
-   这个PR合并入主干后用户有什么可感知的变化吗，用户如何利用这次PR的开发成果，以AGENTS.md为首的文档提供了很好的指引吗？AGENTS.md 及其内联的文档有没有需要更新的地方？综合评估当前代码分支这个 PR 以什么方式完成了什么任务，给这个项目带来了什么改变和影响，下一步的未来展望是什么？
-   ```
-   存档在PR评论区 
-   
-13. **Issue 关闭前，再从主干代码检查 FSD 是否真正开发完成**（这个环节暂时放弃，因为通过率100%，而且 12.如何以用户的角度来验收这次的 PR能发现更精准的问题）
-    使用长 prompt：[prompts/issue_closure_fsd_acceptance.md](../../prompts/issue_closure_fsd_acceptance.md)
-    目的：从主干代码倒查 issue 中的每个 `Spec Unit` 是否已实现，并强制输出 `Updates to FSD`（如有偏差）。
+   - `REFUTED`：不修复，记录驳回证据；
+   - `REQUEST_EVIDENCE`：补证据，不要求改代码；
+   - `CONFIRMED + LOCAL_FIX`：最小局部修复；
+   - `CONFIRMED + SYSTEMIC_FIX`：一轮内闭合同类入口与一般测试；
+   - `CONFIRMED + SPEC_REVISION_REQUIRED`：停止编码，返回 Target State Bridge；
+   - `CONFIRMED + OWNER_DECISION_REQUIRED`：只停止受阻工作包，未受阻部分继续。
 
-14. **再问 GPT 网页版：如何从用户视角验收这次 PR**
-    
-    验收计划需要GPT网页版和claude code达成合意。
-    
-    短 prompt：
+   删除“若干轮后以 Codex 为准”。分歧由可复现行为、代码 / 配置 / 测试 / artifact、已冻结 Issue 和 owner 决策裁决；双方都无可复现证据时保留 `REQUEST_EVIDENCE`，不强行裁定。
 
-   ```text
-   针对这个issue和pr，制定一个验收计划，如何以用户体验的角度来验收这次的PR
-   ```
- 
- 存档在PR评论区
- 
- 下一步：把这份用户视角验收建议交给 Codex，必要时结合 Playwright 等交互工具，真的走一遍验收。
- 备注：这一步经常有可能直接产生新的开发计划。
+   **发散闸门：**满足任一条件时停止逐 finding 补丁，并输出 `SPEC_REVISION_REQUIRED`：
+
+   1. 上一轮修复直接制造本轮新的 P0/P1；
+   2. 连续两轮新增 P0/P1 落在同一 runtime entrypoint、state owner、persistence protocol 或 external side-effect execution chain；
+   3. 同一执行链完成一轮修复后，下一轮仍需新增 durable state、checkpoint、持久化 artifact、recovery branch 或 terminal semantics。
+
+   触发后返回 Bridge 完整枚举受影响执行链；普通项目和未触发项目不缴状态矩阵成本。
+
+   **Owner Decision 输出契约：**必须写明 Decision、Evidence needed、Evidence path、Blocked work、Unblocked work、Safe default。若证据在当前规格下无法合法取得，结论是 `SPEC_REVISION_REQUIRED`，不是把无法作出的决定丢给 owner。局部决策不得默认阻塞整个 Issue。
+
+   最终出口只能是：
+
+   - `PASS`；
+   - `REWORK_REQUIRED`；
+   - `SPEC_REVISION_REQUIRED`；
+   - `OWNER_DECISION_REQUIRED`；
+   - `REQUEST_EVIDENCE`。
+
+11. **终验、合并与合并后 Delta**
+
+   `PASS` 后按目标项目的独立验收与合并政策执行。仓库中的 `/claude-merge-check` 和 Issue closure FSD acceptance 可以作为可选工具使用，但不再列为当前通用主流程或核心产物。
+
+   已执行 Issue Readback 的项目，合并后不再重复完整 Tech Lead 机制解读，只输出：实际实现相对批准 Issue 的偏差、发生变化的取舍、残余风险和后续 Issue。未做 Readback 且确有学习价值时，可以按需执行完整总结。
+
+## 实验机制重审
+
+发散闸门、条件性 Issue Readback 和 Owner Decision 输出契约先作为实验机制。每项累计 3 个适用 PR 后，按 [DEC-008](decisions.md#实验机制重审与退役) 分别输出 `PROMOTE`、`MODIFY` 或 `RETIRE`；从未触发，或触发后没有改变任何参与者下一步动作的机制，默认退役，除非有新的具体风险证据。
 
 ## 核心产物
 
 - `FSD Core Contract`：把需求翻译成可实现、可测试、可审核的契约。
 - `Repo Impact Forecast`：预测 FSD 与当前仓库的真实触点、风险、文档和测试影响。
 - `Target State Bridge`：定义开发完成后用户 / 调用方应该看到什么状态，以及如何验证。
-- `Issue`：把契约、范围、任务拆解、文档更新预测、测试更新预测、验收条件固化。
+- `Issue`：把契约、范围、任务拆解、文档更新预测、测试更新预测、验收条件和 Owner Decisions 固化。
+- 条件性 Issue Readback：帮助 owner 在编码前理解并批准具体 Issue 修订；不是第二套权威。
 - 仓库外 PR body Markdown：由 `.github/pull_request_template.md` 派生，不进入目标工作树或 commit；是 review 和通用 GitHub 发布能力的输入。
-- `Merge Readiness Report`：判断当前 PR 是否具备合并条件。
-- `FSD 完备性验收报告`：Issue 关闭前的最后一道契约核查。
 - `Workflow Docs Sync`：用户一次调用完成全量事实重建、最小必要改写、真实测试、
   fresh-context independent review 或诚实 self-review，以及最终仓库检查。
 
