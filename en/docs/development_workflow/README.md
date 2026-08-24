@@ -10,37 +10,72 @@ for workflow complexity conservation and the review and retirement rules for exp
 ## Main Flow
 
 1. Define the requirement.
+
 2. Draft the black-box `FSD Core Contract` with the Pro web model.
+   The FSD fixes the user-observable contract without designing around the current implementation; repository
+   touchpoints, compatibility, and implementation context belong to the next Bridge step.
+
 3. Compare the FSD, current repository code, and authoritative documents to produce the `Repo Impact
    Forecast` and `Target State Bridge`.
+   The Bridge aligns the black-box requirement with repository facts and separates predictions from commitments
+   without rewriting the FSD's user goal.
+
 4. Turn the FSD, forecast, and bridge into one executable issue contract. Owner decisions must remain explicit.
+   The Issue is the single implementation entry so the Coding Agent does not receive several drifting upstream
+   instruction sets in parallel.
+
 5. Review the issue through two orthogonal lenses before implementation: requirement and acceptance closure,
    and engineering volume and minimal sufficiency. The Issue Agent from step 4 owns the final edit; the lenses
-   advise rather than editing the issue in parallel.
+   advise rather than editing the issue in parallel. The two lenses protect against under-delivery and
+   over-engineering rather than duplicating a vote.
+
 6. Run an issue readback before coding for high-risk issues. It explains the planned runtime chain, necessary
    work packages, long-term complexity, a half-size alternative, test composition, and owner choices. It is an
-   owner-understanding step rather than a second specification source.
+   owner-understanding step rather than a second specification source or approval-state machine.
+
 7. Implement the issue after reading `AGENTS.md`, `SOP.md`, `TESTING.md`, `PR_Checklist.md`, `interact.md`,
    and project capability or business-user documents. Map each Spec Unit to code, tests, and documentation,
    and state which tests are reused, parameterized, or used as the real cross-module scenario.
+   The Coding Agent receives the Issue rather than the FSD, Forecast, and Bridge again because those inputs have
+   already been consolidated into the Issue; implementation remains constrained by repository facts rather than
+   a generic coding template.
+
 8. Self-review the patch and deliver a draft PR using the repository's commit policy and tracked PR template.
    The PR body remains outside the target worktree and records actual scope, evidence, review/fix history, open
-   decisions, and limits.
+   decisions, and limits. It is an important formal-review input even though it is not committed to the target
+   repository.
+
 9. Have Codex perform the formal PR review with the full review system and task prompt. It checks Issue
    compliance, bugs, unnecessary architecture or duplicated repair, the external PR body, repository guidance,
    and the realism of test evidence; important claims must be investigated through code execution or a close
-   reproduction path.
+   reproduction path. This step discovers problems across the whole PR; the next step only verifies findings
+   already raised.
+
+   The formal reviewer must use exactly three final outcomes:
+   - `PASS`: no P0/P1 problem;
+   - `REWORK_REQUIRED`: code, documentation, testing, or evidence still needs correction;
+   - `OWNER_DECISION_REQUIRED`: the facts are established, but the owner must choose the next action and the
+     reviewer states which work is blocked and unblocked.
+
 10. When review finds a problem, verify it before changing code. Codex focuses on whether the problem is real,
     its trigger path, reproduction, and severity; Claude Code focuses on impact, adjacent entrypoints, whether
     the finding is one instance of a broader problem, and the smallest sufficient fix. Evidence and owner
-    decisions resolve disagreement. The only final outcomes are `PASS`, `REWORK_REQUIRED`, and
-    `OWNER_DECISION_REQUIRED`.
+    decisions resolve disagreement.
+
+    Finding verification uses the same three outcomes:
+    - `PASS`: the finding is refuted or does not constitute P0/P1;
+    - `REWORK_REQUIRED`: the finding is confirmed, or evidence is insufficient to rule out P0/P1;
+    - `OWNER_DECISION_REQUIRED`: the facts are established, but whether or how far to fix requires an owner
+      choice with blocked and unblocked work stated.
+
 11. After merge, use the full Tech Lead walkthrough to explain the delivered implementation from final code
     evidence, then assess user-visible changes, how users employ the result, and whether `AGENTS.md` and linked
     documents provide sufficient guidance. Store both in the PR conversation.
+
 12. Keep the pre-close FSD acceptance step: inspect main-branch code against every Issue Spec Unit and produce
     `Updates to FSD` for deviations. The current workflow may pause this step because its observed pass rate was
     100% and user-view acceptance found more precise issues, but the step and prompt remain documented.
+
 13. Create a user-view acceptance plan through agreement between the web GPT and Claude Code, archive it in the
     PR conversation, and hand it to Codex for actual execution with tools such as Playwright when useful. This
     acceptance may create follow-up development work.

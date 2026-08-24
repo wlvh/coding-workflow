@@ -9,6 +9,9 @@
 
 2. **网页端 Pro 模型制定 `FSD Core Contract`**
    使用长 prompt：[prompts/fsd_core_contract.md](../../prompts/fsd_core_contract.md)
+
+   备注：FSD 只钉死用户可观察的需求契约，不根据当前代码预设实现；代码触点、兼容性和落地路径留给下一步 Target State Bridge，避免需求被现状绑死。
+
    权威文档列表：
    * .github/pull_request_template.md
    * docs/business_user_guide.md
@@ -24,9 +27,13 @@
    * Pro 模型产出。
    * 使用长 prompt：[prompts/target_state_bridge.md](../../prompts/target_state_bridge.md)
 
+   备注：Bridge 负责把黑盒 FSD 与当前仓库事实对齐，补齐代码、兼容性、文档和测试上下文；它区分预测与承诺，不改写 FSD 的用户目标。
+
 4. **Issue Agent 写 Issue**
    使用长 prompt：[prompts/issue_agent.md](../../prompts/issue_agent.md)
    目标：把 `FSD`、`Repo Impact Forecast` 和 `Target State Bridge` 固化成唯一实施入口。需要 owner 判断的范围、风险、成本、权限或失败语义必须保持显式，不得在模型合意中静默消失。
+
+   备注：Issue 是后续开发的唯一实施入口，避免 Coding Agent 同时面对多份可能漂移或互相冲突的上游指令。
 
 5. **Codex 与 Claude Code 从正交镜头审核 Issue，再形成一份合意 Issue**
 
@@ -47,6 +54,8 @@
    ```
 
    由第 4 步的 Issue Agent 执笔更新 Issue；两个镜头只提供意见，不直接编辑 Issue。
+
+   备注：两个镜头分别防止“需求没做完”和“工程做过头”，不是让两个模型重复投票。
 
 6. **高风险 Issue 在 Coding 前执行 Issue Readback**
 
@@ -69,6 +78,8 @@
    本解读不是新的产品或工程权威。发现歧义时必须回写 Issue，不得只在解读中形成新要求。
    ```
 
+   备注：Readback 的作用是让 owner 在编码前真正理解复杂 Issue；它不建立新的批准状态，也不替代 Issue 本身。
+
 7. **Coding Agent 按 Issue 开发**
 
    ```text
@@ -78,6 +89,8 @@
    3. 测试策略与测试证据记录方式以 TESTING.md 为准。
    4. 在 todo list 中说明哪些测试复用、哪些参数化扩展，以及哪一条 scenario 证明跨模块组合路径；不得机械地为每个 SU 或 finding 新增独立测试。
    ```
+
+   备注：这里不再重复传入 FSD / Repo Impact Forecast / Target State Bridge，因为它们已经固化进 Issue；也不提供通用开发模板，具体实现由当前仓库事实和 Issue 约束。
 
 8. **Coding Agent 自审并提交 Draft PR**
 
@@ -95,9 +108,11 @@
    3. 每轮 review / 修复都更新 PR body 的 Review / Fix Record。
    4. 根据 `.github/pull_request_template.md` 在仓库外创建临时 Markdown body，并覆盖已有 PR 和本地全部修改内容。
    5. 测试策略与测试证据记录方式以 TESTING.md 为准。
-
-   临时 PR body 位于仓库外，不进入目标工作树或 commit。
    ```
+
+   备注：
+   - 临时 PR body 位于仓库外，不进入目标工作树或 commit。
+   - PR body 是正式代码审核的重要参考材料之一，由通用 GitHub 发布能力读取。
 
 9. **Codex 负责代码审核**
 
@@ -122,9 +137,16 @@
    对应issue：《》
    PR审核指南：《》
    你的职责不单是分析目前的pr有没有符合issue，有没有bug，也要分析这些代码的复杂度是不是必要的。切记不要去优化或修复一个本不应该存在的问题！
+
+   本轮最终结论只能是：
+   - PASS：没有 P0/P1 问题。
+   - REWORK_REQUIRED：存在需要修复或补证据的问题。
+   - OWNER_DECISION_REQUIRED：事实已经查清，但下一步必须由 owner 决定；同时说明阻塞和不阻塞哪些工作。
    ```
 
    审核完成后的追问：按照 PR 审核指南，面向不熟悉本项目底层代码的程序员详细介绍你的发现。
+
+   备注：第 9 步负责从完整 PR 中发现问题；第 10 步只验证已经提出的 finding，不能替代正式 PR 审核。
 
 10. **如果 review 有问题，先验证问题是否真实存在，再决定是否修**
 
@@ -141,20 +163,21 @@
    4. 在评估代码时不但要评估开发是否符合 issue，还要评估有没有过度开发，是否可以在架构层级精简（功能可以提前开发，但是不允许有脱裤子放屁的冗余）。
    5. 你的职责不单是分析目前的 PR 有没有符合 issue、有没有 bug，也要分析这些代码的复杂度是不是必要的。切记不要去优化或修复一个本不应该存在的问题！
 
+   本轮最终结论只能是：
+   - PASS：该 finding 经验证不成立，或确认不构成 P0/P1；无需修改。
+   - REWORK_REQUIRED：该 finding 成立，或现有证据不足以排除 P0/P1；需要修复或补证据。
+   - OWNER_DECISION_REQUIRED：事实已经查清，但是否修复、修复范围或风险接受必须由 owner 决定；同时说明阻塞和不阻塞哪些工作。
+
    实习生的发现：《》
    ```
 
    Codex 重点确认问题是否成立、触发路径、最小复现和严重度；Claude Code 重点检查影响面、同类入口、是否只是一个实例，以及最小充分的修复方式。两者意见交叉核对后由 Codex 输出综合分析；分歧由代码、测试、可复现证据和 owner 决策处理，不以模型身份裁决。
 
-   本轮最终结论只能是：
-
-   - `PASS`：没有 P0/P1 问题；
-   - `REWORK_REQUIRED`：存在需要修复或补证据的问题；
-   - `OWNER_DECISION_REQUIRED`：下一步需要 owner 决定，并说明阻塞和不阻塞哪些工作。
-
    修复后继续复用“PR 提交短 prompt”，再新开 Codex 对话进行 PR 审核，直到没有 P0/P1 问题为止；P2 问题可以接受。
 
    Finding 闭合：在既有 PR review / fix record 和 GitHub thread 中保留来源 ID、判断与关闭证据；不得让未解决 finding 静默消失，也不另建一套重复 reconciliation ledger。
+
+   备注：同一个 PR 的 patch 不必在同一验证对话中反复完整粘贴；应覆盖到最新 head，避免模型继续依据过时 patch。
 
 11. **PR 合并后，用网页端 GPT 的 apps 功能做 Tech Lead 总结**
 
@@ -217,7 +240,6 @@
    存档在 PR 评论区。下一步把这份用户视角验收建议交给 Codex，必要时结合 Playwright 等交互工具，真的走一遍验收。该步骤经常可能直接产生新的开发计划。
 
 ## 实验机制重审
-
 条件性 Issue Readback 和 Owner Decision 输出契约先作为实验机制。每项累计 3 个适用 PR 后，按 [DEC-008](decisions.md#实验机制重审与退役) 分别输出 `PROMOTE`、`MODIFY` 或 `RETIRE`；从未触发，或触发后没有改变任何参与者下一步动作的机制，默认退役，除非有新的具体风险证据。
 
 ## 核心产物
