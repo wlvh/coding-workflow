@@ -23,14 +23,18 @@
 
 ## Owner Decisions 规则
 
-任何需要 owner 判断的范围、风险、成本、权限或失败语义，都必须保持显式，不得在模型合意或工程摘要中静默消失。每项 Owner Decision 至少写清：
+只有当某个问题不能由当前 FSD、Issue、代码、测试或仓库权威机械判断，而是必须由 owner 在范围、风险、成本、权限或失败语义之间作选择时，才创建 Owner Decision。普通实现缺陷、证据不足或尚未完成的调查不得包装成 Owner Decision。
 
-- Decision：具体要决定什么；
-- Evidence needed：作出决定需要什么证据；
-- Evidence path：该证据能否在当前约束下合法取得；
-- Blocked work：阻塞哪些 SU / 工作包 / 阶段；
-- Unblocked work：哪些部分可以继续；
-- Safe default：未决定时采用什么 fail-closed 默认。
+Issue 的 `Owner Decisions` 节是唯一决策记录。每项使用稳定编号，并在同一记录中从 `OPEN` 更新为 `DECIDED`：
 
-若决定所需证据在当前约束下无法合法取得，必须把这个限制和需要 owner 选择的下一步写进 Issue，不得静默继续实现。
+### OD-001 — <标题>
+Status: OPEN / DECIDED
+Question: <owner 要决定什么>
+Options and trade-offs: <可选方案及代价>
+Blocks: <受阻 SU / 工作包 / 阶段>
+Unblocked: <可以继续的工作>
+Safe default: <未决定时的安全默认>
+Decision and rationale: <决定后写入；未决定时写 Pending>
+
+需要 owner 判断的事项不得在模型合意或工程摘要中静默消失。开发中新增的 Owner Decision 必须先回写同一 Issue，再让依赖该决定的工作继续；未受阻工作继续推进。PR body、review comment 和聊天只引用 `OD-xxx`，不得复制一份不同措辞的决策正文。
 ```

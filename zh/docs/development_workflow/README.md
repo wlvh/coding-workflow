@@ -33,7 +33,7 @@
    使用长 prompt：[prompts/issue_agent.md](../../prompts/issue_agent.md)
    目标：把 `FSD`、`Repo Impact Forecast` 和 `Target State Bridge` 固化成唯一实施入口。需要 owner 判断的范围、风险、成本、权限或失败语义必须保持显式，不得在模型合意中静默消失。
 
-   备注：Issue 是后续开发的唯一实施入口，避免 Coding Agent 同时面对多份可能漂移或互相冲突的上游指令。
+   备注：Issue 是后续开发的唯一实施入口，避免 Coding Agent 同时面对多份可能漂移或互相冲突的上游指令。Owner Decision 也只在 Issue 的 `Owner Decisions` 节记录；PR body、review comment 和聊天只引用其 `OD-xxx` 编号，不另写一套可能漂移的决策正文。
 
 5. **Codex 与 Claude Code 从正交镜头审核 Issue，再形成一份合意 Issue**
 
@@ -141,7 +141,7 @@
    本轮最终结论只能是：
    - PASS：没有 P0/P1 问题。
    - REWORK_REQUIRED：存在需要修复或补证据的问题。
-   - OWNER_DECISION_REQUIRED：事实已经查清，但下一步必须由 owner 决定；同时说明阻塞和不阻塞哪些工作。
+   - OWNER_DECISION_REQUIRED：事实已经查清，剩余问题只能由 owner 在范围、风险、成本、权限或失败语义之间作选择。必须引用 Issue 中的 `OD-xxx`；若尚无记录，则要求先创建，并说明阻塞和不阻塞哪些工作。证据不足或普通实现缺陷应判为 REWORK_REQUIRED。
    ```
 
    审核完成后的追问：按照 PR 审核指南，面向不熟悉本项目底层代码的程序员详细介绍你的发现。
@@ -166,14 +166,40 @@
    本轮最终结论只能是：
    - PASS：该 finding 经验证不成立，或确认不构成 P0/P1；无需修改。
    - REWORK_REQUIRED：该 finding 成立，或现有证据不足以排除 P0/P1；需要修复或补证据。
-   - OWNER_DECISION_REQUIRED：事实已经查清，但是否修复、修复范围或风险接受必须由 owner 决定；同时说明阻塞和不阻塞哪些工作。
+   - OWNER_DECISION_REQUIRED：事实已经查清，剩余问题只能由 owner 在范围、风险、成本、权限或失败语义之间作选择。必须引用 Issue 中的 `OD-xxx`；若尚无记录，则要求先创建，并说明阻塞和不阻塞哪些工作。证据不足或普通实现缺陷应判为 REWORK_REQUIRED。
 
    实习生的发现：《》
    ```
 
    Codex 重点确认问题是否成立、触发路径、最小复现和严重度；Claude Code 重点检查影响面、同类入口、是否只是一个实例，以及最小充分的修复方式。两者意见交叉核对后由 Codex 输出综合分析；分歧由代码、测试、可复现证据和 owner 决策处理，不以模型身份裁决。
 
-   修复后继续复用“PR 提交短 prompt”，再新开 Codex 对话进行 PR 审核，直到没有 P0/P1 问题为止；P2 问题可以接受。
+   **Owner Decision 记录规则：**
+
+   `OWNER_DECISION_REQUIRED` 不是全局停工开关，也不能用来代替调查。只有事实已经查清、剩余确实是 owner 权限内的取舍时才使用。Issue 的 `Owner Decisions` 节是唯一决策记录，每项使用稳定编号并在同一记录中从 `OPEN` 更新为 `DECIDED`：
+
+   ```text
+   ### OD-001 — <标题>
+   Status: OPEN / DECIDED
+   Question: <owner 要决定什么>
+   Options and trade-offs: <可选方案及代价>
+   Blocks: <受阻 SU / 工作包 / 阶段>
+   Unblocked: <可以继续的工作>
+   Safe default: <未决定时的安全默认>
+   Decision and rationale: <决定后写入；未决定时写 Pending>
+   ```
+
+   开发中新增的 Owner Decision 必须先回写 Issue，再让依赖该决定的代码继续。PR body、review comment 和聊天只引用 `OD-xxx`，不得复制一份不同措辞的决策正文。未受阻工作继续推进；owner 作出决定后，由当前执行者更新同一 `OD-xxx` 为 `DECIDED`，再恢复受阻工作。
+
+   **完整顺序：**
+
+   1. Coding Agent 完成开发、自审、更新仓库外 PR body，并提交或更新 Draft PR。
+   2. 新开 Codex 对话，使用第 9 步完整审核 prompt 审核最新 exact head；开发对话中的自审不能替代这次审核。
+   3. 若结论为 `PASS`，进入合并以及第 11 至 13 步。
+   4. 若结论为 `REWORK_REQUIRED`，把每个 P0/P1 finding 分别放入新的 Codex 验证对话和 Claude Code 验证对话，使用本节共同 prompt。Codex 核实真实性、触发路径、复现和严重度；Claude Code 核实影响面、同类入口、根因和最小充分修复。
+   5. 将 Claude Code 的意见交给 Codex 输出综合分析。仍有分歧时，只交换代码、测试、复现证据和 Issue 契约，最多三轮；仍证据不足则保持 `REWORK_REQUIRED` 并列明补证据动作，不以模型身份裁决。
+   6. 综合结论为 `REWORK_REQUIRED` 时，在 Codex 验证对话中输入“按照综合分析进行修复”；修复后复用第 8 步 PR 提交短 prompt，更新代码、测试、文档、Review / Fix Record 和 PR body，并推送新 head。
+   7. 每次修复后都新开 Codex 对话，再按第 9 步审核最新 exact head；重复到 `PASS`。P2 可以接受，但必须记录。
+   8. 任何阶段出现 `OWNER_DECISION_REQUIRED` 时，按上述规则创建或更新 `OD-xxx`。只暂停 `Blocks`，`Unblocked` 继续；owner 决定回写同一 Issue 记录后，再恢复受阻工作、更新 PR，并重新执行第 9 步审核。
 
    Finding 闭合：在既有 PR review / fix record 和 GitHub thread 中保留来源 ID、判断与关闭证据；不得让未解决 finding 静默消失，也不另建一套重复 reconciliation ledger。
 

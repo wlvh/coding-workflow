@@ -84,7 +84,9 @@ P0 与 P1 都阻断合并并必须清零；区别在后果等级、影响范围�
 
 ### 3.6 Owner Decision
 
-若代码是否继续、范围如何选择或风险是否接受必须由 owner 决定，输出 `OWNER_DECISION_REQUIRED`，并说清要决定什么、阻塞哪些工作包、不阻塞哪些工作包，以及未决时的安全默认。
+只有事实已经查清，且剩余问题不能由当前 Issue、代码、测试或仓库权威机械判断，而是必须由 owner 在范围、风险、成本、权限或失败语义之间作选择时，才输出 `OWNER_DECISION_REQUIRED`。证据不足、普通实现缺陷或尚未完成的调查属于 `REWORK_REQUIRED`，不得包装成 Owner Decision。
+
+Issue 的 `Owner Decisions` 节是唯一决策记录。Verdict 必须引用现有 `OD-xxx`；若尚无记录，则要求先在 Issue 创建，并说明 `Blocks`、`Unblocked` 和 `Safe default`。局部决定不得默认阻塞整个 Issue；PR body、review comment 和聊天只引用编号，不另写一套决策正文。
 
 ### 3.7 最终出口
 
@@ -92,5 +94,5 @@ P0 与 P1 都阻断合并并必须清零；区别在后果等级、影响范围�
 
 - `PASS`：范围内没有开放 P0/P1，也没有阻塞当前交付的 owner decision；
 - `REWORK_REQUIRED`：存在需要修复或补证据的代码、测试、文档或验收问题；
-- `OWNER_DECISION_REQUIRED`：审核已把事实和影响说明清楚，但下一步必须由 owner 选择。
+- `OWNER_DECISION_REQUIRED`：事实和影响已查清，剩余问题必须由 owner 选择；已引用 Issue 中的 `OD-xxx` 并声明阻塞与不阻塞范围。
 ```

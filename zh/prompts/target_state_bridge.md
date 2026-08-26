@@ -53,17 +53,18 @@
   TS / AC -> 测试目录 -> Stage
 - 不得擅自拍板关键失败路径；需要人类决定的失败路径要显式标注。
 
-## C. Owner Decision 可执行性
+## C. Owner Decision 候选
 
-每项需要 owner 判断的事项必须同时写清：
+只有当问题不能由 FSD、仓库事实、测试或既有权威机械判断，而是必须由 owner 在范围、风险、成本、权限或失败语义之间作选择时，才列为 Owner Decision 候选。普通证据缺口、实现缺陷或尚未完成的调查仍放在风险 / 开放问题中，不升级为 owner 决策。
 
-- Decision；
-- Evidence needed；
-- Evidence path，以及该路径在当前权限 / 安全 / 成本约束下是否合法；
-- Blocked work；
-- Unblocked work；
-- Safe default。
+对每个候选说明：
 
-若没有合法取证路径，必须明确告诉 owner 当前为何无法决定，以及需要修改范围、授权取证还是继续保持安全默认。局部 decision 不得默认阻塞整个 Issue。
+- Question：需要 owner 决定什么；
+- Options and trade-offs：可选方案与代价；
+- Blocks：受阻的 SU / 工作包 / 阶段；
+- Unblocked：可以继续的工作；
+- Safe default：未决定时的安全默认。
+
+Bridge 不创建平行决策记录；Issue Agent 在最终 Issue 的 `Owner Decisions` 节分配稳定 `OD-xxx` 编号并维护后续决定。局部 decision 不得默认阻塞整个 Issue。
 
 ```
