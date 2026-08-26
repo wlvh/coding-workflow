@@ -52,10 +52,4 @@
 - 必须输出 Verification Matrix：
   TS / AC -> 测试目录 -> Stage
 - 不得擅自拍板关键失败路径；需要人类决定的失败路径要显式标注。
-
-## C. Owner Decision 候选
-
-Owner Decision 的适用条件、`OD-xxx` 记录格式和生命周期只以 `issue_agent.md` 的“Owner Decisions：唯一规范”为准；必须读取该节，不得在 Bridge 中另建定义或平行记录。
-
-Bridge 只负责提供 Issue Agent 形成候选所需的仓库事实、可选方案及取舍、受影响范围和未决定时的安全默认。符合唯一规范的候选交给 Issue Agent 写入最终 Issue；不符合的仍保留为普通风险、开放问题、证据缺口或实现问题。局部候选不得默认阻塞整个 Issue。
 ```

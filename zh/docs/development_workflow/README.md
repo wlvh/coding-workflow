@@ -33,7 +33,7 @@
    使用长 prompt：[prompts/issue_agent.md](../../prompts/issue_agent.md)
    目标：把 `FSD`、`Repo Impact Forecast` 和 `Target State Bridge` 固化成唯一实施入口。需要 owner 判断的范围、风险、成本、权限或失败语义必须保持显式，不得在模型合意中静默消失。
 
-   备注：Issue 是后续开发的唯一实施入口，避免 Coding Agent 同时面对多份可能漂移或互相冲突的上游指令。`OWNER_DECISION_REQUIRED` 的适用条件、`OD-xxx` 格式和生命周期只在 `prompts/issue_agent.md` 的“Owner Decisions：唯一规范”中定义；其他步骤只引用，不重复定义。
+   备注：Issue 是后续开发的唯一实施入口，避免 Coding Agent 同时面对多份可能漂移或互相冲突的上游指令。需要 owner 取舍的事项也保留在 Issue 中，后续 PR body、review comment 和聊天只引用 Issue，不另写一套可能漂移的版本。
 
 5. **Codex 与 Claude Code 从正交镜头审核 Issue，再形成一份合意 Issue**
 
@@ -133,7 +133,6 @@
    * PR_Checklist.md
    * SOP.md
    * TESTING.md
-   * prompts/issue_agent.md 中的“Owner Decisions：唯一规范”（仅在可能输出 OWNER_DECISION_REQUIRED 时）
 
    对应issue：《》
    PR审核指南：《》
@@ -142,7 +141,7 @@
    本轮最终结论只能是：
    - PASS：没有 P0/P1 问题。
    - REWORK_REQUIRED：存在需要修复或补证据的问题。
-   - OWNER_DECISION_REQUIRED：只按 prompts/issue_agent.md 的“Owner Decisions：唯一规范”使用；必须引用 Issue 中的 `OD-xxx`。
+   - OWNER_DECISION_REQUIRED：对应 Issue 中存在尚未决定、且会阻塞当前交付的 owner 取舍。
    ```
 
    审核完成后的追问：按照 PR 审核指南，面向不熟悉本项目底层代码的程序员详细介绍你的发现。
@@ -164,12 +163,10 @@
    4. 在评估代码时不但要评估开发是否符合 issue，还要评估有没有过度开发，是否可以在架构层级精简（功能可以提前开发，但是不允许有脱裤子放屁的冗余）。
    5. 你的职责不单是分析目前的 PR 有没有符合 issue、有没有 bug，也要分析这些代码的复杂度是不是必要的。切记不要去优化或修复一个本不应该存在的问题！
 
-   如果可能输出 OWNER_DECISION_REQUIRED，先读取 prompts/issue_agent.md 的“Owner Decisions：唯一规范”。
-
    本轮最终结论只能是：
    - PASS：该 finding 经验证不成立，或确认不构成 P0/P1；无需修改。
    - REWORK_REQUIRED：该 finding 成立，或现有证据不足以排除 P0/P1；需要修复或补证据。
-   - OWNER_DECISION_REQUIRED：只按 prompts/issue_agent.md 的“Owner Decisions：唯一规范”使用；必须引用 Issue 中的 `OD-xxx`。
+   - OWNER_DECISION_REQUIRED：对应 Issue 中存在尚未决定、且会影响是否修复或修复范围的 owner 取舍。
 
    实习生的发现：《》
    ```
@@ -185,13 +182,11 @@
    5. 将 Claude Code 的意见交给 Codex 输出综合分析。仍有分歧时，只交换代码、测试、复现证据和 Issue 契约，最多三轮；仍证据不足则保持 `REWORK_REQUIRED` 并列明补证据动作，不以模型身份裁决。
    6. 综合结论为 `REWORK_REQUIRED` 时，在 Codex 验证对话中输入“按照综合分析进行修复”；修复后复用第 8 步 PR 提交短 prompt，更新代码、测试、文档、Review / Fix Record 和 PR body，并推送新 head。
    7. 每次修复后都新开 Codex 对话，再按第 9 步审核最新 exact head；重复到 `PASS`。P2 可以接受，但必须记录。
-   8. 任何阶段出现 `OWNER_DECISION_REQUIRED` 时，由当前阶段实际存在的主执行者按 prompts/issue_agent.md 的唯一规范写入或更新 `OD-xxx`：Coding 阶段由当前 Coding Agent 负责；review / finding 验证阶段由负责综合分析和后续修复的 Codex 负责。只暂停记录中的 `Blocks`，`Unblocked` 继续。Owner 决定后仍由当前负责继续受阻工作的 Coding Agent 或 Codex 更新同一记录，再恢复受阻工作、更新 PR，并重新执行第 9 步审核。
+   8. 任何阶段出现 `OWNER_DECISION_REQUIRED` 时，把需要 owner 选择的事项以自然语言补回 Issue，并说明它影响哪些工作；受影响工作暂停，其他工作继续。Owner 决定后把结论和理由补回 Issue，再恢复工作、更新 PR，并重新执行第 9 步审核。
 
    Finding 闭合：在既有 PR review / fix record 和 GitHub thread 中保留来源 ID、判断与关闭证据；不得让未解决 finding 静默消失，也不另建一套重复 reconciliation ledger。
 
-   备注：
-   - Owner Decision 的规则只在 prompts/issue_agent.md 维护；本节只说明它进入 review / repair 循环后的操作顺序，避免多处定义漂移。
-   - 同一个 PR 的 patch 不必在同一验证对话中反复完整粘贴；应覆盖到最新 head，避免模型继续依据过时 patch。
+   备注：同一个 PR 的 patch 不必在同一验证对话中反复完整粘贴；应覆盖到最新 head，避免模型继续依据过时 patch。
 
 11. **PR 合并后，用网页端 GPT 的 apps 功能做 Tech Lead 总结**
 
@@ -261,7 +256,7 @@
 - `FSD Core Contract`：把需求翻译成可实现、可测试、可审核的契约。
 - `Repo Impact Forecast`：预测 FSD 与当前仓库的真实触点、风险、文档和测试影响。
 - `Target State Bridge`：定义开发完成后用户 / 调用方应该看到什么状态，以及如何验证。
-- `Issue`：把契约、范围、任务拆解、文档更新预测、测试更新预测、验收条件和 Owner Decisions 固化；Owner Decision 的唯一规范位于 `prompts/issue_agent.md`。
+- `Issue`：把契约、范围、任务拆解、文档更新预测、测试更新预测、验收条件和需要 owner 判断的事项固化。
 - 条件性 Issue Readback：帮助 owner 在编码前理解高风险 Issue；不是第二套权威。
 - 仓库外 PR body Markdown：由 `.github/pull_request_template.md` 派生，不进入目标工作树或 commit；是 review 和通用 GitHub 发布能力的输入。
 - `FSD 完备性验收报告`：Issue 关闭前从主干代码倒查 Spec Unit 与 FSD 偏差的报告。
