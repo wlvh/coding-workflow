@@ -39,7 +39,7 @@ Unblocked: <可以继续的工作>
 Safe default: <未决定时的安全默认>
 Decision and rationale: <决定后写入；未决定时写 Pending>
 
-初始 Issue 中已经存在的 Owner Decision 由 Issue Agent 分配编号。开发或 review 中发现新的 Owner Decision 时，必须先由 Issue Agent 回写同一 Issue，再让依赖该决定的工作继续。未受阻工作继续推进。
+初始 Issue 中已经存在的 Owner Decision 由 Issue Agent 分配编号并写入。开发中发现新的 Owner Decision 时，由当前 Coding Agent 按本节格式写入同一 Issue；PR review 或 finding 验证中发现新的 Owner Decision 时，由负责综合分析和后续修复的 Codex 写入同一 Issue。提出 finding 的 reviewer 或 Claude Code 只提供事实、影响面和建议，不直接维护决策记录。依赖该决定的工作在记录写入前不得继续，未受阻工作继续推进。
 
-Owner 作出决定后，由当前执行者更新同一 `OD-xxx` 为 `DECIDED`，填写 `Decision and rationale`，再恢复受阻工作。PR body、review comment 和聊天只引用 `OD-xxx`，不得复制一份措辞不同的决策正文。
+Owner 作出决定后，由当前负责继续受阻工作的 Coding Agent 或 Codex 更新同一 `OD-xxx` 为 `DECIDED`，填写 `Decision and rationale`，再恢复受阻工作。PR body、review comment 和聊天只引用 `OD-xxx`，不得复制一份措辞不同的决策正文。
 ```
