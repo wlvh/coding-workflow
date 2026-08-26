@@ -210,9 +210,9 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
   Claude Code 重点判断影响面、同类入口和最小充分修复。模型身份不是争议裁决依据。
 - 审核出口：最终只使用 `PASS`、`REWORK_REQUIRED` 和 `OWNER_DECISION_REQUIRED`。证据不足但
   可能改变结论时归入 `REWORK_REQUIRED` 并说明待补证据；不再增加平行的规格或证据状态词。
-- Owner Decision 单一权威：`OWNER_DECISION_REQUIRED` 的适用条件、`OD-xxx` 记录格式和生命周期
-  只在 `zh/prompts/issue_agent.md` 的“Owner Decisions：唯一规范”中定义。README、Target State
-  Bridge、PR review prompt 和本决策只引用该规范并说明各自下一步动作，不建立平行定义。
+- Owner Decision：只有事实查清后仍必须由 owner 取舍时才使用；相关事项以可读自然语言保留
+  在 Issue 中，不规定固定表格或字段。普通实现缺陷、证据不足和未完成调查继续按
+  `REWORK_REQUIRED` 处理。
 - Issue Readback：用于编码前理解高风险 Issue，不形成第二套权威，也不设置额外批准状态。
   它不替代合并后基于最终代码的 Tech Lead 机制解读、用户可感知变化与文档检查、FSD 完备性
   验收、用户视角验收计划及必要时的实际执行。
