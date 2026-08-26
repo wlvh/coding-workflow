@@ -21,9 +21,11 @@
 9. Acceptance Checklist
 10. 风险、开放问题与 Owner Decisions
 
-## Owner Decisions 规则
+## Owner Decisions：唯一规范
 
-只有当某个问题不能由当前 FSD、Issue、代码、测试或仓库权威机械判断，而是必须由 owner 在范围、风险、成本、权限或失败语义之间作选择时，才创建 Owner Decision。普通实现缺陷、证据不足或尚未完成的调查不得包装成 Owner Decision。
+本节是本工作流对 `OWNER_DECISION_REQUIRED`、`OD-xxx` 记录格式和生命周期的唯一规范。README、Target State Bridge 和 PR review prompt 只能引用本节并说明各自的下一步动作，不得复制或改写一套平行定义。
+
+只有当事实已经查清，且问题不能由当前 FSD、Issue、代码、测试或仓库权威机械判断，而是必须由 owner 在范围、风险、成本、权限或失败语义之间作选择时，才创建 Owner Decision。普通实现缺陷、证据不足、尚未完成的调查或 Agent 不知道如何修复，都不得包装成 Owner Decision，应继续按 `REWORK_REQUIRED` 处理。
 
 Issue 的 `Owner Decisions` 节是唯一决策记录。每项使用稳定编号，并在同一记录中从 `OPEN` 更新为 `DECIDED`：
 
@@ -31,10 +33,13 @@ Issue 的 `Owner Decisions` 节是唯一决策记录。每项使用稳定编号�
 Status: OPEN / DECIDED
 Question: <owner 要决定什么>
 Options and trade-offs: <可选方案及代价>
+Evidence: <已经查清、足以支撑取舍的事实和证据>
 Blocks: <受阻 SU / 工作包 / 阶段>
 Unblocked: <可以继续的工作>
 Safe default: <未决定时的安全默认>
 Decision and rationale: <决定后写入；未决定时写 Pending>
 
-需要 owner 判断的事项不得在模型合意或工程摘要中静默消失。开发中新增的 Owner Decision 必须先回写同一 Issue，再让依赖该决定的工作继续；未受阻工作继续推进。PR body、review comment 和聊天只引用 `OD-xxx`，不得复制一份不同措辞的决策正文。
+初始 Issue 中已经存在的 Owner Decision 由 Issue Agent 分配编号。开发或 review 中发现新的 Owner Decision 时，必须先由 Issue Agent 回写同一 Issue，再让依赖该决定的工作继续。未受阻工作继续推进。
+
+Owner 作出决定后，由当前执行者更新同一 `OD-xxx` 为 `DECIDED`，填写 `Decision and rationale`，再恢复受阻工作。PR body、review comment 和聊天只引用 `OD-xxx`，不得复制一份措辞不同的决策正文。
 ```

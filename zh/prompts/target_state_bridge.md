@@ -55,16 +55,7 @@
 
 ## C. Owner Decision 候选
 
-只有当问题不能由 FSD、仓库事实、测试或既有权威机械判断，而是必须由 owner 在范围、风险、成本、权限或失败语义之间作选择时，才列为 Owner Decision 候选。普通证据缺口、实现缺陷或尚未完成的调查仍放在风险 / 开放问题中，不升级为 owner 决策。
+Owner Decision 的适用条件、`OD-xxx` 记录格式和生命周期只以 `issue_agent.md` 的“Owner Decisions：唯一规范”为准；必须读取该节，不得在 Bridge 中另建定义或平行记录。
 
-对每个候选说明：
-
-- Question：需要 owner 决定什么；
-- Options and trade-offs：可选方案与代价；
-- Blocks：受阻的 SU / 工作包 / 阶段；
-- Unblocked：可以继续的工作；
-- Safe default：未决定时的安全默认。
-
-Bridge 不创建平行决策记录；Issue Agent 在最终 Issue 的 `Owner Decisions` 节分配稳定 `OD-xxx` 编号并维护后续决定。局部 decision 不得默认阻塞整个 Issue。
-
+Bridge 只负责提供 Issue Agent 形成候选所需的仓库事实、可选方案及取舍、受影响范围和未决定时的安全默认。符合唯一规范的候选交给 Issue Agent 写入最终 Issue；不符合的仍保留为普通风险、开放问题、证据缺口或实现问题。局部候选不得默认阻塞整个 Issue。
 ```

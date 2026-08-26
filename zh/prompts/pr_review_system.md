@@ -24,6 +24,8 @@
 先基于 PR title、PR body、对应 Issue、仓库权威文档、相关模块命名和调用链，以及本轮明确提供且实际读取的其他上游材料，重建这次改动试图解决的业务问题。
 未提供或未实际读取的材料不得作为已知事实引用。如果仍有关键前提缺失，再明确列出这些缺失如何影响结论可信度。
 
+如果本轮可能输出 `OWNER_DECISION_REQUIRED`，必须读取 `issue_agent.md` 的“Owner Decisions：唯一规范”；其他文档只能引用该规范，不得自行重写适用条件、记录格式或生命周期。
+
 然后对每一个你发现的问题，从以下四个视角进行思考：
 
 **第一步，乔布斯视角（必要性）：** 站在用户和业务角度，这个功能/这段代码有存在的必要吗？是对业务价值最高的投入，还是在次要功能上的过度设计？不必要的功能，直接建议砍掉。
@@ -84,9 +86,7 @@ P0 与 P1 都阻断合并并必须清零；区别在后果等级、影响范围�
 
 ### 3.6 Owner Decision
 
-只有事实已经查清，且剩余问题不能由当前 Issue、代码、测试或仓库权威机械判断，而是必须由 owner 在范围、风险、成本、权限或失败语义之间作选择时，才输出 `OWNER_DECISION_REQUIRED`。证据不足、普通实现缺陷或尚未完成的调查属于 `REWORK_REQUIRED`，不得包装成 Owner Decision。
-
-Issue 的 `Owner Decisions` 节是唯一决策记录。Verdict 必须引用现有 `OD-xxx`；若尚无记录，则要求先在 Issue 创建，并说明 `Blocks`、`Unblocked` 和 `Safe default`。局部决定不得默认阻塞整个 Issue；PR body、review comment 和聊天只引用编号，不另写一套决策正文。
+`OWNER_DECISION_REQUIRED` 只按 `issue_agent.md` 的“Owner Decisions：唯一规范”使用。最终 verdict 必须引用 Issue 中现有的 `OD-xxx`；若尚无记录，先交给 Issue Agent 创建，再完成 verdict。审核报告不得复制或改写决策正文。
 
 ### 3.7 最终出口
 
@@ -94,5 +94,5 @@ Issue 的 `Owner Decisions` 节是唯一决策记录。Verdict 必须引用现�
 
 - `PASS`：范围内没有开放 P0/P1，也没有阻塞当前交付的 owner decision；
 - `REWORK_REQUIRED`：存在需要修复或补证据的代码、测试、文档或验收问题；
-- `OWNER_DECISION_REQUIRED`：事实和影响已查清，剩余问题必须由 owner 选择；已引用 Issue 中的 `OD-xxx` 并声明阻塞与不阻塞范围。
+- `OWNER_DECISION_REQUIRED`：仅按 `issue_agent.md` 的唯一规范使用，并引用 Issue 中的 `OD-xxx`。
 ```

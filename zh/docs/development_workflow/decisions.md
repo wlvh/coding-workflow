@@ -196,7 +196,7 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 
 ## DEC-008：开发工作流采用复杂度守恒与可退役实验机制
 
-- 状态：accepted；其中条件性 Issue Readback 和 Owner Decision 输出契约为 `experimental`。
+- 状态：accepted；其中条件性 Issue Readback 和 Owner Decision 机制为 `experimental`。
 - 日期：2026-08-24 UTC
 - 适用范围：`zh/docs/development_workflow/README.md` 及其引用的 prompts、双语模板与开发审核
   规则；不改变 `workflow-docs-sync` 的运行时、CLI 或发布边界。
@@ -210,8 +210,9 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
   Claude Code 重点判断影响面、同类入口和最小充分修复。模型身份不是争议裁决依据。
 - 审核出口：最终只使用 `PASS`、`REWORK_REQUIRED` 和 `OWNER_DECISION_REQUIRED`。证据不足但
   可能改变结论时归入 `REWORK_REQUIRED` 并说明待补证据；不再增加平行的规格或证据状态词。
-- Owner Decision：必须说明要决定什么、阻塞与不阻塞哪些工作，以及未决时的安全默认。取证
-  路径受限时必须明确告诉 owner，由 owner 决定是否调整范围、权限或继续保持安全默认。
+- Owner Decision 单一权威：`OWNER_DECISION_REQUIRED` 的适用条件、`OD-xxx` 记录格式和生命周期
+  只在 `zh/prompts/issue_agent.md` 的“Owner Decisions：唯一规范”中定义。README、Target State
+  Bridge、PR review prompt 和本决策只引用该规范并说明各自下一步动作，不建立平行定义。
 - Issue Readback：用于编码前理解高风险 Issue，不形成第二套权威，也不设置额外批准状态。
   它不替代合并后基于最终代码的 Tech Lead 机制解读、用户可感知变化与文档检查、FSD 完备性
   验收、用户视角验收计划及必要时的实际执行。
@@ -223,7 +224,7 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 每项实验机制累计 3 个适用 PR 后单独复盘：
 
 - Issue Readback 的适用 PR：实际执行了编码前 Readback；
-- Owner Decision 契约的适用 PR：实际出现需要 owner 作出的选择。
+- Owner Decision 机制的适用 PR：实际出现需要 owner 作出的选择。
 
 复盘判断机制是否改变下一步动作、是否降低错误实施或无效等待，以及额外成本是否高于收益。
 结论只能为 `PROMOTE`、`MODIFY` 或 `RETIRE`。从未触发或触发后未改变下一步动作的机制默认

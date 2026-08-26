@@ -22,8 +22,10 @@ for workflow complexity conservation and the review and retirement rules for exp
 
 4. Turn the FSD, forecast, and bridge into one executable issue contract. Owner decisions must remain explicit.
    The Issue is the single implementation entry so the Coding Agent does not receive several drifting upstream
-   instruction sets in parallel. The Issue's `Owner Decisions` section is also the sole decision record; PR
-   bodies, review comments, and chats reference stable `OD-xxx` IDs rather than restating decisions.
+   instruction sets in parallel. The sole normative definition of `OWNER_DECISION_REQUIRED`, the `OD-xxx`
+   record, and its lifecycle lives in
+   [`zh/prompts/issue_agent.md`](../../../zh/prompts/issue_agent.md); the overview, Bridge, and review prompts
+   only reference it.
 
 5. Review the issue through two orthogonal lenses before implementation: requirement and acceptance closure,
    and engineering volume and minimal sufficiency. The Issue Agent from step 4 owns the final edit; the lenses
@@ -55,10 +57,8 @@ for workflow complexity conservation and the review and retirement rules for exp
    The formal reviewer must use exactly three final outcomes:
    - `PASS`: no P0/P1 problem;
    - `REWORK_REQUIRED`: code, documentation, testing, or evidence still needs correction;
-   - `OWNER_DECISION_REQUIRED`: the facts are established and the remaining question is a genuine owner choice
-     about scope, risk, cost, permission, or failure semantics. The review references an Issue `OD-xxx` record
-     and identifies blocked and unblocked work. Missing evidence or an ordinary implementation defect remains
-     `REWORK_REQUIRED`.
+   - `OWNER_DECISION_REQUIRED`: use only under the canonical Owner Decisions rule in
+     `zh/prompts/issue_agent.md`, and cite the Issue's `OD-xxx`.
 
 10. When review finds a problem, verify it before changing code. Codex focuses on whether the problem is real,
     its trigger path, reproduction, and severity; Claude Code focuses on impact, adjacent entrypoints, whether
@@ -68,8 +68,8 @@ for workflow complexity conservation and the review and retirement rules for exp
     Finding verification uses the same three outcomes:
     - `PASS`: the finding is refuted or does not constitute P0/P1;
     - `REWORK_REQUIRED`: the finding is confirmed, or evidence is insufficient to rule out P0/P1;
-    - `OWNER_DECISION_REQUIRED`: the facts are established and the remaining scope or risk choice belongs to the
-      owner; the result references an Issue `OD-xxx` and states blocked and unblocked work.
+    - `OWNER_DECISION_REQUIRED`: use only under the canonical Owner Decisions rule in
+      `zh/prompts/issue_agent.md`, and cite the Issue's `OD-xxx`.
 
     The operational sequence is:
 
@@ -89,15 +89,13 @@ for workflow complexity conservation and the review and retirement rules for exp
        documentation, review/fix history, PR body, and the head commit.
     7. After every repair, start a fresh Codex conversation and rerun the full step-9 review on the new exact
        head. Repeat until `PASS`; P2 findings may remain but must be recorded.
-    8. On `OWNER_DECISION_REQUIRED`, create or update the Issue's stable `OD-xxx` record. Only its `Blocks`
-       scope pauses; `Unblocked` work continues. After the owner decision is written back into the same Issue
-       record, resume the blocked work, update the PR, and run a fresh step-9 review.
+    8. On `OWNER_DECISION_REQUIRED`, have the Issue Agent create or update the canonical `OD-xxx` under
+       `zh/prompts/issue_agent.md`. Pause only the record's `Blocks`; let `Unblocked` work continue. After the
+       owner decision is written back into the same record, resume the blocked work, update the PR, and run a
+       fresh step-9 review.
 
-    An Owner Decision is not a global stop switch and does not substitute for investigation. Each decision stays
-    in one Issue record with `OPEN` or `DECIDED` status, the question, options and trade-offs, blocked and
-    unblocked work, the safe default, and the final decision and rationale. Dependent code does not proceed until
-    a newly discovered decision is added to the Issue. PR bodies and comments reference the ID rather than
-    creating parallel decision text.
+    This step describes only how an Owner Decision enters the review and repair loop. It does not redefine the
+    decision criteria, record shape, or lifecycle.
 
 11. After merge, use the full Tech Lead walkthrough to explain the delivered implementation from final code
     evidence, then assess user-visible changes, how users employ the result, and whether `AGENTS.md` and linked
@@ -116,8 +114,8 @@ for workflow complexity conservation and the review and retirement rules for exp
 - `FSD Core Contract`: a requirement contract that can be implemented, tested, and reviewed.
 - `Repo Impact Forecast`: predicted repository touchpoints, risks, documentation, and test impact.
 - `Target State Bridge`: target user- or caller-visible state and its validation method.
-- `Issue`: the single executable development contract, including stable `OD-xxx` owner-decision records and
-  work-package blocking scope.
+- `Issue`: the single executable development contract. Its Owner Decisions section is maintained under the sole
+  normative rule in `zh/prompts/issue_agent.md`.
 - Conditional issue readback: owner-facing understanding for high-risk issues; it is not a second authority
   source and does not replace post-merge implementation explanation or user-view acceptance.
 - External PR body Markdown: temporary review and publishing input derived from the tracked PR template; it
@@ -204,9 +202,12 @@ than claiming neutrality. Issue and finding cross-checks remain dual-model but u
 formal PR review remains a separate, detailed step. Model identity is not the disagreement authority. The
 review loop uses only `PASS`, `REWORK_REQUIRED`, and `OWNER_DECISION_REQUIRED` as final outcomes.
 
-Conditional issue readback and the owner-decision contract are experimental and reviewed after three applicable
-PRs with `PROMOTE`, `MODIFY`, or `RETIRE` as the outcomes. Pre-coding readback complements rather than replaces
-post-merge implementation explanation, documentation review, FSD closure checking, and user-view acceptance.
+The canonical Owner Decision definition and record lifecycle live only in `zh/prompts/issue_agent.md`;
+the Bridge, workflow overview, and review prompts reference that source rather than duplicating it.
+Conditional issue readback and the Owner Decision mechanism are experimental and reviewed after three
+applicable PRs with `PROMOTE`, `MODIFY`, or `RETIRE` as the outcomes. Pre-coding readback complements rather
+than replaces post-merge implementation explanation, documentation review, FSD closure checking, and
+user-view acceptance.
 
 Key implementation files:
 
