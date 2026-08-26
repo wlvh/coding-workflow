@@ -185,7 +185,7 @@
    5. 将 Claude Code 的意见交给 Codex 输出综合分析。仍有分歧时，只交换代码、测试、复现证据和 Issue 契约，最多三轮；仍证据不足则保持 `REWORK_REQUIRED` 并列明补证据动作，不以模型身份裁决。
    6. 综合结论为 `REWORK_REQUIRED` 时，在 Codex 验证对话中输入“按照综合分析进行修复”；修复后复用第 8 步 PR 提交短 prompt，更新代码、测试、文档、Review / Fix Record 和 PR body，并推送新 head。
    7. 每次修复后都新开 Codex 对话，再按第 9 步审核最新 exact head；重复到 `PASS`。P2 可以接受，但必须记录。
-   8. 任何阶段出现 `OWNER_DECISION_REQUIRED` 时，先按 prompts/issue_agent.md 的唯一规范由 Issue Agent 创建或更新 `OD-xxx`；只暂停记录中的 `Blocks`，`Unblocked` 继续。Owner 决定写回同一记录后，恢复受阻工作、更新 PR，并重新执行第 9 步审核。
+   8. 任何阶段出现 `OWNER_DECISION_REQUIRED` 时，由当前阶段实际存在的主执行者按 prompts/issue_agent.md 的唯一规范写入或更新 `OD-xxx`：Coding 阶段由当前 Coding Agent 负责；review / finding 验证阶段由负责综合分析和后续修复的 Codex 负责。只暂停记录中的 `Blocks`，`Unblocked` 继续。Owner 决定后仍由当前负责继续受阻工作的 Coding Agent 或 Codex 更新同一记录，再恢复受阻工作、更新 PR，并重新执行第 9 步审核。
 
    Finding 闭合：在既有 PR review / fix record 和 GitHub thread 中保留来源 ID、判断与关闭证据；不得让未解决 finding 静默消失，也不另建一套重复 reconciliation ledger。
 
