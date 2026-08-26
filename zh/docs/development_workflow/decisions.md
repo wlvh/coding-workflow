@@ -193,3 +193,45 @@ Case A 对“部分过时旧文档、共同虚构能力、验证层级膨胀”�
 - 实现边界：不修改 `sync_docs.py`、installer 或 CLI schema，不新增 anchor/policy/Markdown
   parser、repository ledger、receipt、run state 或 claim-level binding。
 - 英文状态：双语下游模板已等价同步；canonical Skill、eval 与决策继续以中文路径为权威。
+
+## DEC-008：开发工作流采用复杂度守恒与可退役实验机制
+
+- 状态：accepted；其中条件性 Issue Readback 和 Owner Decision 机制为 `experimental`。
+- 日期：2026-08-24 UTC
+- 适用范围：`zh/docs/development_workflow/README.md` 及其引用的 prompts、双语模板与开发审核
+  规则；不改变 `workflow-docs-sync` 的运行时、CLI 或发布边界。
+- 复杂度守恒：新增或扩展工作流机制时，必须说明它改变谁的下一步动作、承担什么独立风险、
+  现有机制为何不足，以及它替代、合并、缩小或删除什么；能扩展现有机制时不建立平行机制。
+- 诚实记账：本次改造是经 owner 接受的净复杂度增加。它保留双模型协作并改变分工，恢复正式
+  详细 PR 审核、合并后实现解读、文档检查、FSD 完备性验收和用户视角验收，同时增加条件性
+  Issue Readback、显式 Owner Decisions 和测试复用规则。
+- 双模型边界：Issue 阶段使用需求完成 / 验收与工程量 / 最小充分两个镜头，由 Issue Agent
+  统一执笔；正式 PR 审核仍是独立的详细步骤。Finding 阶段由 Codex 重点核实事实与复现，
+  Claude Code 重点判断影响面、同类入口和最小充分修复。模型身份不是争议裁决依据。
+- 审核出口：最终只使用 `PASS`、`REWORK_REQUIRED` 和 `OWNER_DECISION_REQUIRED`。证据不足但
+  可能改变结论时归入 `REWORK_REQUIRED` 并说明待补证据；不再增加平行的规格或证据状态词。
+- Owner Decision：只有事实查清后仍必须由 owner 取舍时才使用；相关事项以可读自然语言保留
+  在 Issue 中，不规定固定表格或字段。普通实现缺陷、证据不足和未完成调查继续按
+  `REWORK_REQUIRED` 处理。
+- Issue Readback：用于编码前理解高风险 Issue，不形成第二套权威，也不设置额外批准状态。
+  它不替代合并后基于最终代码的 Tech Lead 机制解读、用户可感知变化与文档检查、FSD 完备性
+  验收、用户视角验收计划及必要时的实际执行。
+- 测试复杂度：优先复用、参数化和扩展 scenario；只有复现已确认缺陷、保护已登记不变量或
+  覆盖现有测试无法到达的真实边界时，才把对抗探针晋升为长期测试。
+
+### 实验机制重审与退役
+
+每项实验机制累计 3 个适用 PR 后单独复盘：
+
+- Issue Readback 的适用 PR：实际执行了编码前 Readback；
+- Owner Decision 机制的适用 PR：实际出现需要 owner 作出的选择。
+
+复盘判断机制是否改变下一步动作、是否降低错误实施或无效等待，以及额外成本是否高于收益。
+结论只能为 `PROMOTE`、`MODIFY` 或 `RETIRE`。从未触发或触发后未改变下一步动作的机制默认
+退役；继续保留必须有新的具体风险证据。
+
+- 与 DEC-006 / DEC-007 的关系：把直接风险覆盖和可退役知识原则应用到开发工作流自身；不改变
+  两项决策对 `workflow-docs-sync` 与下游模板的既有语义。
+- 实现边界：本轮只修改现有文档和 prompt，不新增 prompt 文件、ledger、run state、自动化
+  workflow 或机器 parser。
+- 英文状态：对外语义摘要同步到英文 development workflow；中文决策文件继续是权威。

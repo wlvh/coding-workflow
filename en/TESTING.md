@@ -74,6 +74,25 @@ verify its implementation and command in the target repository.
 6. A documentation-only gate proves only the structure, parsing, or alignment it actually checks; it is not
    runtime behavior validation.
 
+### Long-lived Test Selection and Adversarial Probes
+
+Choose the smallest sufficient long-lived coverage in this order before adding a new test:
+
+1. reuse an existing test;
+2. parameterize an existing contract or scenario;
+3. extend an existing end-to-end composition path;
+4. only then add a new test function, test file, fixture family, or runner.
+
+Promote an adversarial probe into the permanent suite only when it reproduces a confirmed defect, protects a
+registered architecture invariant, or covers a real boundary that existing tests cannot reach. Keep other
+one-off forensic probes in PR review evidence instead of the permanent suite. Prefer one general rule and
+parameterized coverage for a failure class over a separate test for every adjacent example.
+
+For changes that cross modules, persistence boundaries, or external side effects, identify the scenario that
+covers the real combined path. Independently passing unit and contract layers do not prove composition
+closure. A new fixture system or execution entrypoint is itself maintenance complexity and must identify the
+independent risk that existing mechanisms cannot carry.
+
 <!-- project-fill: Map code, configuration, schema, user behavior, artifact, and documentation changes to evidence levels using actual project risk, then remove this marker. -->
 
 ## 5. Side Effects and Isolation
