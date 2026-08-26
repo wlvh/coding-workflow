@@ -89,10 +89,12 @@ for workflow complexity conservation and the review and retirement rules for exp
        documentation, review/fix history, PR body, and the head commit.
     7. After every repair, start a fresh Codex conversation and rerun the full step-9 review on the new exact
        head. Repeat until `PASS`; P2 findings may remain but must be recorded.
-    8. On `OWNER_DECISION_REQUIRED`, have the Issue Agent create or update the canonical `OD-xxx` under
-       `zh/prompts/issue_agent.md`. Pause only the record's `Blocks`; let `Unblocked` work continue. After the
-       owner decision is written back into the same record, resume the blocked work, update the PR, and run a
-       fresh step-9 review.
+    8. On `OWNER_DECISION_REQUIRED`, the active execution owner writes or updates the canonical `OD-xxx` under
+       `zh/prompts/issue_agent.md`: the current Coding Agent does so during implementation, while the Codex
+       conversation responsible for synthesis and repair does so during review or finding verification. Pause
+       only the record's `Blocks`; let `Unblocked` work continue. After the owner decision, the Coding Agent or
+       Codex that will resume the blocked work updates the same record, resumes the work, updates the PR, and
+       runs a fresh step-9 review.
 
     This step describes only how an Owner Decision enters the review and repair loop. It does not redefine the
     decision criteria, record shape, or lifecycle.
