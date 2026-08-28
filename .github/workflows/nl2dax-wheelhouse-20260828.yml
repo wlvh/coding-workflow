@@ -49,6 +49,7 @@ jobs:
           referencing==0.37.0
           requests==2.33.1
           rpds-py==0.30.0
+          setuptools==82.0.1
           tomli==2.4.1
           typing-extensions==4.15.0
           urllib3==2.7.0
@@ -60,8 +61,8 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           wheels = sorted(Path('wheelhouse').glob('*.whl'))
-          if len(wheels) < 28:
-              raise SystemExit(f'expected at least 28 wheels, got {len(wheels)}')
+          if len(wheels) < 29:
+              raise SystemExit(f'expected at least 29 wheels, got {len(wheels)}')
           print('\n'.join(path.name for path in wheels))
           PY
 
