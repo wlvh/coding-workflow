@@ -1,0 +1,76 @@
+name: Build nl2dax public wheelhouse
+
+on:
+  push:
+    branches:
+      - agent/nl2dax-wheelhouse-20260828
+    paths:
+      - .github/workflows/nl2dax-wheelhouse-20260828.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build-wheelhouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Download exact public wheels
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > requirements.txt <<'REQ'
+          attrs==26.1.0
+          azure-core==1.41.0
+          azure-identity==1.25.3
+          certifi==2026.4.22
+          cffi==2.0.0
+          charset-normalizer==3.4.7
+          colorama==0.4.6
+          cryptography==48.0.0
+          exceptiongroup==1.3.1
+          idna==3.13
+          iniconfig==2.3.0
+          jsonschema==4.26.0
+          jsonschema-specifications==2025.9.1
+          msal==1.36.0
+          msal-extensions==1.3.1
+          packaging==26.2
+          pluggy==1.6.0
+          pycparser==3.0
+          pygments==2.20.0
+          pyjwt==2.12.1
+          pytest==9.0.3
+          python-dotenv==1.2.2
+          referencing==0.37.0
+          requests==2.33.1
+          rpds-py==0.30.0
+          tomli==2.4.1
+          typing-extensions==4.15.0
+          urllib3==2.7.0
+          REQ
+          python -m pip download \
+            --dest wheelhouse \
+            --only-binary=:all: \
+            --requirement requirements.txt
+          python - <<'PY'
+          from pathlib import Path
+          wheels = sorted(Path('wheelhouse').glob('*.whl'))
+          if len(wheels) < 28:
+              raise SystemExit(f'expected at least 28 wheels, got {len(wheels)}')
+          print('\n'.join(path.name for path in wheels))
+          PY
+
+      - name: Upload dependency-only wheelhouse
+        uses: actions/upload-artifact@v4
+        with:
+          name: nl2dax-wheelhouse-py313-linux-x86_64
+          path: |
+            wheelhouse/
+            requirements.txt
+          retention-days: 1
+          if-no-files-found: error
