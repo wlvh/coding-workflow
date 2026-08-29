@@ -40,6 +40,12 @@ identity 时 `BLOCKER`。成功后仍走一条流程，不建立本地/remote/ho
 open/create pull request 时为 true；未提及时为 false。true 只创建 Draft，不标 Ready、不合并。
 除不可恢复的 `BLOCKER` 外，不向用户索要内部路径、branch、SHA、命令、Agent 数量或顺序。
 
+PR 意图 true 时还必须在编辑前得到可发布的远端 `base_ref`：无 ref 的 GitHub URL 使用已解析的
+default branch；显式 tree ref 只在它是该仓库 branch 时使用同一 branch；tag、裸 commit 或其他
+detached ref 没有可发布 base，远端写入前 `Publication: PR_BLOCKED`。本地来源优先使用
+HEAD 所属且远端同 SHA 的 branch；只有 `target_head` 精确等于远端 default branch SHA 时才可
+回退 default。该 `base_ref` 只是本轮事实，不写状态文件。
+
 ### 本地原工作树保护
 
 本地来源先固定调用时 `HEAD^{commit}`；无 commit 时 `BLOCKER`，不要求用户 commit/stash。
@@ -68,9 +74,14 @@ stage 输出捕获 index 变化。任一差异只证明并发变化：逐项标 
 路径隔离承担。本地最终报告包含“本次同步与 PR 基于调用时的 committed HEAD；原工作树中的
 未提交修改未进入调查或 PR。”
 
-PR 意图 false 时，仅当当前工作树满足 prepare dirty allowlist 且不会形成 editable path 的
-index/worktree 分叉才直接执行；否则从同一调用时 HEAD 建外部 clean worktree完整重跑，不要求
-用户清理。
+PR 意图 false 时，仅当当前工作树满足 prepare dirty allowlist、editable path 的真实 index 与
+`target_head` 一致、且 canonical gate 不依赖或改写真实 index，才可直接执行。直跑前在仓库外
+保存 `git ls-files --stage -z` 原始输出；prepare 后创建仓库外临时 `GIT_INDEX_FILE`，以
+`git read-tree "$target_head"` 初始化。Candidate seal 的 `git add`、cached diff、
+`write-tree`、tree 断言和 final check 全部继承该 alternate index，绝不写用户真实 index。
+每条测试前后也用 alternate index 断言 candidate；若测试本身需要真实 index 语义，则改用外部
+clean checkout。最终删除临时 index 并逐 byte 重比真实 staged entries；差异时停止并报告并发
+变化。其他情况从同一调用时 HEAD 建外部 clean worktree 完整重跑，不要求用户清理。
 
 ### 固定上游并 prepare
 
@@ -97,10 +108,14 @@ python3 <skill-root>/scripts/sync_docs.py prepare \
 可重复结果和必要历史重建事实；旧文档和近期 diff 都不能自证。
 
 - 描述性事实须有项目证据；规范性政策可由 scoped instruction、accepted decision、团队配置或
-  持久化 owner decision 支持。配置只证明 enforcement，不自动 supersede 政策；冲突登记
-  finding/open decision。个人偏好未被持久化时不进入项目。
+  持久化 owner decision 支持。混合语句拆分核验，禁止把事实改写成政策或把政策伪装成实现事实。
+  配置只证明 enforcement，不自动 supersede 政策；同类政策按显式 supersession 与既有
+  authority/scope 裁决。冲突登记 finding/open decision；权威仍不明时保留原文和已检查来源。
+  个人偏好未被持久化时不进入项目。
 - 任何语义编辑前登记 finding：唯一 ID、`BLOCKER/WARN/NOTE`、证据、风险、最小修复边界。
   同根因合并，多文档共同虚构能力必须是 BLOCKER，不得事后倒填。
+- BLOCKER 表示候选会错误、虚构、越权、不可复现或遗漏关键风险，必须修复；WARN 表示实质性
+  质量/维护风险，除非需要 owner 决策否则修复；NOTE 是不改变可交付性的非阻断观察。
 - 从 finding 提取具体路径、命令、能力、字段、政策名与 superseded 术语，做定向 `git grep`
   或等价 tracked-file 搜索。完整核对九份核心文档，但不无条件审计全仓 Markdown/配置；范围外
   漂移只记录 exact path、snippet、风险和建议，由 owner 决定扩 PR、拆 PR 或开 Issue。
@@ -150,7 +165,8 @@ unchanged sync checker 的 dirty allowlist 更窄，防止 check 消费 tree 外
 显式 stage 后，用 `git diff --cached --name-only -z` NUL-safe 确认 staged paths 精确等于
 changed subset，运行 `git diff --cached --check` 与 `git diff --exit-code`，并从 NUL status
 确认无 unexpected untracked/范围外 dirty。记录固定身份事实：target head、upstream SHA、
-language、changed paths、`candidate_tree="$(git write-tree)"`。
+language、changed paths、`candidate_tree="$(git write-tree)"`，以及 PR 意图 true 时的
+`base_ref`。
 
 不创建 candidate JSON、patch SHA contract、evidence manifest、receipt 或 repository-local
 candidate file。tests、review、final check 都绑定该 tree；每个 gate 前后执行
@@ -207,22 +223,29 @@ CHANGES_REQUESTED 不自动推导 REJECTED。Tests、Review、Publication 不互
 否则每条事实只标 DISCLOSED 或 OWNER_ACCEPTED，不另建 schema。不输出 Overall、Merge readiness、
 Orchestrator result 或聚合 PASS/PARTIAL/FAIL。
 
+状态轴独立只限制报告推导，不豁免动作前置条件。PR 意图 true 且 Candidate 不是 CHECKED 时，
+不得 commit、push 或创建 PR，Publication 必须 PR_BLOCKED。若偏差已产生远端对象，仍按读回事实
+报告 Publication，并在 Process deviations 明确写出越过的 gate；后续成功不能追溯抹掉违规。
+
 Publication 优先级唯一：PR 意图 false 始终 NOT_REQUESTED；PR 意图 true 且九文档零 diff 才
 NO_CHANGES；其余请求按远端事实为 DRAFT_VERIFIED 或 PR_BLOCKED。随后报告固定身份、证据、每次
 test attempt、review finding/关闭证据、check 边界与原工作树复核。
 
 ### Commit、readback 与恢复
 
-PR 意图 true 且有 diff 时，只有 sealed candidate 通过必要 tests、所需 review、final check、
-cleanup 和发布前原工作树复核后才：
+PR 意图 true 且有 diff 时，只有 Candidate CHECKED、必要 tests、所需 review、cleanup 和发布前
+原工作树复核都通过后才：
 
 1. 用 sealed index commit；断言 parent 等于 target head，`HEAD^{tree}` 等于 reviewed candidate。
-2. 解析 remote/default base/唯一 head branch，push，只创建 Draft PR。
-3. 读回 PR number、base、head、head SHA、能取得时的 head tree、Draft 状态、changed files；
+2. 任何远端写入前重新解析 `base_ref`，要求其 SHA 仍等于 `target_head`，并 NUL-safe 证明
+   candidate 相对该 base 的 changed files 精确等于 sealed subset；不一致即 PR_BLOCKED。
+3. push 唯一 head branch，并以 `base_ref` 创建 Draft PR；不得静默改用 default base。
+4. 读回 PR number、base、head、head SHA、能取得时的 head tree、Draft 状态、changed files；
    全部一致才 DRAFT_VERIFIED。
 
-仓库外 PR body 记录 identity、changed files、findings、exact tests、review、check、五条状态、
-known limits、rollback 和本地原工作树边界；sync checker 不参与 Git/GitHub 发布。
+仓库外 PR body 记录 target head、base ref、candidate tree、changed files、findings、exact
+tests、review、check、五条状态、known limits、rollback 和本地原工作树边界；sync checker
+不参与 Git/GitHub 发布。
 
 - **Readback unavailable**：403、GitHub 5xx、read permission 不足或 metadata 暂不可读。保留
   CHECKED candidate、commit、branch 和可能存在的 Draft；不回滚、不称 verified，PR_BLOCKED，
