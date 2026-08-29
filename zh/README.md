@@ -23,26 +23,28 @@
 
 ## 默认行为
 
-- 目标仓库：默认使用 Codex 当前工作目录所属的 Git 根；只有当前目录不在 Git 仓库中时才询问。
+- 目标仓库：显式本地路径优先，其次是显式 GitHub repository URL，否则使用 Codex 当前工作目录
+  所属的 Git 根。安装 Skill 的来源 URL 不会被误当成目标。
 - 语言：显式 `zh` / `en` 优先；否则中文请求使用 `zh`，其他语言请求使用 `en`。
 - PR：明确说不创建 PR 时不创建；提到 PR、提 PR、创建/提交 PR 或 open/create pull request 时
   创建 draft PR；未提及则不创建。永不自动标记 Ready 或合并。
-- 工作树：请求 PR 时，无论原工作树是否 clean，都从调用时 committed HEAD 在仓库外创建 clean
-  worktree 和唯一新分支。Skill 不改动原工作树中的普通、staged、untracked 或 ignored 内容，也不
-  stash、clean、commit 或覆盖用户修改；最终报告前会重新比较 NUL 分隔的 status 与 staged
-  entries，并只对调用前 status/ignored 枚举出的非 clean 路径复核类型、mode、普通文件 SHA-256
-  或 symlink target，不扫描整棵仓库，也不比较原始 Git index 文件。调用期间新增的 ignored 路径
-  不在原集合内；其他差异只证明发生了并发变化，不归因于 Agent。
+- 工作树：本地目标请求 PR 时，从调用时 committed HEAD 在仓库外创建 clean worktree 和唯一
+  新分支。最终报告前逐 byte 比较调用前的 NUL status 与 staged entries，并只对调用前 status
+  路径复核类型、mode、普通文件 SHA-256 或 symlink target，从而覆盖 dirty tracked 内容被同状态
+  覆写的事故。Skill 不枚举、读取或哈希 ignored path；调用前已有 `.env`、venv、
+  `node_modules`、cache 等 ignored 内容的并发变化属于明确剩余风险，由全部执行只发生在外部
+  worktree 的路径隔离承担。GitHub URL 会物化真实 clone/fetch checkout，并报告原工作树保护
+  `NOT_APPLICABLE`。
 
-最终报告会明确写：
+本地目标的最终报告会明确写：
 
 ```text
 本次同步与 PR 基于调用时的 committed HEAD；原工作树中的未提交修改未进入调查或 PR。
 ```
 
-仓库没有 commit 时会报告 `BLOCKER`。同步已经通过、但 remote、认证、push 权限或 PR 创建
-失败时，保留外部 worktree、分支、commit 和仓库外 PR body，并报告
-`Documentation sync: PASS`、`Publication: PR_BLOCKED`、`Overall: PARTIAL`，不会谎称 PR 已创建。
+仓库没有 commit 时会报告 `BLOCKER`。最终只用 Candidate、Tests、Review、Process deviations
+和 Publication 五条独立事实；不会输出 Overall 或聚合 PASS/PARTIAL/FAIL。发布读回不可用或
+确认不一致都会保留本地正确 candidate 并报告 `Publication: PR_BLOCKED`，但采用不同的恢复处置。
 
 ## 仓库自带安装器（可选）
 

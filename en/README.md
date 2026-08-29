@@ -25,28 +25,28 @@ turn.
 
 ## Defaults
 
-- Target: use the Git root containing Codex's current working directory. Ask only when the current directory
-  is not in a Git repository.
+- Target: prefer an explicit local path, then an explicit GitHub repository URL; otherwise use the Git root
+  containing Codex's current working directory. A Skill installation source URL is not treated as the target.
 - Language: an explicit `zh` / `en` wins; otherwise a Chinese request selects `zh` and any other language
   selects `en`.
 - PR: an explicit request not to create a PR selects false. Mentioning PR, opening, creating, or submitting a
   pull request selects true. No mention selects false. The Skill never marks a PR Ready or merges it.
-- Worktree: when a PR is requested, always create an external clean worktree and a unique branch from the
-  committed HEAD captured at invocation. The Skill does not change ordinary, staged, untracked, or ignored
-  content in the original worktree, or stash, clean, commit, or overwrite user changes there.
-  Before the final report, it compares the captured NUL-delimited status and staged entries, then rechecks
-  type, mode, regular-file SHA-256, or symlink target only for non-clean paths enumerated by the invocation-time
-  status and ignored-path snapshot. It does not hash the whole repository or compare raw Git index-file bytes.
-  New ignored paths created concurrently are outside the original set; any other difference proves concurrent
-  change, not that the Agent caused it.
+- Worktree: for a local target and requested PR, create an external clean worktree and unique branch from the
+  committed HEAD captured at invocation. Before the final report, byte-compare the captured NUL-delimited
+  status and staged entries, then recheck type, mode, regular-file SHA-256, or symlink target only for paths in
+  the invocation-time status. This still detects a dirty tracked file overwritten without changing its status
+  code. The Skill does not enumerate, read, or hash ignored paths. Concurrent changes to pre-existing ignored
+  content such as `.env`, virtual environments, `node_modules`, and caches are an accepted residual risk
+  carried by running all work only in the external worktree. A GitHub URL is materialized as a real clone/fetch
+  checkout and reports original-worktree protection as `NOT_APPLICABLE`.
 
-The final report states that the sync and PR use the invocation-time committed HEAD and exclude uncommitted
-changes from the original worktree.
+For a local target, the final report states that the sync and PR use the invocation-time committed HEAD and
+exclude uncommitted changes from the original worktree.
 
-A repository with no commit is a `BLOCKER`. If documentation sync passes but the remote, authentication,
-push permission, or PR creation fails, the Skill preserves the external worktree, branch, commit, and
-out-of-repository PR body. It reports `Documentation sync: PASS`, `Publication: PR_BLOCKED`, and
-`Overall: PARTIAL` instead of claiming that a PR exists.
+A repository with no commit is a `BLOCKER`. The final summary reports only five independent facts:
+Candidate, Tests, Review, Process deviations, and Publication; it has no Overall or aggregate
+PASS/PARTIAL/FAIL. Both unavailable readback and confirmed remote mismatch preserve the correct local
+candidate and report `Publication: PR_BLOCKED`, with distinct recovery handling.
 
 ## Repository installer (optional)
 
