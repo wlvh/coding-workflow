@@ -8,6 +8,10 @@ dependencies, authentication, configuration, artifacts, side effects, extension 
 debt change. Every claim must come from current implementation, configuration, tests, committed artifacts,
 or reproducible evidence.
 
+Choose prose, a responsibility table, a data flow, state transitions, an object lifecycle, or another form
+according to the structure that is hardest to understand in this project. None of these forms is required;
+use one only when it resolves a specific ambiguity.
+
 <!-- project-fill: Describe the system boundary, exclusions, and project-specific update triggers, then remove this marker. -->
 
 ## 1. System Purpose
