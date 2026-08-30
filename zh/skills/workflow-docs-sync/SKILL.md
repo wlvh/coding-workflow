@@ -126,7 +126,10 @@ python3 <skill-root>/scripts/sync_docs.py prepare \
   active marker。Architecture 查入口/调用链/边界/数据流/错误/副作用；Capability 查 UI/API/
   tests/限制/anchor；Testing 查真实 gate；Governance 最后查 AGENTS、Checklist、SOP、PR
   template。四项是覆盖维度，不是固定 Agent 拓扑；通用模板不写 docs-sync 的 pin、seal、review
-  隔离或发布实现。
+  隔离或发布实现。`TESTING.md` 中针对 Architecture 与 Capability 声明的证据映射，在相关声明
+  稳定后收口；测试从事实重建开始就是调查证据。后置维度发现前置声明错误时，回到该声明的
+  权威文档修复，再重新核对受影响的下游文档；发现重复定义时，以权威文档为准，把派生副本
+  收敛为引用。不得只在派生文档中打补丁或建立第二套修正规则。
 
 新增 marker、alias、机器状态、parser、兼容入口或控制机制前，finding 必须证明独立风险、真实
 消费者、可复现失败和现有机制不足；能扩展现有机制时不另造同义入口。
@@ -255,5 +258,8 @@ tests、review、check、五条状态、known limits、rollback 和本地原工�
   PR_BLOCKED。
 
 无 remote/auth/push/PR 权限时也保留 checkout、branch、commit、仓库外 body，输出已解析身份的
-recovery command，不猜未知值。只有 DRAFT_VERIFIED、原工作树两次复核无差异时才可移除外部
-checkout；任何原工作树差异或 PR_BLOCKED 都保留。
+recovery command，不猜未知值。只有本轮所需 gate 已完成、原工作树复核无差异（适用时），且
+外部 checkout 不再承载无法从固定 SHA 重新得到的唯一工作成果时，才可移除它：
+`DRAFT_VERIFIED`、`NO_CHANGES`，以及 `NOT_REQUESTED` 且 changed subset 为空时可清理。
+`PR_BLOCKED`、原工作树出现差异、候选尚未闭合，或 `NOT_REQUESTED` 且 changed subset 非空时，
+必须保留外部 checkout 并报告其路径；cleanup 失败不得报告为已清理。
