@@ -5,6 +5,10 @@
 Derive every exact command from current repository scripts, task configuration, CI, build files, or test
 framework configuration, and verify it from the repository root or a recorded working directory. Do not
 infer a language, runner, service, or phase from this template.
+Define each canonical test entrypoint or command in one authoritative location; elsewhere, reference its
+name or authority instead of copying a drift-prone full command. When a project supports multiple test
+paths, state each path's audience, environment prerequisites, actual coverage, and which path produces
+formal maintainer, CI, PR, or publication evidence.
 Prefer a verified repository-owned unified entrypoint when one exists and record what it actually covers;
 otherwise, do not create a wrapper only to satisfy this template. Review a wrapper as a separate project
 change only when repeated multi-command orchestration, service lifecycle, or cleanup steps provide independent

@@ -22,12 +22,13 @@
 
 ### Scenario
 
-<!-- project-fill: 用一个已验证的真实场景替换本段；包含 User goal、Required context、User action or request、Directly observable result、Failure / degradation / escalation、Acceptance assertion 和 capability anchor；完成后删除此 marker -->
+<!-- project-fill: 用一个已验证的真实场景替换本段；包含 User goal、Required context、User action or request、Directly observable result、Failure / degradation / escalation、Acceptance assertion 和适用的真实 contract/reference 或测试证据；完成后删除此 marker -->
 
 ## 3. Cross-cutting User-visible Invariants
 
-不变量必须可由目标读者直接判断，通过稳定 capability anchor 回到 contract，并避免依赖
-会随数据变化的示例数值。
+不变量必须可由目标读者直接判断：项目采用 capability contract anchor 协议时，使用其
+canonical anchor；项目已有自己的 contract/reference 机制时，使用该真实机制或可核对的测试
+证据。不得为满足本模板发明 anchor registry，并避免依赖会随数据变化的示例数值。
 
 <!-- project-fill: 列出跨 journey 的真实可见不变量与验收证据；没有时写 Not applicable — 已验证原因；完成后删除此 marker -->
 
@@ -36,4 +37,4 @@
 限制必须区分当前不支持、暂时降级和 future / proposed。人工升级只写用户能识别的触发条件、
 可见解释和责任角色，不暴露内部监控细节。
 
-<!-- project-fill: 写入已验证限制、降级、拒绝和人工升级路径，并引用 capability anchor；没有配置升级路径时准确说明；完成后删除此 marker -->
+<!-- project-fill: 写入已验证限制、降级、拒绝和人工升级路径，并引用适用的真实 contract/reference 或测试证据；没有配置升级路径时准确说明；完成后删除此 marker -->

@@ -24,12 +24,14 @@ is verified, write `Not configured —` with the entrypoints checked and the rea
 
 ### Scenario
 
-<!-- project-fill: Replace this section with one verified scenario containing User goal, Required context, User action or request, Directly observable result, Failure / degradation / escalation, Acceptance assertion, and capability anchor, then remove this marker. -->
+<!-- project-fill: Replace this section with one verified scenario containing User goal, Required context, User action or request, Directly observable result, Failure / degradation / escalation, Acceptance assertion, and the applicable real contract/reference mechanism or test evidence, then remove this marker. -->
 
 ## 3. Cross-cutting User-visible Invariants
 
-Invariants must be directly judgeable by the target reader, trace to the contract through stable capability
-anchors, and avoid example values that change with data.
+Invariants must be directly judgeable by the target reader: if the project adopts a capability-contract
+anchor protocol, use its canonical anchors; if it has its own contract/reference mechanism, use that real
+mechanism or verifiable test evidence. Do not invent an anchor registry to satisfy this template, and avoid
+example values that change with data.
 
 <!-- project-fill: List real cross-journey visible invariants and acceptance evidence. If none exist, write Not applicable with a verified reason, then remove this marker. -->
 
@@ -39,4 +41,4 @@ Distinguish currently unsupported behavior, temporary degradation, and future or
 escalation should expose user-recognizable triggers, explanations, and responsible roles without leaking
 internal monitoring details.
 
-<!-- project-fill: Add verified limits, degradation, refusal, and human escalation paths with capability anchors. If no path is configured, say so accurately, then remove this marker. -->
+<!-- project-fill: Add verified limits, degradation, refusal, and human escalation paths with the applicable real contract/reference mechanism or test evidence. If no path is configured, say so accurately, then remove this marker. -->

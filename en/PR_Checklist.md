@@ -34,9 +34,12 @@ explicitly requests it.
   `TESTING.md`, and `SOP.md` according to actual impact. State the current factual basis for affected
   authorities left unchanged; do not edit every document merely for completeness.
 - [ ] Keep the authority direction `capability_contract.json → interact.md → business_user_guide.md` for
-  capability changes. User-visible claims have current implementation or test evidence and stable anchors.
-- [ ] Reference Markdown anchors through the capability contract's contract-defined protocol without copying
-  its token here; do not present alignment as sentence-level binding or proof of capability semantics.
+  capability changes. User-visible claims have current implementation or test evidence and are checked
+  through the project's real contract/reference mechanism.
+- [ ] When a project adopts a contract anchor protocol, reference and validate under that protocol; when it
+  uses its own contract/reference mechanism, check that real mechanism or test evidence. Do not invent an
+  anchor to satisfy this template, and do not present structural alignment as sentence-level binding or
+  proof of capability semantics.
 - [ ] Check architecture impact across entrypoints, module boundaries, data flow, state, error models,
   external dependencies, artifacts, and side effects.
 - [ ] Replace or delete every active project-fill marker while preserving valid Markdown and JSON.
@@ -45,6 +48,8 @@ explicitly requests it.
 
 - [ ] Complete the review gate required by this project's test and delivery policy, and accurately record
   reviewer identity, scope, and limitations.
+- [ ] Bind each review conclusion to the content actually reviewed, such as a diff or commit. After that
+  content changes, the prior conclusion is invalid; re-review the affected content.
 - [ ] Handle actionable review feedback according to this project's policy. Keep recheck evidence for resolved
   items and record the impact and required decision for anything left open.
 - [ ] Rerun affected tests and mechanical checks after fixes, then recheck the final diff and Git state.

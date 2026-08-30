@@ -28,15 +28,18 @@
   `interact.md`、business guide、`TESTING.md` 和 `SOP.md`；确受影响但保持不变的权威文档有
   当前事实依据，不要求为了齐全而修改所有文档。
 - [ ] 能力变化遵循 `capability_contract.json → interact.md → business_user_guide.md` 的权威
-  方向；用户可见声明有当前实现或测试证据和稳定 anchor。
-- [ ] Markdown anchor 按 capability contract 的 contract-defined protocol 引用，没有在本文复写
-  token；alignment 结论没有冒充句子级绑定或能力语义证明。
+  方向；用户可见声明有当前实现或测试证据，并按本项目真实 contract/reference 机制核对。
+- [ ] 项目采用 contract anchor 协议时，按该协议引用和验证；项目使用自有 contract/reference
+  机制时，核对该真实机制或测试证据；不为满足模板发明 anchor。结构 alignment 结论没有冒充
+  句子级绑定或能力语义证明。
 - [ ] 架构影响已核对入口、模块边界、数据流、状态、错误模型、外部依赖、artifact 和副作用。
 - [ ] 所有 active project-fill marker 已替换或删除，Markdown 与 JSON 仍可被严格解析。
 
 ## Review Closure
 
 - [ ] 已完成本项目测试与交付政策要求的 review gate，并准确记录 reviewer 身份、范围和限制。
+- [ ] Review 结论绑定其实际审阅的内容，例如 diff 或 commit；内容再次变化后，原结论失效，
+  必须对受影响内容重新复核。
 - [ ] 已按本项目政策处理可执行的 review feedback；已解决项有复核证据，未解决项明确记录
   影响与所需决策。
 - [ ] 修复后重跑受影响测试和机械检查，最终 diff 与 Git 状态已再次检查。
