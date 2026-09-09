@@ -3,9 +3,11 @@
 ## Purpose and Authority
 
 `SOP.md` keeps stable process entrypoints and does not copy volatile commands, test lists, or publishing
-details. When sources conflict, current code, configuration, tests, contracts, and focused authorities such
-as `TESTING.md` and `PR_Checklist.md` take precedence. Follow this project's actual audit, recoverability,
-and delivery policy for how execution records are stored and retained.
+details. When sources conflict, check descriptive facts against current implementation evidence and
+normative policy against valid project authorization and policy sources; split mixed statements. Use the
+source scopes and existing conflict-resolution rules in `AGENTS.md`; filenames do not automatically
+override existing authority. Follow this project's actual audit, recoverability, and delivery policy for
+how execution records are stored and retained.
 
 ## Available SOPs
 
@@ -22,8 +24,9 @@ Every SOP step contains only:
 ## Failure, Rollback, and Escalation
 
 On failure, stop at a safe boundary and preserve the exact error and current repository state. Rollback
-must match real persistence and side effects. Escalate missing authority, product decisions, or external
-coordination to the responsible person instead of guessing or bypassing the boundary.
+must match real persistence and side effects. When permissions, substantive decisions about public
+semantics, or external coordination exceed current authorization, escalate through existing
+responsibilities instead of guessing or bypassing the boundary.
 
 <!-- project-fill: Add verified stop conditions, recoverable rollback entrypoints, and escalation ownership. If no project-specific rules exist, write None with a verified reason, then remove this marker. -->
 

@@ -2,11 +2,14 @@
 
 ## 0. Scope and Update Triggers
 
-This document is the authority for the current system structure. Update or confirm the relevant section
-when runtime entrypoints, module boundaries, call flows, data contracts, state, error models, external
-dependencies, authentication, configuration, artifacts, side effects, extension points, or architecture
-debt change. Every claim must come from current implementation, configuration, tests, committed artifacts,
-or reproducible evidence.
+This document describes the current system structure within its stated scope. Existing official
+specifications and accepted policies remain effective within their own scopes and are not overridden by
+this document's filename. Update or confirm the relevant section when runtime entrypoints, module
+boundaries, call flows, data contracts, state, error models, external dependencies, authentication,
+configuration, artifacts, side effects, extension points, or architecture
+debt change. Check descriptive facts against current implementation, configuration, tests, committed
+artifacts, or reproducible evidence. Check normative constraints against valid project authorization and
+policy sources; split mixed statements.
 
 Choose prose, a responsibility table, a data flow, state transitions, an object lifecycle, or another form
 according to the structure that is hardest to understand in this project. None of these forms is required;
@@ -27,7 +30,7 @@ use one only when it resolves a specific ambiguity.
 Each invariant should state the positive constraint, scope, falsification method, and consequence of
 violation. Do not present a vision or proposed design as a current invariant.
 
-<!-- project-fill: Add architecture invariants supported by code, configuration, or tests. If none exist, write Not applicable with a verified reason, then remove this marker. -->
+<!-- project-fill: Add architecture invariants supported by implementation evidence or accepted policy, distinguishing current behavior from normative constraints and identifying scope. If no invariant applies, write Not applicable with a verified reason; if not yet confirmed, state the scope checked and evidence gap, then remove this marker. -->
 
 ## 4. Module Responsibility Boundaries
 
@@ -62,3 +65,13 @@ Mark future or proposed items explicitly; do not present them as current capabil
 points.
 
 <!-- project-fill: List evidence-backed extension interfaces, known architecture debt, impact, and review triggers. If none exist, write None with a verified reason, then remove this marker. -->
+
+## Change propagation
+
+Record only propagation relationships confirmed by project evidence and easy to overlook.
+Use them to guide investigation, not to require every check for every change.
+
+| Change type | Impact requiring further investigation | Corresponding validation |
+|---|---|---|
+
+<!-- project-fill: Use this project's implementation, call relationships, and existing validation to record a few important propagation relationships. If none apply, state the scope checked and the reason, then remove this marker. -->

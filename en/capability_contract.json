@@ -1,11 +1,15 @@
 {
   "schema_version": "0.1.0",
   "status": "__PROJECT_FILL__: replace with the verified contract status",
-  "purpose": "Machine-readable registry for current capability, boundary, responsibility, behavior, and document anchors.",
+  "purpose": "Machine-readable registry for selected public commitments, boundaries, responsibilities, calling behavior, and document anchors; record supported commitments without creating them.",
   "source_language": "en-US",
   "rules": [
     "Every fill entry must be replaced with verified project content or deleted before validation.",
-    "Every active statement must have evidence in the current implementation, configuration, tests, committed artifacts, or reproducible results.",
+    "Check descriptive facts against current implementation, configuration, tests, committed artifacts, or reproducible results; check normative policy against valid project authorization and policy sources, splitting mixed statements. An active status does not turn implementation observations into policy.",
+    "Existing official user documentation, interface specifications, and accepted policies remain effective within their respective scopes. This contract registers selected commitments and boundaries, interact explains interaction semantics, and the guide provides usage instructions; generated documents do not override existing authority by filename.",
+    "Register only public commitments, boundaries, responsibilities, and calling behavior worth preserving explicitly, identifying existing public commitments or accepted policy sources in the statement. Pure implementation or test observations usually belong in interact.md and do not automatically become long-term support or refusal policy; adopt new long-term commitments through the project's existing authorization and persistence rules.",
+    "When no content applies, accurately express inapplicability, the scope checked, and the reason within the existing structure without inventing entries or consumers. Not applicable means verified inapplicability, Not configured means an applicable mechanism is unconfigured, and not yet confirmed means insufficient evidence; these descriptions do not add or replace status values.",
+    "test_anchor is an evidence pointer, not a prose author; do not automatically generate statement or status from tests, or generate CLI, MCP, OpenAPI, or handlers from this contract. Direct actual invocation to real public interfaces and their official references.",
     "Future or proposed behavior must use an explicit non-active status and must not be presented as currently available.",
     "Markdown documents use only `<!-- capability-anchor: <ANCHOR_ID> -->` to reference stable anchor_id values; the marker name and ANCHOR_ID are case-sensitive, ANCHOR_ID must match `[A-Za-z0-9_.-]+`, and a target checker may tolerate whitespace differences inside the comment, but a JSON path, array position, or schema-internal path cannot replace the anchor ID.",
     "Other anchor, ref, contract, or wiki-link forms are unsupported and do not establish an alignment reference; this generic protocol does not guarantee that any consumer exhaustively detects or rejects unknown aliases.",
@@ -19,7 +23,7 @@
         "anchor_id": "__PROJECT_FILL__:CAPABILITY.identifier",
         "type": "capability",
         "status": "__PROJECT_FILL__: replace with active, experimental, future, proposed, or deprecated",
-        "statement": "__PROJECT_FILL__: replace with a verified project capability",
+        "statement": "__PROJECT_FILL__: describe a capability supported by an existing public commitment or accepted policy, its scope and source; verify current implementation facts separately",
         "audience": [
           "__PROJECT_FILL__: replace with the real audiences"
         ],
@@ -35,7 +39,7 @@
         "anchor_id": "__PROJECT_FILL__:BOUNDARY.identifier",
         "type": "capability_boundary",
         "status": "__PROJECT_FILL__: replace with the verified status",
-        "statement": "__PROJECT_FILL__: replace with a verified current limit, rejection, or degradation boundary",
+        "statement": "__PROJECT_FILL__: describe a limit, refusal, or degradation boundary supported by an existing public commitment or accepted policy and cite its source; do not turn implementation observations into policy",
         "audience": [
           "__PROJECT_FILL__: replace with the real audiences"
         ],
@@ -51,7 +55,7 @@
         "anchor_id": "__PROJECT_FILL__:RESPONSIBILITY.identifier",
         "type": "responsibility_boundary",
         "status": "__PROJECT_FILL__: replace with the verified status",
-        "statement": "__PROJECT_FILL__: replace with a verified human or system responsibility boundary",
+        "statement": "__PROJECT_FILL__: describe a human or system responsibility boundary supported by an existing public commitment or accepted policy and cite its source",
         "audience": [
           "__PROJECT_FILL__: replace with the real audiences"
         ],
@@ -67,7 +71,7 @@
         "anchor_id": "__PROJECT_FILL__:BEHAVIOR.identifier",
         "type": "agent_behavior",
         "status": "__PROJECT_FILL__: replace with the verified status",
-        "statement": "__PROJECT_FILL__: replace with a verified ask, refuse, explain, or degrade behavior",
+        "statement": "__PROJECT_FILL__: describe calling, clarification, refusal, explanation, or degradation behavior supported by an existing public commitment or accepted policy and cite its source",
         "audience": [
           "__PROJECT_FILL__: replace with the real audiences"
         ],
@@ -83,7 +87,7 @@
         "anchor_id": "DOC.interact",
         "type": "document",
         "status": "active",
-        "statement": "interact.md is the source of truth for user-visible behavior and acceptance invariants.",
+        "statement": "interact.md explains user-visible behavior, interaction semantics, and acceptance; existing official documentation, interface specifications, and accepted policies remain effective within their respective scopes.",
         "audience": [
           "business_user",
           "agent",
@@ -96,7 +100,7 @@
         "anchor_id": "DOC.business_user_guide",
         "type": "document",
         "status": "active",
-        "statement": "docs/business_user_guide.md is a teaching document derived from capability_contract.json and interact.md.",
+        "statement": "docs/business_user_guide.md provides usage guidance, navigation to official documentation and interfaces, and necessary additions; mature projects may use a short bridge while original official documentation remains the content authority within its scope.",
         "audience": [
           "business_user",
           "agent",

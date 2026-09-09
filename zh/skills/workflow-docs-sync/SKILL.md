@@ -6,7 +6,8 @@ description: 从用户显式指定的本地 Git 路径、GitHub repository URL �
 # Workflow Docs Sync
 
 一次调用完成事实重建、必要文档改写、真实测试、复核、机械检查和明确授权的 Draft PR。
-现有文档与模板都是待验证声明；主 Agent 是候选 checkout 的唯一写入者。
+九份文档是人和 Agent 共用的项目沟通界面，不是项目事实数据库。描述性事实核对当前实现
+证据，规范性政策核对有效项目授权与政策依据；主 Agent 是候选 checkout 的唯一写入者。
 
 ## 调用、身份与 checkout
 
@@ -105,13 +106,16 @@ python3 <skill-root>/scripts/sync_docs.py prepare \
 ### Findings 驱动的最小改写
 
 写入前运行 `git -C <target> ls-files -z` 建范围，从当前代码、配置、测试、committed artifacts、
-可重复结果和必要历史重建事实；旧文档和近期 diff 都不能自证。
+可重复结果和必要历史重建事实；旧文档和近期 diff 都不能自证其描述性声明。
 
 - 描述性事实须有项目证据；规范性政策可由 scoped instruction、accepted decision、团队配置或
   持久化 owner decision 支持。混合语句拆分核验，禁止把事实改写成政策或把政策伪装成实现事实。
   配置只证明 enforcement，不自动 supersede 政策；同类政策按显式 supersession 与既有
-  authority/scope 裁决。冲突登记 finding/open decision；权威仍不明时保留原文和已检查来源。
-  个人偏好未被持久化时不进入项目。
+  authority/scope 裁决。冲突先登记 finding 并调查；权威仍不明时保留原文和已检查来源，
+  是否登记 Open question 按下文的公共语义与授权边界判断。个人偏好未被持久化时不进入项目。
+- 已有正式用户文档、接口规范和已接受政策继续在各自覆盖范围内有效。Capability contract
+  登记选定的承诺与边界；interact 展开交互语义；用户指南负责使用说明。生成文档不因文件名
+  自动覆盖既有权威，也不能只靠实现观察创造支持或拒绝政策。
 - 任何语义编辑前登记 finding：唯一 ID、`BLOCKER/WARN/NOTE`、证据、风险、最小修复边界。
   同根因合并，多文档共同虚构能力必须是 BLOCKER，不得事后倒填。
 - BLOCKER 表示候选会错误、虚构、越权、不可复现或遗漏关键风险，必须修复；WARN 表示实质性
@@ -119,11 +123,13 @@ python3 <skill-root>/scripts/sync_docs.py prepare \
 - 从 finding 提取具体路径、命令、能力、字段、政策名与 superseded 术语，做定向 `git grep`
   或等价 tracked-file 搜索。完整核对九份核心文档，但不无条件审计全仓 Markdown/配置；范围外
   漂移只记录 exact path、snippet、风险和建议，由 owner 决定扩 PR、拆 PR 或开 Issue。
+  核对须覆盖正文、Authority Map、checklist、JSON statement 和 project-fill 提示中的同一语义，
+  不能改完一处就保留另一处冲突；验收看范围内语义是否一致，不以修改处数为标准。
 - 只改失真内容。不得因关键词、旧路径、命令或术语命中就删除父 heading/section；整节删除须由
   finding 证明全部语义失效。整段、整节删除或大范围替换后，重读完整 section 与相邻 section，
   确认有证据的政策、命令、能力和责任未被误删。
-- 保持 `capability_contract.json → interact.md → docs/business_user_guide.md` 权威方向并清除
-  active marker。Architecture 查入口/调用链/边界/数据流/错误/副作用；Capability 查 UI/API/
+- 按上述各自范围维护文档；生成实例清除 active marker，上游非 PR 源模板保留 active marker。
+  Architecture 查入口/调用链/边界/数据流/错误/副作用；Capability 查 UI/API/
   tests/限制/anchor；Testing 查真实 gate；Governance 最后查 AGENTS、Checklist、SOP、PR
   template。四项是覆盖维度，不是固定 Agent 拓扑；通用模板不写 docs-sync 的 pin、seal、review
   隔离或发布实现。`TESTING.md` 中针对 Architecture 与 Capability 声明的证据映射，在相关声明
@@ -133,6 +139,35 @@ python3 <skill-root>/scripts/sync_docs.py prepare \
 
 新增 marker、alias、机器状态、parser、兼容入口或控制机制前，finding 必须证明独立风险、真实
 消费者、可复现失败和现有机制不足；能扩展现有机制时不另造同义入口。
+
+### 面向项目使用的写法
+
+- AGENTS 按任务提供短路由：局部实现、可观察行为、公共约定、共享组件、项目使用或外部
+  调用、合并发布、未决公共语义分别指向相关入口。日常任务不要求每次读完九份文档；本 Skill
+  的完整核对责任仍保留。事实不清继续调查；外部行为等价的内部实现自行选择最简单且符合
+  项目风格的方式；事实已查清仍有超出当前授权的实质性公共语义分歧时，才向 maintainer/owner
+  提出具体问题。
+- Change propagation 只在 architecture 定义：根据当前项目实现、调用关系和已有验证，记录
+  少量容易遗漏的传播关系，指导调查而非要求每次全查。不得把外部给定的任务专属影响清单
+  预填成项目事实；独立调查确认的关系可以写入。AGENTS 负责路由，TESTING 引用关系并把风险
+  转成具体输入、入口、预期结果或错误及相应验证，不重复传播表或另建通用组合矩阵。
+- 多项能力影响同一可观察结果时，先查既有规则能否确定组合行为；共享对象、状态、资源或
+  优先级只是调查提示。只有仍有实质性语义分歧且超出当前授权时，在 interact 登记 Open
+  question，写清 Current evidence、Current behavior / safe boundary、Decision、Close when。
+  区分实现观察与政策依据；未找到决定不等于维护者从未决定；不编造责任人或流程。决定落地后
+  改写为 Current behavior 并补行为测试；没有此类问题时不强行创建。
+- Contract 只登记值得保留的公开承诺、边界、职责和调用行为，并指出既有公开承诺或已接受
+  政策依据。纯实现或测试观察通常写入 interact，不自动变成长期支持或拒绝政策；新增长期
+  承诺按项目已有授权与持久化规则采纳。没有适用内容时按现有结构说明依据，不编造条目或
+  消费者。`test_anchor` 是证据指针，不是正文作者；按现有 rules 处理缺失测试指针，不从
+  测试自动生成 statement/status，不新增状态，也不从 contract 生成 CLI、MCP、OpenAPI 或 handler。
+- 用户指南回答解决什么问题、输入、结果、不做什么、正式接口入口和何时求助。成熟项目允许
+  短桥接页：明确原正式文档在相应范围内仍是正文权威，只作导航与必要补充。interact 和指南
+  指向真实 API、CLI 或协议参考，不把内部实现、偶然行为或规划包装成正式能力。
+- 所有模板允许有依据的 `Not applicable`、`Not configured` 或尚未确认：分别表示确实不适用、
+  适用机制尚未配置、证据不足，写清已检查范围与原因，不得互相替代。保留现有九个固定路径、
+  JSON 结构、机器必需字段、状态枚举和 consumer contract；文件数量或 contract 是否可选的
+  产品取舍留给后续证据与授权，不在本次文档同步中实现。
 
 ### 测试合同
 

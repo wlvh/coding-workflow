@@ -49,11 +49,12 @@ maintenance value.
 
 ## 3. Capability Contract Alignment
 
-A project's alignment test should recursively collect stable `anchor_id` values from every object in
-`capability_contract.json`. It should use the protocol defined by the contract rules to check uniqueness
-and Markdown references without
-hardcoding buckets, JSON paths, array positions, or requiring every contract entry to appear in the
-business guide.
+When a project adopts the capability-contract anchor protocol, its alignment test should recursively
+collect stable `anchor_id` values from every object in `capability_contract.json`. It should use the
+protocol defined by the contract rules to check uniqueness and Markdown references without hardcoding
+buckets, JSON paths, array positions, or requiring every contract entry to appear in the business guide.
+When a project uses an existing contract/reference mechanism, check its actual validation instead of
+inventing another protocol to satisfy this template.
 
 When `test_anchor: null` is explicit, record both a nonempty, concrete `untested_reason` and a nonempty
 `pending_since`; register the real test anchor when a test exists. Anchor alignment proves only mechanical
@@ -61,9 +62,15 @@ facts such as a structural reference, a valid ID, and no dangling target. It doe
 sentence-level binding or that claim semantics are implemented. Before claiming an alignment test exists,
 verify its implementation and command in the target repository.
 
-<!-- project-fill: Cite the target project's real alignment test, command, and scope. If it is not implemented, write Not configured and the reason, then remove this marker. -->
+<!-- project-fill: Cite validation, commands, and scope for the mechanism actually used by the target project. If applicable but not implemented, write Not configured and the reason; distinguish verified inapplicability from content not yet confirmed, stating the scope checked and basis, then remove this marker. -->
 
 ## 4. Change Type to Required Evidence
+
+Start with relevant relationships in
+[Change propagation in architecture.md](architecture.md#change-propagation). Turn each risk into concrete
+checks: which inputs pass through which entrypoint, the expected result or error, the test covering that
+path, and its actual result. Do not merely claim compatibility was verified. Maintain validation methods
+here without duplicating the propagation table or adding a generic combination matrix.
 
 1. For a safely and deterministically reproducible escaped bug, establish the smallest regression test or
    fixture that fails before the fix, then change the implementation.
@@ -97,7 +104,7 @@ covers the real combined path. Independently passing unit and contract layers do
 closure. A new fixture system or execution entrypoint is itself maintenance complexity and must identify the
 independent risk that existing mechanisms cannot carry.
 
-<!-- project-fill: Map code, configuration, schema, user behavior, artifact, and documentation changes to evidence levels using actual project risk, then remove this marker. -->
+<!-- project-fill: Reference applicable Change propagation relationships in architecture.md and use actual risk to specify concrete behavior checks, existing coverage or gaps, and required evidence levels. If none apply, state the scope checked; do not duplicate the propagation table here, then remove this marker. -->
 
 ## 5. Side Effects and Isolation
 

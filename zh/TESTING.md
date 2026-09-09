@@ -35,18 +35,25 @@
 
 ## 3. Capability Contract Alignment
 
-项目的 alignment test 应在本地递归收集 `capability_contract.json` 中所有对象的稳定
-`anchor_id`。它应按 contract rules 定义的协议检查唯一性和 Markdown 引用，
-但不硬编码 bucket、JSON path、数组位置或要求所有 contract 条目进入 business guide。
+项目采用 capability contract anchor 协议时，alignment test 应在本地递归收集
+`capability_contract.json` 中所有对象的稳定 `anchor_id`。它应按 contract rules 定义的协议
+检查唯一性和 Markdown 引用，但不硬编码 bucket、JSON path、数组位置或要求所有 contract
+条目进入 business guide。
+项目使用既有 contract/reference 机制时，核对该机制的实际验证，不为满足模板另造协议。
 
 显式使用 `test_anchor: null` 时同时记录非空、具体的 `untested_reason` 和非空 `pending_since`；
 已有测试时登记真实测试锚点。Anchor alignment 只证明结构引用、合法 ID 和非悬空等机械事实，
 不单独证明句子级绑定或声明的业务语义已经实现。文档声明 alignment test 存在之前，必须确认
 目标仓库确有对应测试实现和可执行命令。
 
-<!-- project-fill: 引用目标项目真实 alignment test、命令和覆盖范围；尚未实现时准确写 Not configured 及原因；完成后删除此 marker -->
+<!-- project-fill: 引用目标项目实际采用机制的验证、命令和覆盖范围；适用但尚未实现时写 Not configured 及原因；确实不适用或尚未确认时分别说明已检查范围与依据；完成后删除此 marker -->
 
 ## 4. Change Type to Required Evidence
+
+先引用 [architecture.md 的 Change propagation](architecture.md#change-propagation) 中与本次
+变更有关的关系，把风险转成具体检查：哪些输入经过哪个入口，预期什么结果或错误，哪条
+测试覆盖该路径，以及实际结果。不要只写“兼容性已验证”；本节维护验证方法，不重复传播
+表，也不新增通用组合矩阵。
 
 1. 可安全、确定性复现的 escaped bug：先建立修复前失败的最小回归测试或 fixture，再改实现。
 2. 无法先建立失败测试：保留修复前失败证据，说明无法稳定自动化的原因和剩余风险。
@@ -73,7 +80,7 @@
 各层 unit/contract 分别通过不能自动证明组合路径闭合。新增测试若形成新的 fixture 体系或
 执行入口，必须作为独立维护复杂度说明其不可由现有机制承担的风险。
 
-<!-- project-fill: 按本项目真实风险映射代码、配置、schema、用户行为、artifact 和文档变更所需测试层级；完成后删除此 marker -->
+<!-- project-fill: 引用 architecture.md 中适用的 Change propagation 关系，按实际风险写明具体行为检查、已有覆盖或缺口及所需测试层级；没有适用关系时说明已检查范围，不在此重复传播表；完成后删除此 marker -->
 
 ## 5. Side Effects and Isolation
 
