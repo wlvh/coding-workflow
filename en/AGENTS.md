@@ -2,14 +2,50 @@
 
 ## Authority Map
 
-- Current code, configuration, tests, committed artifacts, and reproducible results are project facts.
+- Check descriptive facts against current code, configuration, tests, committed artifacts, and reproducible
+  results. Check normative policy against valid project authorization and policy sources; split mixed
+  statements. Documents cannot independently prove their own factual claims.
+- Existing official user documentation, interface specifications, and accepted policies remain effective
+  within their respective scopes. Generated documents do not override existing authority by filename;
+  resolve conflicts through the project's existing scope and supersession rules.
 - `architecture.md` defines system structure and boundaries; `TESTING.md` defines test entrypoints and
   evidence levels; `PR_Checklist.md` defines delivery checks; `SOP.md` keeps only stable process entrypoints.
-- `capability_contract.json` defines capability boundaries, `interact.md` defines user-visible behavior and
-  acceptance, and `docs/business_user_guide.md` only derives explanations from the first two.
-- Existing documents are claims to verify against implementation; they cannot prove themselves correct.
+- `capability_contract.json` registers selected public commitments and boundaries; `interact.md` explains
+  interaction semantics; `docs/business_user_guide.md` provides usage guidance and navigation to official
+  interfaces. Each respects the authority scopes above.
 
-<!-- project-fill: Add other authoritative project sources and conflict precedence, then remove this marker. -->
+<!-- project-fill: List existing official project documentation, interface specifications, and policy sources, with their respective scopes and existing conflict-resolution rules, then remove this marker. -->
+
+## Task Routing
+
+Choose an entrypoint for the current task, then follow relevant evidence. Do not require all nine documents
+to be read in full for every task.
+
+| Task | Start with | Then verify |
+|---|---|---|
+| Local fix or internal implementation | `TESTING.md` | Relevant implementation and existing tests |
+| User-visible behavior change | `interact.md`, `TESTING.md` | Official interfaces, failure paths, and behavior tests |
+| Public capability or data agreement change | `capability_contract.json`, `architecture.md`, `interact.md` | Corresponding implementation, callers, and validation |
+| Shared component change | `architecture.md`, `TESTING.md` | Entrypoints using that component and relevant regressions |
+| Project use or external invocation | `docs/business_user_guide.md`, official interface references | Actual API, CLI, or protocol |
+| Merge or release | `PR_Checklist.md`, PR template | Actual diff, tests, and documentation |
+| Unresolved public semantics | Open questions in `interact.md`, related Issue | Existing rules, current authorization, and project decisions |
+
+- Facts are unclear: continue investigating.
+- Internal implementations differ but external behavior is equivalent: choose the simplest approach that
+  fits the project's style.
+- Facts are established, but a substantive disagreement about public semantics remains beyond current
+  authorization: ask the maintainer/owner a concrete question.
+
+Maintain propagation relationships only in
+[Change propagation in architecture.md](architecture.md#change-propagation). Investigate relevant
+relationships and find the corresponding validation in `TESTING.md`. Update affected content only; for an
+affected document left unchanged, state its factual or policy basis in delivery notes. Derive encoding,
+lint, formatter, build, and type rules from real repository configuration, not this template.
+
+`Not applicable` means verified inapplicability; `Not configured` means an applicable mechanism has not been
+configured; not yet confirmed means insufficient evidence. These are not interchangeable. State the scope
+checked and the reason; never present insufficient evidence as inapplicability.
 
 ## Repository Overview
 
@@ -35,19 +71,6 @@ Describe stable modules, entrypoints, and responsibilities. Do not permanently m
 
 <!-- project-fill: List committed or generated artifacts, persisted state, and external systems. If none exist, write Not applicable with a verified reason, then remove this marker. -->
 
-## Change Impact Rules
-
-- Update or confirm `architecture.md` when module boundaries, runtime call flow, data flow, state, error
-  model, external dependencies, or extension points change.
-- For capability changes, update or confirm `capability_contract.json` first, then inspect `interact.md`
-  and the business guide. For user-visible behavior changes, update or confirm `interact.md` first.
-- Tests remain factual evidence; keep exact commands, fixtures, layers, and isolation details in
-  `TESTING.md` only.
-- Not every change requires every document to change. For an affected authority left unchanged, state the
-  current factual basis in the delivery record.
-- Derive encoding, lint, formatter, build, and type rules from real repository configuration, not this
-  template.
-
 ## Collaboration
 
 - The primary executor owns final judgments, deliverables, and writes; delegated results must be reviewed
@@ -56,8 +79,8 @@ Describe stable modules, entrypoints, and responsibilities. Do not permanently m
   isolation method.
 - Divide work dynamically by module, call flow, risk, or evidence type; do not require a fixed agent count
   or schedule.
-- Agreement, voting, or consensus is not evidence. Important conclusions must trace to repository facts and
-  reproducible validation.
+- Agreement, voting, or consensus is not evidence. Important conclusions must trace to the corresponding
+  factual evidence or valid policy sources.
 - Investigation and review tasks are read-only by default; when changes are needed, hand them off explicitly
   to an executor who owns the affected paths.
 
@@ -65,9 +88,9 @@ Describe stable modules, entrypoints, and responsibilities. Do not permanently m
 
 ## Architecture
 
-Treat `architecture.md` as the architecture authority. Rebuild affected call paths from real entrypoints
-before a change, then verify invariants, module responsibilities, data contracts, state, side effects, and
-failure paths afterward.
+Read `architecture.md` within its stated scope and follow the existing specifications it references.
+Rebuild affected call paths from real entrypoints before a change, then verify invariants, module
+responsibilities, data contracts, state, side effects, and failure paths afterward.
 
 ## Testing
 

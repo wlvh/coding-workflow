@@ -1,8 +1,10 @@
 # PR Submission Checklist
 
-This file is the pre-submission todo. Check only items proven by the current diff, test output, or repository
-state; record a reason when an item does not apply. Do not commit, push, or create a PR unless the user
-explicitly requests it.
+This file is the pre-submission todo. Check only completed items with supporting evidence; use the
+[Authority Map in AGENTS.md](AGENTS.md#authority-map) to judge evidence types and authority scopes.
+`Not applicable` needs grounds for inapplicability; `Not configured` requires confirmation that an
+applicable mechanism is unconfigured. Mark insufficient evidence as not yet confirmed. Do not commit, push,
+or create a PR unless the user explicitly requests it.
 
 <!-- project-fill: Add project-specific approval, commit, base/head, or release gates. Remove this marker when no project-specific rule applies. -->
 
@@ -31,11 +33,11 @@ explicitly requests it.
 ## Documentation and Contracts
 
 - [ ] Check `AGENTS.md`, `architecture.md`, `capability_contract.json`, `interact.md`, the business guide,
-  `TESTING.md`, and `SOP.md` according to actual impact. State the current factual basis for affected
+  `TESTING.md`, and `SOP.md` according to actual impact. State the current factual or policy basis for affected
   authorities left unchanged; do not edit every document merely for completeness.
-- [ ] Keep the authority direction `capability_contract.json → interact.md → business_user_guide.md` for
-  capability changes. User-visible claims have current implementation or test evidence and are checked
-  through the project's real contract/reference mechanism.
+- [ ] Use the Authority Map in `AGENTS.md` to check document responsibilities, source scopes, and factual
+  and policy evidence. Split mixed statements for verification and check the project's real
+  contract/reference mechanism.
 - [ ] When a project adopts a contract anchor protocol, reference and validate under that protocol; when it
   uses its own contract/reference mechanism, check that real mechanism or test evidence. Do not invent an
   anchor to satisfy this template, and do not present structural alignment as sentence-level binding or
@@ -52,6 +54,8 @@ explicitly requests it.
   content changes, the prior conclusion is invalid; re-review the affected content.
 - [ ] Handle actionable review feedback according to this project's policy. Keep recheck evidence for resolved
   items and record the impact and required decision for anything left open.
+- [ ] Open questions resolved by this change have been rewritten as Current behavior in `interact.md`, with
+  corresponding behavior tests added. If none apply, state the scope checked.
 - [ ] Rerun affected tests and mechanical checks after fixes, then recheck the final diff and Git state.
 
 ## PR Delivery

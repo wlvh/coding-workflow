@@ -1,11 +1,15 @@
 {
   "schema_version": "0.1.0",
   "status": "__PROJECT_FILL__: 替换为已验证的契约状态",
-  "purpose": "当前能力、边界、职责、行为及文档锚点的机器可读登记表。",
+  "purpose": "选定的公开承诺、边界、职责、调用行为及文档锚点的机器可读登记表；记录有依据的承诺，不创造承诺。",
   "source_language": "zh-CN",
   "rules": [
     "每个填充项必须在验证前替换为已核实的项目内容，或从契约中删除。",
-    "每条 active 声明必须有当前实现、配置、测试、committed artifacts 或可重复运行结果作为证据。",
+    "描述性事实核对当前实现、配置、测试、committed artifacts 或可重复运行结果；规范性政策核对有效项目授权与政策依据，混合语句拆开处理；active 不使实现观察自动成为政策。",
+    "已有正式用户文档、接口规范和已接受政策继续在各自覆盖范围内有效；本 contract 登记选定的承诺与边界，interact 展开交互语义，用户指南负责使用说明，生成文档不因文件名自动覆盖既有权威。",
+    "只登记值得明确保留的公开承诺、边界、职责和调用行为，并在 statement 中指出既有公开承诺或已接受政策依据。纯实现或测试观察通常优先写入 interact.md，不自动升级为长期支持或拒绝政策；新增长期承诺按项目已有授权与持久化规则采纳。",
+    "没有适用内容时按现有结构准确表达不适用及已检查范围与原因，不编造条目或消费者。Not applicable 表示确实不适用，Not configured 表示适用机制尚未配置，尚未确认表示证据不足；这些说明不增加或替换状态枚举。",
+    "test_anchor 是证据指针，不是正文作者；不从测试自动生成 statement 或 status，也不从本 contract 生成 CLI、MCP、OpenAPI 或 handler；实际调用指向真实公开接口及其正式参考。",
     "future 或 proposed 行为必须使用明确的非 active 状态，不得呈现为当前可用能力。",
     "Markdown 文档只用 `<!-- capability-anchor: <ANCHOR_ID> -->` 引用稳定 anchor_id；marker 名称与 ANCHOR_ID 大小写敏感，ANCHOR_ID 必须匹配 `[A-Za-z0-9_.-]+`；目标 checker 可容忍 comment 内空白差异，但不得用 JSON path、数组位置或 schema 内部路径代替 anchor ID。",
     "其他 anchor、ref、contract 或 wiki link 形式不受支持，不能建立 alignment 引用；本通用协议不保证任何消费者会穷举发现或拒绝未知 alias。",
@@ -19,7 +23,7 @@
         "anchor_id": "__PROJECT_FILL__:CAPABILITY.identifier",
         "type": "capability",
         "status": "__PROJECT_FILL__: 替换为 active、experimental、future、proposed 或 deprecated",
-        "statement": "__PROJECT_FILL__: 替换为已验证的项目能力",
+        "statement": "__PROJECT_FILL__: 写明有既有公开承诺或已接受政策依据的能力、适用范围与依据，当前实现事实另行核验",
         "audience": [
           "__PROJECT_FILL__: 替换为真实受众"
         ],
@@ -35,7 +39,7 @@
         "anchor_id": "__PROJECT_FILL__:BOUNDARY.identifier",
         "type": "capability_boundary",
         "status": "__PROJECT_FILL__: 替换为已验证的状态",
-        "statement": "__PROJECT_FILL__: 替换为已验证的当前限制、拒绝或降级边界",
+        "statement": "__PROJECT_FILL__: 写明有既有公开承诺或已接受政策依据的限制、拒绝或降级边界及其依据，不将实现观察升级为政策",
         "audience": [
           "__PROJECT_FILL__: 替换为真实受众"
         ],
@@ -51,7 +55,7 @@
         "anchor_id": "__PROJECT_FILL__:RESPONSIBILITY.identifier",
         "type": "responsibility_boundary",
         "status": "__PROJECT_FILL__: 替换为已验证的状态",
-        "statement": "__PROJECT_FILL__: 替换为已验证的人类或系统职责边界",
+        "statement": "__PROJECT_FILL__: 写明有既有公开承诺或已接受政策依据的人类或系统职责边界及其依据",
         "audience": [
           "__PROJECT_FILL__: 替换为真实受众"
         ],
@@ -67,7 +71,7 @@
         "anchor_id": "__PROJECT_FILL__:BEHAVIOR.identifier",
         "type": "agent_behavior",
         "status": "__PROJECT_FILL__: 替换为已验证的状态",
-        "statement": "__PROJECT_FILL__: 替换为已验证的追问、拒绝、解释或降级行为",
+        "statement": "__PROJECT_FILL__: 写明有既有公开承诺或已接受政策依据的调用、追问、拒绝、解释或降级行为及其依据",
         "audience": [
           "__PROJECT_FILL__: 替换为真实受众"
         ],
@@ -83,7 +87,7 @@
         "anchor_id": "DOC.interact",
         "type": "document",
         "status": "active",
-        "statement": "interact.md 是用户可观察行为与验收不变量的真相源。",
+        "statement": "interact.md 按本 contract rules 的范围规则展开用户可观察行为、交互语义与验收。",
         "audience": [
           "business_user",
           "agent",
@@ -96,7 +100,7 @@
         "anchor_id": "DOC.business_user_guide",
         "type": "document",
         "status": "active",
-        "statement": "docs/business_user_guide.md 是派生自 capability_contract.json 与 interact.md 的教学文档。",
+        "statement": "docs/business_user_guide.md 按本 contract rules 的范围规则提供使用说明、正式文档与接口目录及必要补充；成熟项目可使用短桥接页。",
         "audience": [
           "business_user",
           "agent",

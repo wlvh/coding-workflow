@@ -15,6 +15,8 @@ actual returned directory when the current session has not registered it yet.
 
 This repository publishes bilingual downstream workflow-document templates, the canonical
 `workflow-docs-sync` Skill, and its installer. Chinese under `zh/` is the semantic source; `en/` is derived.
+The templates provide task routing, change propagation, combined behavior and open questions, and
+user/interface navigation. Mature projects can keep a short guide that links to their existing documentation.
 
 Detailed behavior and optional repository installation are in the [中文指南](zh/README.md#一句话开始) and
 [English guide](en/README.md#one-line-start).

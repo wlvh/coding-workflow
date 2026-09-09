@@ -2,14 +2,42 @@
 
 ## Authority Map
 
-- 当前代码、配置、测试、committed artifacts 和可重复运行结果是项目事实来源。
+- 描述性事实核对当前代码、配置、测试、committed artifacts 和可重复运行结果；规范性政策
+  核对有效的项目授权与政策依据，混合语句拆开处理。文档不能单独证明自身的事实声明。
+- 已有正式用户文档、接口规范和已接受政策继续在各自覆盖范围内有效；生成文档不因文件名
+  自动覆盖既有权威。冲突按项目已有的适用范围和替代规则处理。
 - `architecture.md` 定义系统结构与边界；`TESTING.md` 定义测试入口与证据层级；
   `PR_Checklist.md` 定义交付核对；`SOP.md` 只保存稳定流程入口。
-- `capability_contract.json` 定义能力边界，`interact.md` 定义用户可观察行为与验收，
-  `docs/business_user_guide.md` 只派生解释前两者。
-- 现有文档是需要与实现核对的声明，不能单独证明自身正确。
+- `capability_contract.json` 登记选定的公开承诺与边界；`interact.md` 展开交互语义；
+  `docs/business_user_guide.md` 负责使用说明和正式接口导航，均须尊重上述权威范围。
 
-<!-- project-fill: 补充本项目的其他权威来源及冲突优先级；完成后删除此 marker -->
+<!-- project-fill: 列出本项目已有的正式文档、接口规范、政策依据及各自覆盖范围和既有冲突处理规则；完成后删除此 marker -->
+
+## Task Routing
+
+按当前任务选择入口，再沿相关证据继续调查，不要求每次完整读取九份文档。
+
+| 任务 | 优先入口 | 随后核对 |
+|---|---|---|
+| 局部修复、内部实现 | `TESTING.md` | 相关实现和既有测试 |
+| 用户可观察行为变化 | `interact.md`、`TESTING.md` | 正式接口、失败路径和行为测试 |
+| 公共能力或数据约定变化 | `capability_contract.json`、`architecture.md`、`interact.md` | 对应实现、调用方和验证 |
+| 共享组件变化 | `architecture.md`、`TESTING.md` | 使用该组件的入口与相关回归 |
+| 项目使用或外部调用 | `docs/business_user_guide.md`、正式接口参考 | 实际 API、CLI 或协议 |
+| 合并与发布 | `PR_Checklist.md`、PR template | 实际 diff、测试和文档 |
+| 未决公共语义 | `interact.md` 的 Open questions、相关 Issue | 既有规则、当前授权和项目决定 |
+
+- 事实不清楚：继续调查。
+- 内部实现有多种方式，但外部行为等价：自行选择最简单、最符合项目风格的方式。
+- 事实已查清，仍有超出当前授权的实质性公共语义分歧：提出具体问题，交给 maintainer/owner。
+
+变更传播关系只在 [architecture.md 的 Change propagation](architecture.md#change-propagation)
+维护；按相关关系调查，在 `TESTING.md` 查找对应验证。只更新受影响内容；确受影响但保持不变
+的文档，在交付说明中写明事实或政策依据。编码、lint、formatter、build 和类型规则从仓库
+真实配置提取，不从本模板推断。
+
+`Not applicable` 表示经核对确实不适用；`Not configured` 表示适用的机制尚未配置；尚未确认
+表示证据不足。三者不能互相替代，均须说明已检查范围与原因，不能把证据不足写成不适用。
 
 ## Repository Overview
 
@@ -35,30 +63,20 @@
 
 <!-- project-fill: 列出 committed/generated artifacts、持久化状态和外部系统；无此类状态时写 Not applicable — 已验证原因；完成后删除此 marker -->
 
-## Change Impact Rules
-
-- 模块边界、运行时调用链、数据流、状态、错误模型、外部依赖或扩展点变化时，更新或确认
-  `architecture.md`。
-- 能力边界变化时，先更新或确认 `capability_contract.json`，再检查 `interact.md` 和 business
-  guide；用户可观察行为变化时，先更新或确认 `interact.md`。
-- 测试仍是事实证据；具体命令、fixture、层级和隔离要求只在 `TESTING.md` 维护。
-- 不要求每次修改全部文档。确受影响但保持不变的权威文档，应在交付说明中写明当前事实依据。
-- 编码、lint、formatter、build 和类型规则必须从仓库真实配置提取，不从本模板推断。
-
 ## Collaboration
 
 - 主执行者对最终判断、最终产物和最终写入结果负责；受委派结果必须经过审阅与合成。
 - 并行写入时必须先明确不重叠的路径所有权；具体隔离方式遵循目标项目政策。
 - 可按模块、调用链、风险或证据类型动态分工，不强制 Agent 数量或固定调度顺序。
-- 协作者结论、投票或共识不等于证据；重要判断必须回到仓库事实和可重复验证。
+- 协作者结论、投票或共识不等于证据；重要判断必须回到对应的事实证据或有效政策依据。
 - 调查与审查任务默认只读；需要修改时应显式移交给具有写入所有权的执行者。
 
 <!-- project-fill: 补充本项目确有需要的协作或所有权规则；没有时删除此 marker -->
 
 ## Architecture
 
-以 `architecture.md` 为架构权威。修改前从真实入口重建受影响调用链，修改后核对不变量、
-模块职责、数据契约、状态、副作用和失败路径是否闭合。
+按 `architecture.md` 的覆盖范围读取架构说明及其引用的既有规范。修改前从真实入口重建
+受影响调用链，修改后核对不变量、模块职责、数据契约、状态、副作用和失败路径是否闭合。
 
 ## Testing
 

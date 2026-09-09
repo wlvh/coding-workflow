@@ -82,9 +82,9 @@ Studio can also load the canonical `zh/skills/workflow-docs-sync/` directly.
 
 ## Synchronization boundary
 
-The Skill pins target HEAD and upstream SHA, reconstructs facts from current code, configuration, tests,
-committed artifacts, reproducible results, and necessary Git history, then makes only the document changes
-those facts require. Existing documents and upstream templates are hypotheses, not evidence.
+The Skill pins target HEAD and upstream SHA, then makes the minimum necessary changes supported by project
+evidence. See the [canonical Skill](../zh/skills/workflow-docs-sync/SKILL.md) for fact and policy verification,
+and the [Directory Map](#directory-map) for document roles and entrypoints.
 
 Architecture, Capability / User Behavior, Testing, and Governance are coverage dimensions, not a fixed
 agent topology. The main agent is the only execution-worktree writer. Test environments follow actual
@@ -121,12 +121,13 @@ only in the [Chinese maintainer map](../zh/README.md#维护者地图).
 
 ## Directory Map
 
-- [AGENTS.md](AGENTS.md): authority entrypoint, stable module map, and impact rules.
-- [architecture.md](architecture.md): system purpose, call flows, boundaries, state, and side effects.
-- [capability_contract.json](capability_contract.json): capability, boundary, responsibility, and behavior
-  anchors.
-- [interact.md](interact.md): user-visible behavior and acceptance.
-- [docs/business_user_guide.md](docs/business_user_guide.md): first-use business guide.
+- [AGENTS.md](AGENTS.md): authority scopes, task routing, and a stable module map.
+- [architecture.md](architecture.md): the definition point for system structure and Change propagation relationships.
+- [capability_contract.json](capability_contract.json): a registry of selected public commitments, boundaries,
+  responsibilities, calling behavior, and document anchors.
+- [interact.md](interact.md): user-visible behavior, combined semantics, Open questions, and acceptance.
+- [docs/business_user_guide.md](docs/business_user_guide.md): project usage guidance and the official interface
+  directory, allowing a short bridge to existing documentation.
 - [TESTING.md](TESTING.md): test entrypoints, layers, isolation, and evidence.
 - [PR_Checklist.md](PR_Checklist.md): general PR todo and target-project publishing-policy boundary.
 - [SOP.md](SOP.md): stable standard-process entrypoints.

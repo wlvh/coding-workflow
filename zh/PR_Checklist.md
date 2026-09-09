@@ -1,7 +1,8 @@
 # PR Submission Checklist
 
-本文件本身就是提交前 todo。只勾选已经由当前 diff、测试输出或仓库状态证明的项目；不适用
-时记录原因。除非用户明确要求，不执行 commit、push 或 PR 创建。
+本文件本身就是提交前 todo。只勾选已完成且有依据的项目；证据类型与权威范围的判断见
+[AGENTS.md 的 Authority Map](AGENTS.md#authority-map)。`Not applicable` 须有不适用依据，`Not configured` 须确认
+适用机制未配置；证据不足应写尚未确认。除非用户明确要求，不执行 commit、push 或 PR 创建。
 
 <!-- project-fill: 补充本项目特有的审批、提交、base/head 或发布 gate；没有项目专属要求时删除此 marker -->
 
@@ -26,9 +27,9 @@
 
 - [ ] 已按真实影响检查 `AGENTS.md`、`architecture.md`、`capability_contract.json`、
   `interact.md`、business guide、`TESTING.md` 和 `SOP.md`；确受影响但保持不变的权威文档有
-  当前事实依据，不要求为了齐全而修改所有文档。
-- [ ] 能力变化遵循 `capability_contract.json → interact.md → business_user_guide.md` 的权威
-  方向；用户可见声明有当前实现或测试证据，并按本项目真实 contract/reference 机制核对。
+  当前事实或政策依据，不要求为了齐全而修改所有文档。
+- [ ] 按 `AGENTS.md` 的 Authority Map 核对各文档职责、来源范围及事实与政策证据；混合语句
+  已拆分核验，并按本项目真实 contract/reference 机制核对。
 - [ ] 项目采用 contract anchor 协议时，按该协议引用和验证；项目使用自有 contract/reference
   机制时，核对该真实机制或测试证据；不为满足模板发明 anchor。结构 alignment 结论没有冒充
   句子级绑定或能力语义证明。
@@ -42,6 +43,8 @@
   必须对受影响内容重新复核。
 - [ ] 已按本项目政策处理可执行的 review feedback；已解决项有复核证据，未解决项明确记录
   影响与所需决策。
+- [ ] 本次已解决的 Open question 已在 `interact.md` 中改写为 Current behavior，并补充对应
+  行为测试；没有适用项时说明已核对范围。
 - [ ] 修复后重跑受影响测试和机械检查，最终 diff 与 Git 状态已再次检查。
 
 ## PR Delivery

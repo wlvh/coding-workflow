@@ -77,9 +77,8 @@ repo scope 的目标路径必须恰好是 clean Git 根目录；审查生成的 
 
 ## 同步边界
 
-Skill 固定目标 HEAD 与上游 SHA，从当前代码、配置、测试、committed artifacts、可重复运行
-结果和必要 Git 历史全量重建事实，再只做事实要求的最小文档改写。现有文档与上游模板都是
-hypotheses，不是证据。
+Skill 固定目标 HEAD 与上游 SHA，依据项目证据做最小必要改写。事实与政策的核验方法见
+[canonical Skill](skills/workflow-docs-sync/SKILL.md)，文档职责与入口见[目录地图](#目录地图)。
 
 Architecture、Capability / User Behavior、Testing、Governance 是覆盖维度，不是固定 Agent
 拓扑。主 Agent 是执行 worktree 的唯一写入者；测试环境由项目命令、副作用、CI 和项目政策
@@ -137,11 +136,11 @@ fi
 
 ## 目录地图
 
-- [AGENTS.md](AGENTS.md)：agent 权威入口、稳定模块地图与影响规则模板。
-- [architecture.md](architecture.md)：系统目的、调用链、边界、状态与副作用模板。
-- [capability_contract.json](capability_contract.json)：能力、边界、职责与行为锚点契约。
-- [interact.md](interact.md)：用户可观察行为与验收模板。
-- [docs/business_user_guide.md](docs/business_user_guide.md)：首次使用业务指南模板。
+- [AGENTS.md](AGENTS.md)：权威范围、任务路由与稳定模块地图模板。
+- [architecture.md](architecture.md)：系统结构与 Change propagation 关系的定义位置。
+- [capability_contract.json](capability_contract.json)：选定公开承诺、边界、职责、调用行为与文档锚点的登记表。
+- [interact.md](interact.md)：用户可观察行为、组合语义、Open questions 与验收模板。
+- [docs/business_user_guide.md](docs/business_user_guide.md)：项目使用指南与正式接口目录，允许链接既有文档的短桥接页。
 - [TESTING.md](TESTING.md)：测试入口、层级、隔离和证据模板。
 - [PR_Checklist.md](PR_Checklist.md)：通用 PR todo 与目标项目发布政策边界。
 - [SOP.md](SOP.md)：稳定标准流程入口模板。
