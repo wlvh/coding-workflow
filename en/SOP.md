@@ -3,11 +3,9 @@
 ## Purpose and Authority
 
 `SOP.md` keeps stable process entrypoints and does not copy volatile commands, test lists, or publishing
-details. When sources conflict, check descriptive facts against current implementation evidence and
-normative policy against valid project authorization and policy sources; split mixed statements. Use the
-source scopes and existing conflict-resolution rules in `AGENTS.md`; filenames do not automatically
-override existing authority. Follow this project's actual audit, recoverability, and delivery policy for
-how execution records are stored and retained.
+details. Follow the [Authority Map in AGENTS.md](AGENTS.md#authority-map) for sources, evidence, and conflict
+handling. Follow this project's actual audit, recoverability, and delivery policy for how execution
+records are stored and retained.
 
 ## Available SOPs
 

@@ -87,7 +87,7 @@
         "anchor_id": "DOC.interact",
         "type": "document",
         "status": "active",
-        "statement": "interact.md 展开用户可观察行为、交互语义与验收；已有正式文档、接口规范和已接受政策继续在各自覆盖范围内有效。",
+        "statement": "interact.md 按本 contract rules 的范围规则展开用户可观察行为、交互语义与验收。",
         "audience": [
           "business_user",
           "agent",
@@ -100,7 +100,7 @@
         "anchor_id": "DOC.business_user_guide",
         "type": "document",
         "status": "active",
-        "statement": "docs/business_user_guide.md 负责使用说明、正式文档和接口导航及必要补充；成熟项目可使用短桥接页，原正式文档继续在相应范围内作为正文权威。",
+        "statement": "docs/business_user_guide.md 按本 contract rules 的范围规则提供使用说明、正式文档与接口目录及必要补充；成熟项目可使用短桥接页。",
         "audience": [
           "business_user",
           "agent",

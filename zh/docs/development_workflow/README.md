@@ -239,15 +239,8 @@
 必须替换或删除 marker。仅对 sync 工具自身有意义的实现细节放在
 `zh/skills/workflow-docs-sync/`，不写入下游模板。
 
-- `AGENTS.md`：agent 权威入口、稳定模块地图、影响规则与项目约定。
-- `architecture.md`：系统目的、运行时主流程、边界、状态、失败与副作用。
-- `capability_contract.json`：能力边界、职责边界、agent 行为承诺的机器可读真相源。
-- `interact.md`：用户可观察行为与验收不变量。
-- `docs/business_user_guide.md`：面向首次接触业务人员的教学派生文档。
-- `TESTING.md`：测试入口、测试分层、隔离、测试证据与 alignment 边界。
-- `PR_Checklist.md`：PR todo、Git diff、测试、文档、review closure 与仓库外 body 边界。
-- `SOP.md`：标准流程骨架，只做入口，不重复规范。
-- `.github/pull_request_template.md`：PR body 的长期模板。
+当前模板职责与入口统一见[中文维护入口的目录地图](../../README.md#目录地图)，此处不另维护
+一份容易漂移的职责清单。
 
 ## Workflow Docs Sync
 
@@ -255,8 +248,8 @@
 创建 draft PR。Skill 内部解析 canonical upstream checkout；无法定位时使用仓库外临时 shallow clone，
 并在整轮固定目标 HEAD 与上游 SHA。
 
-- 写文档前至少以 `git ls-files -z` 建立范围，从代码、配置、测试、committed artifacts、
-  可重复运行结果和必要 Git 历史全量重建事实；现有文档与上游模板只是 hypotheses。
+- 写文档前至少以 `git ls-files -z` 建立范围；事实与政策的核验方法遵循
+  [canonical Skill](../../skills/workflow-docs-sync/SKILL.md)，不在本说明重复定义。
 - Architecture、Capability / User Behavior、Testing、Governance 是覆盖维度，不是固定 Agent
   拓扑。主 Agent 可独立完成，也可按模块、调用链、风险或证据类型动态委派只读调查。
 - 主 Agent 是目标工作区唯一写入者。全量质疑九份文档后只改错误、缺失或失真部分；正确

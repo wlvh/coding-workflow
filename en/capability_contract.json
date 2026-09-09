@@ -87,7 +87,7 @@
         "anchor_id": "DOC.interact",
         "type": "document",
         "status": "active",
-        "statement": "interact.md explains user-visible behavior, interaction semantics, and acceptance; existing official documentation, interface specifications, and accepted policies remain effective within their respective scopes.",
+        "statement": "interact.md explains user-visible behavior, interaction semantics, and acceptance within the authority scopes defined in this contract.",
         "audience": [
           "business_user",
           "agent",
@@ -100,7 +100,7 @@
         "anchor_id": "DOC.business_user_guide",
         "type": "document",
         "status": "active",
-        "statement": "docs/business_user_guide.md provides usage guidance, navigation to official documentation and interfaces, and necessary additions; mature projects may use a short bridge while original official documentation remains the content authority within its scope.",
+        "statement": "docs/business_user_guide.md provides usage guidance, the directory of official documentation and interfaces, and necessary additions within the authority scopes defined in this contract; mature projects may use a short bridge.",
         "audience": [
           "business_user",
           "agent",

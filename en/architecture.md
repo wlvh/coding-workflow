@@ -2,14 +2,10 @@
 
 ## 0. Scope and Update Triggers
 
-This document describes the current system structure within its stated scope. Existing official
-specifications and accepted policies remain effective within their own scopes and are not overridden by
-this document's filename. Update or confirm the relevant section when runtime entrypoints, module
-boundaries, call flows, data contracts, state, error models, external dependencies, authentication,
-configuration, artifacts, side effects, extension points, or architecture
-debt change. Check descriptive facts against current implementation, configuration, tests, committed
-artifacts, or reproducible evidence. Check normative constraints against valid project authorization and
-policy sources; split mixed statements.
+This document describes the current system structure, checking sources and scope through the
+[Authority Map in AGENTS.md](AGENTS.md#authority-map). Update or confirm the relevant section when runtime
+entrypoints, module boundaries, call flows, data contracts, state, error models, external dependencies,
+authentication, configuration, artifacts, side effects, extension points, or architecture debt change.
 
 Choose prose, a responsibility table, a data flow, state transitions, an object lifecycle, or another form
 according to the structure that is hardest to understand in this project. None of these forms is required;

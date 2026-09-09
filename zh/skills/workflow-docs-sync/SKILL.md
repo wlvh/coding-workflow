@@ -6,8 +6,8 @@ description: 从用户显式指定的本地 Git 路径、GitHub repository URL �
 # Workflow Docs Sync
 
 一次调用完成事实重建、必要文档改写、真实测试、复核、机械检查和明确授权的 Draft PR。
-九份文档是人和 Agent 共用的项目沟通界面，不是项目事实数据库。描述性事实核对当前实现
-证据，规范性政策核对有效项目授权与政策依据；主 Agent 是候选 checkout 的唯一写入者。
+九份文档是人和 Agent 共用的项目沟通界面，不是项目事实数据库。主 Agent 是候选 checkout
+的唯一写入者。
 
 ## 调用、身份与 checkout
 
@@ -113,9 +113,9 @@ python3 <skill-root>/scripts/sync_docs.py prepare \
   配置只证明 enforcement，不自动 supersede 政策；同类政策按显式 supersession 与既有
   authority/scope 裁决。冲突先登记 finding 并调查；权威仍不明时保留原文和已检查来源，
   是否登记 Open question 按下文的公共语义与授权边界判断。个人偏好未被持久化时不进入项目。
-- 已有正式用户文档、接口规范和已接受政策继续在各自覆盖范围内有效。Capability contract
-  登记选定的承诺与边界；interact 展开交互语义；用户指南负责使用说明。生成文档不因文件名
-  自动覆盖既有权威，也不能只靠实现观察创造支持或拒绝政策。
+- 从已核实的项目来源建立 `AGENTS.md` 的 Authority Map；独立消费的 contract rules 保留
+  完整范围规则，其他文档按职责引用，不各自复制定义。不得用待修正文档为自身作证，也不按
+  生成文件名决定优先级。
 - 任何语义编辑前登记 finding：唯一 ID、`BLOCKER/WARN/NOTE`、证据、风险、最小修复边界。
   同根因合并，多文档共同虚构能力必须是 BLOCKER，不得事后倒填。
 - BLOCKER 表示候选会错误、虚构、越权、不可复现或遗漏关键风险，必须修复；WARN 表示实质性
@@ -162,8 +162,8 @@ python3 <skill-root>/scripts/sync_docs.py prepare \
   消费者。`test_anchor` 是证据指针，不是正文作者；按现有 rules 处理缺失测试指针，不从
   测试自动生成 statement/status，不新增状态，也不从 contract 生成 CLI、MCP、OpenAPI 或 handler。
 - 用户指南回答解决什么问题、输入、结果、不做什么、正式接口入口和何时求助。成熟项目允许
-  短桥接页：明确原正式文档在相应范围内仍是正文权威，只作导航与必要补充。interact 和指南
-  指向真实 API、CLI 或协议参考，不把内部实现、偶然行为或规划包装成正式能力。
+  短桥接页：明确原正式文档在相应范围内仍是正文权威，只作导航与必要补充。正式接口目录
+  由指南维护，interact 引用该入口并展开交互语义；不把内部实现、偶然行为或规划包装成正式能力。
 - 所有模板允许有依据的 `Not applicable`、`Not configured` 或尚未确认：分别表示确实不适用、
   适用机制尚未配置、证据不足，写清已检查范围与原因，不得互相替代。保留现有九个固定路径、
   JSON 结构、机器必需字段、状态枚举和 consumer contract；文件数量或 contract 是否可选的

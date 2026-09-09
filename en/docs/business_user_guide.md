@@ -1,21 +1,18 @@
 # Project Use Guide
 
 This guide helps project users and external calling agents understand the problem solved, required inputs,
-expected results, exclusions, official interface entrypoints, and when to seek help. Existing official user
-documentation, interface specifications, and accepted policies remain effective within their respective
-scopes. This page provides usage guidance and necessary additions without overriding existing authority by
-filename.
+expected results, exclusions, official interface entrypoints, and when to seek help. Check sources and
+scope through the [Authority Map in AGENTS.md](../AGENTS.md#authority-map).
 
 A mature project may reduce this page to a short bridge: identify the original official documentation as
 the content authority within its scope, provide navigation and necessary additions, and link to sections
-that already answer these questions instead of rewriting the full guide. `capability_contract.json`
-registers selected commitments and boundaries; `interact.md` explains interaction semantics. Keep usage
-guidance consistent with their applicable content and existing official documentation; do not present
-internal implementation, incidental behavior, or plans as public commitments.
+that already answer these questions instead of rewriting the full guide. Keep usage guidance consistent
+with the corresponding confirmed behavior; do not present internal implementation, incidental behavior,
+or plans as public commitments.
 
 ## 0. Documentation and Interface Entrypoints
 
-<!-- project-fill: Link to existing official user documentation and real API, CLI, or protocol references, identifying their respective scopes and this page's additions. Distinguish verified inapplicability, applicable but unconfigured references, and content not yet confirmed due to insufficient evidence, then remove this marker. -->
+<!-- project-fill: Maintain the directory of existing official user documentation and real API, CLI, or protocol references here for interact.md and other documents to cite. Identify their respective scopes and this page's additions. Distinguish verified inapplicability, applicable but unconfigured references, and content not yet confirmed due to insufficient evidence, then remove this marker. -->
 
 ## 1. Value
 

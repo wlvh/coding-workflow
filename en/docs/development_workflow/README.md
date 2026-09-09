@@ -118,6 +118,9 @@ for workflow complexity conservation and the review and retirement rules for exp
 
 ## English Coverage Boundary
 
+Current template roles and entrypoints are maintained in the [Directory Map](../../README.md#directory-map),
+without a second role list here that could drift.
+
 English workflow documentation is exposed only when its path is ready. The long prompt pack remains outside
 the English-ready surface; see [en/prompts/README.md](../../prompts/README.md). Bilingual template, README,
 and development-workflow content changed by a PR must close in that PR. Unchanged historical decisions
@@ -129,9 +132,9 @@ Invoke `$workflow-docs-sync` once with the target repository, a required `zh` / 
 whether to create a draft PR after success. The Skill resolves the canonical upstream checkout or uses an
 external shallow clone, then pins target HEAD and upstream SHA for the entire run.
 
-- Before writing, use at least `git ls-files -z` to establish scope and reconstruct facts from code,
-  configuration, tests, committed artifacts, reproducible results, and necessary Git history. Existing
-  documents and upstream templates are hypotheses.
+- Before writing, use at least `git ls-files -z` to establish scope. Follow the
+  [canonical Skill](../../../zh/skills/workflow-docs-sync/SKILL.md) for fact and policy verification instead
+  of redefining the method here.
 - Architecture, Capability / User Behavior, Testing, and Governance are coverage dimensions, not a fixed
   agent topology. The main agent may investigate directly or delegate read-only work by module, call flow,
   risk, or evidence type.

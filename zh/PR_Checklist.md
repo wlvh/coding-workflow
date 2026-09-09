@@ -1,7 +1,7 @@
 # PR Submission Checklist
 
-本文件本身就是提交前 todo。事实项以当前 diff、测试输出或仓库状态核对，政策项以有效授权
-与政策依据核对；只勾选已完成项。`Not applicable` 须有不适用依据，`Not configured` 须确认
+本文件本身就是提交前 todo。只勾选已完成且有依据的项目；证据类型与权威范围的判断见
+[AGENTS.md 的 Authority Map](AGENTS.md#authority-map)。`Not applicable` 须有不适用依据，`Not configured` 须确认
 适用机制未配置；证据不足应写尚未确认。除非用户明确要求，不执行 commit、push 或 PR 创建。
 
 <!-- project-fill: 补充本项目特有的审批、提交、base/head 或发布 gate；没有项目专属要求时删除此 marker -->
@@ -28,10 +28,8 @@
 - [ ] 已按真实影响检查 `AGENTS.md`、`architecture.md`、`capability_contract.json`、
   `interact.md`、business guide、`TESTING.md` 和 `SOP.md`；确受影响但保持不变的权威文档有
   当前事实或政策依据，不要求为了齐全而修改所有文档。
-- [ ] 已有正式用户文档、接口规范与已接受政策在各自范围内继续有效；contract 登记选定承诺
-  与边界，interact 展开交互语义，用户指南负责使用说明，没有因文件名覆盖既有权威。
-- [ ] 用户可见事实有当前实现或测试证据，规范性政策有有效授权与政策依据，混合语句已拆分
-  核验，并按本项目真实 contract/reference 机制核对。
+- [ ] 按 `AGENTS.md` 的 Authority Map 核对各文档职责、来源范围及事实与政策证据；混合语句
+  已拆分核验，并按本项目真实 contract/reference 机制核对。
 - [ ] 项目采用 contract anchor 协议时，按该协议引用和验证；项目使用自有 contract/reference
   机制时，核对该真实机制或测试证据；不为满足模板发明 anchor。结构 alignment 结论没有冒充
   句子级绑定或能力语义证明。

@@ -2,13 +2,10 @@
 
 ## 0. Authority and Scope
 
-Existing official user documentation, interface specifications, and accepted policies remain effective
-within their respective scopes. `capability_contract.json` registers selected public commitments and
-boundaries; this document explains interaction semantics and acceptance; `docs/business_user_guide.md`
-provides usage guidance. Generated documents do not override existing authority by filename. Check
-descriptive facts against current implementation evidence and normative policy against valid authorization
-and policy sources; split mixed statements. Describe only behavior directly observable through a UI, API
-response, or other public entrypoint; logs, monitoring, and internal state are not user results.
+This document explains user-visible behavior, interaction semantics, and acceptance, checking sources and
+scope through the [Authority Map in AGENTS.md](AGENTS.md#authority-map). Describe only behavior directly
+observable through a UI, API response, or other public entrypoint; logs, monitoring, and internal state
+are not user results.
 
 <!-- project-fill: Describe public entrypoints, this document's scope and exclusions, and cite official documentation, interface specifications, and policy sources effective within their respective scopes, then remove this marker. -->
 
@@ -65,7 +62,7 @@ document Current behavior and validate it directly.
 Not every project needs an unresolved question. A decision not found does not mean maintainers never made
 one; investigate existing rules and current authorization before deciding that a decision is needed.
 
-<!-- project-fill: Keep and complete the four parts below only for a real question meeting the conditions above. If none exist, remove the question skeleton and state the scope checked, then remove this marker. -->
+<!-- project-fill: Replace this comment with the four parts below only for a real question meeting the conditions above. If none exist, remove this comment and state the scope checked, then remove this marker.
 
 ### Question title
 
@@ -80,11 +77,11 @@ An existing Issue or decision entrypoint; if none was found, say so without inve
 
 Close when:
 Once the decision is implemented, rewrite it as Current behavior and add corresponding behavior tests.
+-->
 
 ## 7. Interface Entrypoints
 
-Users and external calling agents should start with real public interfaces and their official references.
-Internal functions, incidental behavior, and plans do not become official capabilities by being documented
-here. This page supplements interaction semantics without replacing interface specifications.
-
-<!-- project-fill: Link to this project's real API, CLI, or protocol and official interface references, identifying scope. Give separate grounds for no such interface, an unconfigured reference, or an entrypoint not yet confirmed, then remove this marker. -->
+Maintain the directory of public interfaces and official references in the
+[guide's Documentation and Interface Entrypoints](docs/business_user_guide.md#0-documentation-and-interface-entrypoints).
+This page supplements interaction semantics without duplicating that directory. Internal functions,
+incidental behavior, and plans do not become official capabilities by being documented here.

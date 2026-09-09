@@ -2,11 +2,9 @@
 
 ## 0. Authority and Scope
 
-已有正式用户文档、接口规范和已接受政策继续在各自覆盖范围内有效。`capability_contract.json`
-登记选定的公开承诺与边界，本文档展开交互语义与验收，`docs/business_user_guide.md` 负责
-使用说明；生成文档不因文件名自动覆盖既有权威。描述性事实核对当前实现证据，规范性政策
-核对有效授权与政策依据，混合语句拆开处理。本文档只写可由 UI、API 响应或其他公开入口
-直接观察的行为，不把日志、监控或内部状态当成用户结果。
+本文档按 [AGENTS.md 的 Authority Map](AGENTS.md#authority-map) 核对来源与适用范围，展开
+用户可观察行为、交互语义与验收。只写可由 UI、API 响应或其他公开入口直接观察的行为，
+不把日志、监控或内部状态当成用户结果。
 
 <!-- project-fill: 说明本项目的公开入口、本文覆盖范围与排除项，并引用各自范围内有效的正式文档、接口规范与政策依据；完成后删除此 marker -->
 
@@ -57,7 +55,7 @@ canonical anchor；项目已有自己的 contract/reference 机制时，使用�
 不要求每个项目都有未决问题。“未找到决定”不等于“维护者从未决定”；先调查既有规则和
 当前授权，再判断是否需要决定。
 
-<!-- project-fill: 仅为符合上述条件的真实问题保留下列四部分并填写内容；没有此类问题时删除问题骨架，说明已检查范围；完成后删除此 marker -->
+<!-- project-fill: 仅为符合上述条件的真实问题，用下列四部分替换本注释；没有此类问题时删除本注释并说明已检查范围；完成后删除此 marker
 
 ### 问题标题
 
@@ -72,10 +70,9 @@ Decision:
 
 Close when:
 决定落地后改写为 Current behavior，并补充对应行为测试。
+-->
 
 ## 7. Interface Entrypoints
 
-用户与外部调用 Agent 应从真实公开接口及其正式参考进入。内部函数、偶然行为和规划不能
-因写入本文就成为正式能力；本页补充交互语义，不取代接口规范。
-
-<!-- project-fill: 指向本项目真实 API、CLI 或协议及正式接口参考，标明适用范围；没有此类接口、参考尚未配置与入口尚未确认应分别说明依据；完成后删除此 marker -->
+公开接口与正式参考的目录统一见[用户指南的 Documentation and Interface Entrypoints](docs/business_user_guide.md#0-documentation-and-interface-entrypoints)。
+本页补充交互语义，不另建接口目录；内部函数、偶然行为和规划不能因写入本文就成为正式能力。

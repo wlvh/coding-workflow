@@ -1,8 +1,8 @@
 # PR Submission Checklist
 
-This file is the pre-submission todo. Verify factual items against the current diff, test output, or
-repository state, and policy items against valid authorization and policy sources; check only completed
-items. `Not applicable` needs grounds for inapplicability; `Not configured` requires confirmation that an
+This file is the pre-submission todo. Check only completed items with supporting evidence; use the
+[Authority Map in AGENTS.md](AGENTS.md#authority-map) to judge evidence types and authority scopes.
+`Not applicable` needs grounds for inapplicability; `Not configured` requires confirmation that an
 applicable mechanism is unconfigured. Mark insufficient evidence as not yet confirmed. Do not commit, push,
 or create a PR unless the user explicitly requests it.
 
@@ -35,12 +35,8 @@ or create a PR unless the user explicitly requests it.
 - [ ] Check `AGENTS.md`, `architecture.md`, `capability_contract.json`, `interact.md`, the business guide,
   `TESTING.md`, and `SOP.md` according to actual impact. State the current factual or policy basis for affected
   authorities left unchanged; do not edit every document merely for completeness.
-- [ ] Existing official user documentation, interface specifications, and accepted policies remain effective
-  within their respective scopes. The contract registers selected commitments and boundaries, interact
-  explains interaction semantics, and the guide provides usage instructions; filenames do not override
-  existing authority.
-- [ ] User-visible facts have current implementation or test evidence, and normative policy has valid
-  authorization and policy sources. Split mixed statements for verification and check the project's real
+- [ ] Use the Authority Map in `AGENTS.md` to check document responsibilities, source scopes, and factual
+  and policy evidence. Split mixed statements for verification and check the project's real
   contract/reference mechanism.
 - [ ] When a project adopts a contract anchor protocol, reference and validate under that protocol; when it
   uses its own contract/reference mechanism, check that real mechanism or test evidence. Do not invent an
