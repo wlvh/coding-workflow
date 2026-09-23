@@ -77,8 +77,21 @@ Describe stable modules, entrypoints, and responsibilities. Do not permanently m
   and synthesized before use.
 - Assign non-overlapping path ownership before parallel writes; follow the target project's policy for the
   isolation method.
-- Divide work dynamically by module, call flow, risk, or evidence type; do not require a fixed agent count
-  or schedule.
+- By default, the primary executor handles a batch of tasks that share context, rules, and implementation.
+  Do not mechanically split subagents merely by case, company, metric, or file, or spawn them one after
+  another to reload the same context serially.
+- Delegation must offer a clear benefit, such as independent review, isolating a large source-reading task,
+  or bounded specialist work with a concrete payoff. Do not delegate work an existing executor can complete
+  directly when none of these benefits applies.
+- Before delegating, use existing sessions and records to check running tasks and available results, and
+  state the new objective and uncovered scope. Do not assign the same execution task twice. Prefer the
+  original executor or existing results for incremental work without compromising required review independence.
+- Before reusing a conclusion, verify the object's version, task scope, judgment criteria, and completion.
+  An existing result path does not prove completion. Redo only new, unfinished, or invalidated work; formal
+  review must still cover its full required scope.
+- Independent verification may deliberately repeat investigation. Do not present batch partitioning as
+  independent verification or replace explicitly required independent review with author self-review.
+  Deduplication does not cancel cross-model verification explicitly arranged by the user.
 - Agreement, voting, or consensus is not evidence. Important conclusions must trace to the corresponding
   factual evidence or valid policy sources.
 - Investigation and review tasks are read-only by default; when changes are needed, hand them off explicitly

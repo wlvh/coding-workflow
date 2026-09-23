@@ -75,7 +75,8 @@ for workflow complexity conservation and the review and retirement rules for exp
     2. Start a fresh Codex conversation and run the full step-9 review against the latest exact head; builder
        self-review does not replace this review.
     3. On `PASS`, proceed to merge and the post-merge steps.
-    4. On `REWORK_REQUIRED`, send each P0/P1 finding to fresh Codex and Claude Code verification conversations.
+    4. On `REWORK_REQUIRED`, send all P0/P1 findings from this review conversation as one batch to one fresh
+       Codex verification conversation and one fresh Claude Code verification conversation.
        Codex verifies truth, trigger path, reproduction, and severity; Claude Code verifies impact, adjacent
        entrypoints, root cause, and the smallest sufficient fix.
     5. Give Claude Code's analysis to Codex for synthesis. If disagreement remains, exchange only code, tests,
