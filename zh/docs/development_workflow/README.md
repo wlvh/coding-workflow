@@ -170,13 +170,8 @@
    8. 任何阶段出现 `OWNER_DECISION_REQUIRED` 时，把需要 owner 选择的事项以自然语言补回 Issue，并说明它影响哪些工作；受影响工作暂停，其他工作继续。Owner 决定后把结论和理由补回 Issue，再恢复工作、更新 PR，并重新执行第 9 步审核。
    9. 如果返工超过三次，在gpt对话输入：
    ```text
-这个PR合并入主干后用户调用allocate_optimized.sh有什么可感知的变化吗，用户如何利用这次PR的开发成果，以AGENTS.md为首的文档提供了很好的指引吗？AGENTS.md 及其内联的文档有没有需要更新的地方？下一步的未来展望是什么？GitHub 
-
-   Finding 闭合：在既有 PR review / fix record 和 GitHub thread 中保留来源 ID、判断与关闭证据；不得让未解决 finding 静默消失，也不另建一套重复 reconciliation ledger。
-
-   备注：同一个 PR 的 patch 不必在同一验证对话中反复完整粘贴；应覆盖到最新 head，避免模型继续依据过时 patch。
+综合前面反复返工暴露出来的问题，也许我们过于拘泥于当前实现细节。跳出目前的问题，看看当前实现还有哪些可以在不损失目标和必要正确性的前提下简化。没有明确收益的地方不要动。   ```
    ```
-
 11. **PR 合并后，用网页端 GPT 的 apps 功能做 Tech Lead 总结**
 
    总结短 prompt：
