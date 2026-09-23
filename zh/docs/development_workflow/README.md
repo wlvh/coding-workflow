@@ -163,7 +163,7 @@
    1. Coding Agent 完成开发、自审、更新仓库外 PR body，并提交或更新 Draft PR。
    2. 新开 Codex 对话，使用第 9 步完整审核 prompt 审核最新 exact head；开发对话中的自审不能替代这次审核。
    3. 若结论为 `PASS`，进入合并以及第 11 至 13 步。
-   4. 若结论为 `REWORK_REQUIRED`，把每个 P0/P1 finding 分别放入新的 Codex 验证对话和 Claude Code 验证对话，使用本节共同 prompt。Codex 核实真实性、触发路径、复现和严重度；Claude Code 核实影响面、同类入口、根因和最小充分修复。
+   4. 若结论为 `REWORK_REQUIRED`，将本轮审阅对话发现的全部 P0/P1 findings 作为一批，分别交给一个新的 Codex 验证对话和一个新的 Claude Code 验证对话，使用本节共同 prompt。Codex 核实真实性、触发路径、复现和严重度；Claude Code 核实影响面、同类入口、根因和最小充分修复。
    5. 将 Claude Code 的意见交给 Codex 输出综合分析。仍有分歧时，只交换代码、测试、复现证据和 Issue 契约，最多三轮；仍证据不足则保持 `REWORK_REQUIRED` 并列明补证据动作，不以模型身份裁决。
    6. 综合结论为 `REWORK_REQUIRED` 时，在 Codex 验证对话中输入“按照综合分析进行修复”；修复后复用第 8 步 PR 提交短 prompt，更新代码、测试、文档、Review / Fix Record 和 PR body，并推送新 head。
    7. 每次修复后都新开 Codex 对话，再按第 9 步审核最新 exact head；重复到 `PASS`。P2 可以接受，但必须记录。
