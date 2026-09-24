@@ -218,7 +218,7 @@ Independent 与 self-review 都绑定 `(target_head, candidate_tree)`。优先 f
 independent reviewer：完整仓库只读，blind-first 先从代码/配置/tests/committed artifacts 形成
 高风险 findings，再读候选与原始 diff；不编辑、stage、commit、push 或写仓库。
 
-记录 mode、可用的 reviewer/session/thread identity、reviewed head/tree、blind-first boundary
+记录 mode、可用的 reviewer/session/thread identity、实际上下文来源、reviewed head/tree、blind-first boundary
 和 result。head/tree 任一变化即失效；仅 commit metadata 变化不重做语义 review。无认知隔离时
 完整 self-review 并写 `Review: SELF_REVIEW`；用户明确要求 independent 而平台不可用时停止。
 Review finding 复用前述 ID/severity/证据/风险/边界；修复全部 BLOCKER 与无需 owner 决策的 WARN
