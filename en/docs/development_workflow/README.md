@@ -199,10 +199,21 @@ formal PR review remains a separate, detailed step. Model identity is not the di
 review loop uses only `PASS`, `REWORK_REQUIRED`, and `OWNER_DECISION_REQUIRED` as final outcomes.
 
 Owner choices remain visible in the Issue and are explained in readable prose rather than a fixed schema.
-Conditional issue readback and the Owner Decision mechanism are experimental and reviewed after three
-applicable PRs with `PROMOTE`, `MODIFY`, or `RETIRE` as the outcomes. Pre-coding readback complements rather
-than replaces post-merge implementation explanation, documentation review, FSD closure checking, and
-user-view acceptance.
+The specific conditional issue-readback and Owner Decision procedures remain experimental. Under the
+2026-09-24 revision, each is reviewed using actual usage feedback: roughly three uses are a reminder, not a
+counting gate. Review may happen earlier when costs or gaps emerge, or after prolonged non-use; do not
+manufacture tasks to reach a count. Assess understanding and decision benefits, risk coverage, prevention of
+incorrect implementation or wasted waiting, and execution cost. Non-use, an unchanged next action, or the
+absence of a risk event alone does not justify retirement; a readback can improve informed judgment without
+changing the plan.
+
+Only extra steps, records, or redundant checks may be retired, not necessary authorization boundaries or
+substantive owner choices. The owner decides whether to retain, adjust, or retire a procedure based on
+available evidence; `PROMOTE`, `MODIFY`, and `RETIRE` remain optional labels. Record the conclusion and reasons
+in an existing relevant Issue or PR and update affected workflow guidance. Disclose insufficient evidence;
+experimental status is not proof of maturity. No separate counter, tracking file, or dedicated evaluation is
+required by this rule. Pre-coding readback complements rather than replaces post-merge implementation
+explanation, documentation review, FSD closure checking, and user-view acceptance.
 
 Key implementation files:
 
