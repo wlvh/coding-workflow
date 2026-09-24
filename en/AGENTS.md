@@ -77,6 +77,9 @@ Describe stable modules, entrypoints, and responsibilities. Do not permanently m
   and synthesized before use.
 - Assign non-overlapping path ownership before parallel writes and coordinate shared-state updates;
   follow the target project's policy for the isolation method.
+  For example, the primary agent first assigns modification scopes; subagents investigate, modify, and
+  return results within their assigned scopes. The primary agent coordinates shared ledgers, shared quotas,
+  and other interdependent operations, then checks that all changes work together correctly.
 - Delegation must offer a clear benefit, such as reducing overall completion time, isolating a large
   source-reading task, specialist work, or independent review. Proactive task splitting is not required,
   nor is a fixed agent count or order. Different cases, companies, metrics, or files alone do not justify
