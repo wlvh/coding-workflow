@@ -6,6 +6,22 @@ This directory provides English templates derived from the Chinese semantic sour
 language-, framework-, and project-neutral. The canonical `workflow-docs-sync` Skill remains under
 `zh/skills/workflow-docs-sync/` and reads English templates from the pinned upstream commit.
 
+## Issue-driven coding loop
+
+The [development workflow](docs/development_workflow/README.md) defines the coding loop: an adopted Issue,
+independent Issue and PR reviews by two different companies, continuous engineering responsibility,
+candidate-bound validation, and acceptance of the actual user outcome. Shared behavior rules, impact
+findings, and migration plans are retained when needed; FSD, Forecast, and Bridge are no longer mandatory
+upstream documents.
+
+The [version-adoption contract](docs/development_workflow/version_adoption.md) explains how a consumer such
+as Tongxu can run a fixed version and adopt an update at the user's request. This repository supplies the
+workflow and canonical programming prompts; it does not claim that publishing these documents upgrades
+Tongxu's controller. The [prompt catalog](prompts/README.md) states the current English coverage boundary.
+
+The document synchronization Skill below remains a separate operation. It does not install or upgrade a
+coding-loop runtime.
+
 ## One-line start
 
 Copy this exact instruction into Codex while it is open in the target project:
@@ -111,6 +127,8 @@ Templates do not assume a programming language, framework, test runner, service,
   this file is derived from it.
 - Development workflow and decisions: `../zh/docs/development_workflow/`; the English overview is under
   `docs/development_workflow/README.md`.
+- Fixed-version adoption: `docs/development_workflow/version_adoption.md`; canonical programming-prompt
+  sources and their ordered role mapping are under `../zh/prompts/`.
 - Scenario tests: `../tests/test_workflow_docs_sync.py`; test code owns the detailed constraints.
 - GitHub paths: root `.github/` serves this repository, while `.github/` here and under `zh/` are downstream
   template sources.
@@ -133,6 +151,9 @@ only in the [Chinese maintainer map](../zh/README.md#维护者地图).
 - [SOP.md](SOP.md): stable standard-process entrypoints.
 - [.github/pull_request_template.md](.github/pull_request_template.md): long-term PR body structure.
 - [docs/development_workflow/README.md](docs/development_workflow/README.md): English workflow overview.
+- [docs/development_workflow/version_adoption.md](docs/development_workflow/version_adoption.md): fixed
+  versions, prompt ownership, user-requested upgrades, and existing-work compatibility.
+- [prompts/README.md](prompts/README.md): English prompt status and the canonical Chinese source.
 - [../zh/skills/workflow-docs-sync/](../zh/skills/workflow-docs-sync/): canonical Skill implementation.
 
 ## Install and Language Boundary
@@ -145,13 +166,14 @@ translation status in unchanged historical decisions remains a historical record
 
 ## Related Work
 
-This repository covers the **producer** side: how an agent reconstructs repository facts from committed
-code, config, tests, and artifacts, keeps changes to the minimum necessary, and delivers a reviewable
-draft PR from an isolated clean worktree.
+This repository maintains the coding-loop contract and project-document synchronization tools.
+[Tongxu](https://github.com/wlvh/tongxu) is a consumer responsible for controlled execution, project
+coordination, progress visibility, and real validation of the workflow version it adopts.
 
 [acceptance-agent](https://github.com/wlvh/acceptance-agent) covers the **acceptor** side: how an
 independent verifier decides `accept` / `reject` / `request_evidence` from the specification, the final
 artifact, and the test evidence — while being deliberately denied the builder's implementation
-conversation, so it cannot inherit the builder's framing.
+conversation, so it cannot inherit the builder's framing. It is a related project, not a mandatory third
+complete code review after this coding loop's cross-company review.
 
 Author: [github.com/wlvh](https://github.com/wlvh) · [huaweidata.com](https://huaweidata.com)

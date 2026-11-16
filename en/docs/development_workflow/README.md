@@ -1,131 +1,263 @@
 # Development Workflow
 
-This is the English overview of the repository's human-in-the-loop coding workflow. The Chinese workflow
-is the semantic source; this file closes the English meaning for the workflow content changed in this PR.
+This is the English overview of the [Chinese semantic source](../../../zh/docs/development_workflow/README.md).
+It defines the coding loop supplied by coding-workflow and the behavior required of a consumer such as
+Tongxu. The current contract is **coding-loop v2**, adopted in
+[DEC-009](../../../zh/docs/development_workflow/decisions.md#dec-009issue-直接驱动的编程回路与固定版本采用).
+It does not assert that a consumer already implements every requirement. See the
+[version-adoption contract](version_adoption.md) for fixed versions, source ownership, upgrades, and
+existing-work compatibility. Decision history remains in the
+[Chinese decisions](../../../zh/docs/development_workflow/decisions.md).
 
-See
-[DEC-008](../../../zh/docs/development_workflow/decisions.md#dec-008开发工作流采用复杂度守恒与可退役实验机制)
-for workflow complexity conservation and the review and retirement rules for experimental mechanisms.
+## Scope and defaults
 
-## Main Flow
+The default unit of development is an adopted Issue with observable acceptance conditions. FSD Core
+Contract, Repo Impact Forecast, and Target State Bridge are no longer mandatory documents. Retain shared
+behavior agreements, material impact findings, or a migration plan when they change real implementation,
+coordination, or release decisions. Keep one authoritative requirement instead of rewriting it in several
+parallel artifacts.
 
-1. Define the requirement.
+Issue review and PR review each involve two different companies, independent contexts, and distinct
+review lenses. Provider choices are configurable. Two prompts, two sessions, or two models from one
+company do not satisfy the cross-company requirement. Actual provider and execution records establish
+participation; role names and intended dispatches do not.
 
-2. Draft the black-box `FSD Core Contract` with the Pro web model.
-   The FSD fixes the user-observable contract without designing around the current implementation; repository
-   touchpoints, compatibility, and implementation context belong to the next Bridge step.
+One engineering responsibility continues through investigation, implementation, tests, and repairs.
+Sessions may change when context or execution must be recovered. The host maintains the actual permission,
+workspace, candidate, operation, and evidence boundaries. Existing adequate delegation does not create a
+new compulsory plan-approval step.
 
-3. Compare the FSD, current repository code, and authoritative documents to produce the `Repo Impact
-   Forecast` and `Target State Bridge`.
-   The Bridge aligns the black-box requirement with repository facts and separates predictions from commitments
-   without rewriting the FSD's user goal.
+These sections describe responsibilities, not a requirement for a separate agent, document, or model call
+at every heading. Investigation, implementation, and testing may alternate; coordination and progress
+reporting continue throughout.
 
-4. Turn the FSD, forecast, and bridge into one executable issue contract. Owner decisions must remain explicit.
-   The Issue is the single implementation entry so the Coding Agent does not receive several drifting upstream
-   instruction sets in parallel. Owner choices also stay in the Issue; PR bodies, review comments, and chats
-   refer back to the Issue instead of creating a second version.
+## 1. Receive a requirement in the existing project
 
-5. Review the issue through two orthogonal lenses before implementation: requirement and acceptance closure,
-   and engineering volume and minimal sufficiency. The Issue Agent from step 4 owns the final edit; the lenses
-   advise rather than editing the issue in parallel. The two lenses protect against under-delivery and
-   over-engineering rather than duplicating a vote.
+Treat multiple Issues at different stages as the normal project context. The secretary first relates new
+input to existing goals and work: duplication, extension, upstream output, shared agreement, semantic
+conflict, resource conflict, or release-order constraint. Suspected conflicts require investigation before
+becoming blockers. New input can supplement existing work instead of automatically creating more Issues.
 
-6. Run an issue readback before coding for high-risk issues. It explains the planned runtime chain, necessary
-   work packages, long-term complexity, a half-size alternative, test composition, and owner choices. It is an
-   owner-understanding step rather than a second specification source or approval-state machine.
+Persist receipt independently of model dispatch so a busy secretary does not lose incoming requirements.
+Keep receipt, association, delivery to the responsible engineer, adoption into a work version, and actual
+implementation distinguishable. A delivered message does not prove that the running candidate covers it.
 
-7. Implement the issue after reading `AGENTS.md`, `SOP.md`, `TESTING.md`, `PR_Checklist.md`, `interact.md`,
-   and project capability or business-user documents. Map each Spec Unit to code, tests, and documentation,
-   and state which tests are reused, parameterized, or used as the real cross-module scenario.
-   The Coding Agent receives the Issue rather than the FSD, Forecast, and Bridge again because those inputs have
-   already been consolidated into the Issue; implementation remains constrained by repository facts rather than
-   a generic coding template.
+The secretary discovers and routes relevant work. Engineering owners establish technical compatibility;
+the user decides substantive product or authority choices. Only affected work or stages wait. Cross-Issue
+coordination does not merge permissions or overwrite another owner's active workspace. Several active
+Issues do not require unlimited concurrent writers.
 
-8. Self-review the patch and deliver a draft PR using the repository's commit policy and tracked PR template.
-   The PR body remains outside the target worktree and records actual scope, evidence, review/fix history, open
-   decisions, and limits. It is an important formal-review input even though it is not committed to the target
-   repository.
+## 2. Form an Issue and its acceptance conditions
 
-9. Have Codex perform the formal PR review with the full review system and task prompt. It checks Issue
-   compliance, bugs, unnecessary architecture or duplicated repair, the external PR body, repository guidance,
-   and the realism of test evidence; important claims must be investigated through code execution or a close
-   reproduction path. This step discovers problems across the whole PR; the next step only verifies findings
-   already raised.
+The Issue author uses the user's original intent, existing decisions, relevant repository facts, and
+related work. Include the user goal and observable result, necessary boundaries, acceptance scenarios,
+shared agreements or dependencies that actually matter, and unresolved user choices. Do not demand a
+large fixed template for every task or re-create the three retired documents as compulsory sections.
 
-   The formal reviewer must use exactly three final outcomes:
-   - `PASS`: no P0/P1 problem;
-   - `REWORK_REQUIRED`: code, documentation, testing, or evidence still needs correction;
-   - `OWNER_DECISION_REQUIRED`: the Issue contains an unresolved owner choice that blocks the current delivery.
+Define initial acceptance scenarios now: starting conditions, user actions, expected observations, and
+important failure or compatibility behavior. Commands, data, accounts, and environment details can be
+completed during engineering. A complex change may include an explanation of how the finished behavior
+will work; it is derived from the same requirement and is not another specification or approval gate.
 
-10. When review finds a problem, verify it before changing code. Codex focuses on whether the problem is real,
-    its trigger path, reproduction, and severity; Claude Code focuses on impact, adjacent entrypoints, whether
-    the finding is one instance of a broader problem, and the smallest sufficient fix. Evidence and owner
-    decisions resolve disagreement.
+Multiple Issues can reference one shared behavior agreement or one outcome-level acceptance scenario.
+PR descriptions and conversations refer to those sources rather than maintaining competing requirements.
 
-    Finding verification uses the same three outcomes:
-    - `PASS`: the finding is refuted or does not constitute P0/P1;
-    - `REWORK_REQUIRED`: the finding is confirmed, or evidence is insufficient to rule out P0/P1;
-    - `OWNER_DECISION_REQUIRED`: the Issue contains an unresolved owner choice that affects whether or how far
-      the finding should be fixed.
+## 3. Review the Issue through two independent lenses
 
-    The operational sequence is:
+Both reviewers receive the original user request and decisions, the same Issue version, traceable shared
+repository facts, and relevant related Issues. They may verify decisive facts independently. Shared
+material must not force them to trust the author's conclusions or inherit the author's conversation.
 
-    1. The Coding Agent completes implementation and self-review, updates the external PR body, and creates or
-       updates the draft PR.
-    2. Start a fresh Codex conversation and run the full step-9 review against the latest exact head; builder
-       self-review does not replace this review.
-    3. On `PASS`, proceed to merge and the post-merge steps.
-    4. On `REWORK_REQUIRED`, send all P0/P1 findings from this review conversation as one batch to one fresh
-       Codex verification conversation and one fresh Claude Code verification conversation.
-       Codex verifies truth, trigger path, reproduction, and severity; Claude Code verifies impact, adjacent
-       entrypoints, root cause, and the smallest sufficient fix.
-    5. Give Claude Code's analysis to Codex for synthesis. If disagreement remains, exchange only code, tests,
-       reproducible evidence, and the Issue contract for at most three rounds. If evidence is still insufficient,
-       remain `REWORK_REQUIRED` and state the evidence work; model identity never decides correctness.
-    6. When the synthesis is `REWORK_REQUIRED`, continue in the Codex verification conversation with an explicit
-       instruction to implement the synthesis. Then reuse the step-8 PR submission prompt to update code, tests,
-       documentation, review/fix history, PR body, and the head commit.
-    7. After every repair, start a fresh Codex conversation and rerun the full step-9 review on the new exact
-       head. Repeat until `PASS`; P2 findings may remain but must be recorded.
-    8. On `OWNER_DECISION_REQUIRED`, add the owner choice to the Issue in readable prose and state which work it
-       affects. Pause the affected work while other work continues. After the owner decides, add the conclusion
-       and rationale to the same Issue, resume the work, update the PR, and run a fresh step-9 review.
+- **Completion and acceptance:** identify omissions that prevent the original goal from being met and
+  acceptance conditions that cannot distinguish real success. Do not expand the task to every imaginable
+  edge case.
+- **Minimal sufficiency:** challenge unnecessary requirements, reuse existing capabilities, and propose
+  deletion or scope reduction where justified. Do not replace one excessive plan with another large design.
 
-11. After merge, use the full Tech Lead walkthrough to explain the delivered implementation from final code
-    evidence, then assess user-visible changes, how users employ the result, and whether `AGENTS.md` and linked
-    documents provide sufficient guidance. Store both in the PR conversation.
+Each reviewer first investigates independently, then exchanges material findings. Neither owes a complete
+implementation design, file forecast, or separate test architecture. The Issue author edits the same Issue;
+reviewers recheck changed or disputed parts while reusing still-valid evidence.
 
-12. Keep the pre-close FSD acceptance step: inspect main-branch code against every Issue Spec Unit and produce
-    `Updates to FSD` for deviations. The current workflow may pause this step because its observed pass rate was
-    100% and user-view acceptance found more precise issues, but the step and prompt remain documented.
+Separate blocking problems, nonblocking suggestions, and new ideas. Unadopted new ideas stay outside the
+current target. Agreement between models does not enlarge user authority. Technical uncertainty remains
+engineering evidence work; only substantive choices outside existing delegation go to the user.
+Still-applicable material may be reused; an author's declaration that a task is small does not bypass a
+required independent review.
 
-13. Create a user-view acceptance plan through agreement between the web GPT and Claude Code, archive it in the
-    PR conversation, and hand it to Codex for actual execution with tools such as Playwright when useful. This
-    acceptance may create follow-up development work.
+## 4. Investigate and implement under continuous responsibility
 
-## Core Artifacts
+Bind the actual requirement snapshot, work version, initial code version H0, adopted workflow and prompt
+version, and valid delegation before execution. Begin with read-only investigation. If the resulting work
+remains within valid delegation, continue without a fixed per-file approval or a second preparation owner.
 
-- `FSD Core Contract`: a requirement contract that can be implemented, tested, and reviewed.
-- `Repo Impact Forecast`: predicted repository touchpoints, risks, documentation, and test impact.
-- `Target State Bridge`: target user- or caller-visible state and its validation method.
-- `Issue`: the single executable development contract, including owner choices that must remain visible.
-- Conditional issue readback: owner-facing understanding for high-risk issues; it is not a second authority
-  source and does not replace post-merge implementation explanation or user-view acceptance.
-- External PR body Markdown: temporary review and publishing input derived from the tracked PR template; it
-  never enters the target worktree or commit.
-- `FSD Completeness Acceptance Report`: the pre-close main-branch check of Spec Units and FSD deviations.
-- `Workflow Docs Sync`: one invocation for full fact reconstruction, minimal necessary document changes,
-  real tests, fresh-context independent review or honest self-review, and deterministic final checks.
+Predicted files are investigation hints. The host separately enforces:
 
-## English Coverage Boundary
+- **Read scope:** the authorized repository snapshot and the managed workspace's subsequent changes;
+  unrelated private paths, credential sources, and other repositories are not implicitly included.
+- **Write scope:** controlled modification, creation, deletion, and rename in the permitted workspace and
+  resources; check both rename endpoints and path protection, including path traversal or link escapes.
+- **Execution scope:** actual code, dependencies, configuration, processes, network, and external effects
+  available to tests or commands under the current execution profile.
 
-Current template roles and entrypoints are maintained in the [Directory Map](../../README.md#directory-map),
-without a second role list here that could drift.
+The engineer may inspect a previously unpredicted caller or create a necessary file within that boundary.
+Tests receive the actual candidate and required runtime inputs, not only files the model happened to read.
+Mechanical boundaries do not prove that an edit is semantically necessary; engineering and independent
+review remain responsible for that judgment.
 
-English workflow documentation is exposed only when its path is ready. The long prompt pack remains outside
-the English-ready surface; see [en/prompts/README.md](../../prompts/README.md). Bilingual template, README,
-and development-workflow content changed by a PR must close in that PR. Unchanged historical decisions
-retain their recorded translation status.
+Implement the smallest sufficient change, maintain project tests and necessary documentation, and self-review.
+Choose real tests from the repository and actual environment. Existing project tests may change when their
+premise changes; do not weaken the adopted business acceptance criteria to make an implementation pass.
+Only add independent assertions where existing coverage is insufficient.
+
+Create or update a draft PR under the project's valid publishing delegation. Record actual changes,
+verification, remaining limits, and references to the Issue. Implementation success, local result return,
+formal review, merge, deployment, and user acceptance remain different facts.
+
+## 5. Validate the candidate and exercise user paths early
+
+Select evidence for the actual candidate, test definition, and relevant environment. Retain complete
+controller-produced execution records, including failures, stops, and unknown results. A model's PASS claim
+or a matching command name is not execution evidence.
+An implementer being unable to edit a registered script does not establish that another independent author
+designed it or that it proves business correctness. Promote temporary probes into permanent tests only
+when they cover a real, continuing risk.
+
+Reuse an already valid test execution instead of automatically rerunning it at another stage. Confirm that
+its inputs and relevant environment remain applicable and resolve later conflicting failures or unknown
+executions before relying on an earlier PASS. This requires consistent success selection, failure handling,
+and recovery; removing one final test call alone is insufficient. Repeated runs that actually establish
+stability, baseline behavior, or new integration behavior remain justified.
+
+Use the Issue-stage acceptance scenarios as the implementation becomes runnable. Complete their concrete
+steps and execute applicable real user paths on the PR candidate, integration candidate, or preview before
+merge where possible. Record what requires the deployment environment in advance and verify it there later.
+An internal PR proves its contribution; it need not independently demonstrate a whole multi-Issue outcome.
+
+## 6. Review every PR with two companies and exchange evidence
+
+Before formal pass, two reviewers from different companies independently review the same accurate candidate,
+adopted Issue, repository rules, and real code and test evidence. Both can discover their own findings and
+investigate necessary callers; the second reviewer does not merely evaluate the first reviewer's summary.
+
+The correctness lens emphasizes actual behavior, triggers, and evidence. The impact lens emphasizes callers,
+compatibility, shared agreements, related work, and implementation complexity. Both cover the complete
+required review scope; lenses are not a partition that leaves part of the candidate unreviewed.
+
+After independent discovery, exchange concrete findings, counterevidence, and decision-relevant gaps. The
+original engineer repairs or refutes findings. Both reviewers confirm the changed candidate and the
+applicability of reused conclusions. Changes require review of their consequences, not necessarily a fresh
+full-repository read. No fixed extra fact-verifier or synthesis agent is required. A clean review needs no
+manufactured debate.
+
+Final review outcomes remain:
+
+- `PASS`: no unresolved blocking issue or decision-relevant evidence gap in the reviewed scope;
+- `REWORK_REQUIRED`: implementation, documentation, tests, or necessary evidence needs work;
+- `OWNER_DECISION_REQUIRED`: a substantive unresolved user choice blocks the affected work.
+
+Nonblocking style suggestions need not reach consensus. Resolve technical disputes through evidence;
+refer product choices to the user; retain essential unresolved gaps instead of voting them away. Specialist
+investigation is triggered by a concrete gap, not automatically by every finding. Reviews do not grant
+merge, deployment, resource, or spending permission.
+
+Cross-company review adds a second review to a clean PR that previously could pass after one reviewer.
+Reduced repetition in harder paths does not prove that every task will be cheaper or faster.
+
+## 7. Integrate and receive the accurate result
+
+A valid task may continue from H0 while the default branch advances. Display the actual base and whether it
+is behind; integrate long-running work at a useful time. Continuing development, forming a candidate,
+integrating with current main, and obtaining authority to publish are separate conditions.
+
+Combine already reviewed immutable members with real combination validation and an independent reception
+judgment. Member passes do not automatically establish that the combination works. A new PR retains the
+dual-company requirement, with review focused on the composition and interaction where prior evidence
+remains applicable.
+
+If conflict repair, adaptation, configuration, dependency, or connection changes alter reviewed behavior,
+obtain validation and independent conclusions for the new candidate. Reuse unaffected investigation and
+facts; do not relabel old acceptance as acceptance of the new combination.
+
+Final reception checks the adopted scope, exact candidate, applicable dual reviews, actual composition
+and scenario evidence, outstanding blockers, and delivery conditions. It does not default to a third
+complete code review. Refer a newly discovered gap to the existing review responsibility for focused work.
+Merge and release proceed only under the actual effective delegation and target checks.
+
+## 8. Accept the user outcome and explain the result
+
+Acceptance starts in the Issue, becomes executable during development, and runs on suitable candidates.
+After merge or deployment, verify only the parts that need that environment or whose evidence changed.
+One outcome can include several Issues and PRs; share the outcome scenarios instead of rebuilding the plan
+for every internal PR.
+
+An implementation gap returns to the engineering owner. A change of goal, scope, or important semantics
+returns to the requirement and decision process. An evidence or environment gap calls for the missing
+verification. User acceptance comes from the actual user or an explicitly authorized acceptance mechanism;
+passing tests, merging code, or a model's completion statement cannot fabricate it.
+
+Ordinary delivery notes explain the observable change, use, actual verification, and remaining limits.
+Provide a deeper mechanism walkthrough or HTML when the change warrants it or the user requests it.
+Necessary documentation is maintained with implementation rather than first considered after merge.
+The former FSD completeness closure step is not restored as a default gate.
+
+## Throughout: adopted changes, progress, and recovery
+
+Do not rewrite an active execution's target in place. Save incoming amendments separately, distinguish
+clarification, in-scope supplement, and scope change, then adopt them at a supported continuation point.
+Record the requirement version and work version that consume them, and which candidate implements them.
+An adopted goal still requires implementation and verification evidence. Stop or withdrawal requests use
+the actual stop mechanism instead of waiting in an ordinary amendment queue.
+
+Old records keep their original bindings. A clarification or scope reduction may allow reuse of unchanged
+code and evidence; establish their applicability to the new requirement without rewriting old records or
+transferring an old PASS. Unknown effects are reconciled from the original operation before another writer
+or retry is started. Engineering responsibility can continue across sessions with accurate saved inputs,
+changes, candidates, evidence, unresolved work, and the next action.
+
+Show expected finished behavior separately from actual engineering progress. The project view should reveal
+what each item is for, what has actually been achieved, what is active or waiting, and the next useful action.
+Distinguish phase, activity, result, and user outcome; use observed timestamps and explicit unknown states.
+Do not invent progress percentages or treat model activity as verified advancement. The secretary and UI
+read the same underlying records rather than maintaining another authoritative progress ledger.
+
+## Adoption and coverage
+
+The programming instructions come from this repository's fixed canonical sources. Tongxu or another
+consumer supplies actual task data and enforces tools, permissions, isolation, and protocol checks. Loading
+this README alone does not implement those behaviors. See [version adoption](version_adoption.md).
+
+In-flight old work retains its original workflow, prompts, inputs, authority, and interpretation. New work
+uses the selected supported version. Old prepared material does not acquire new write permission, and
+unknown old execution cannot be silently migrated or retried. Preserve historical reading after retiring
+an old execution path once its remaining responsibilities are settled.
+
+English prose here is derived from the Chinese source. The long prompt bundle remains **en-pending**;
+see the [English prompt catalog](../../prompts/README.md). Do not represent untranslated prompts as an
+English-ready bundle. This coding-loop change leaves the document synchronization Skill's runtime and
+publishing boundary below unchanged.
+
+## Necessary artifacts and optional material
+
+Ordinary work uses the adopted Issue, necessary shared agreements, actual code candidates and validation,
+independent review findings, delivery, and outcome-acceptance records. The host reuses existing work and
+execution records for accurate relationships; models need not maintain another ledger describing them.
+
+Historical FSD, Bridge, and FSD-closure prompts remain available as optional or historical Chinese material
+through the [prompt catalog](../../prompts/README.md). They are excluded from the default v2 source index
+and cannot reappear as compulsory prerequisites for every Issue.
+
+Assess complexity using actual benefits and existing work records: preserve necessary independent
+challenge while removing repeated transcription, handoffs, and unconditional reruns. No dedicated new
+evaluation platform is required to justify simplification. Lack of a trigger alone does not prove that a
+mechanism has no value.
+
+## Core project documents
+
+The repository's core templates are language-, framework-, and project-neutral sources that consumers
+adapt to their projects. Fixed policy is written as complete rules; project-specific facts use active
+project-fill markers, which must be replaced or removed before the target's final checks. Documentation
+sync implementation details stay in its canonical Skill instead of being distributed as generic project
+rules. The [Directory Map](../../README.md#directory-map) owns the current template roles and entrypoints.
 
 ## Workflow Docs Sync
 
@@ -190,32 +322,15 @@ the committed second target instead of a derived test-only identity. Either fail
 a clean target. This decision adds no parser, ledger, receipt, run state, installer behavior, or
 `sync_docs.py` / CLI feature.
 
-### DEC-008 Summary
+### Historical workflow decisions
 
-[DEC-008](../../../zh/docs/development_workflow/decisions.md) applies direct-risk and mechanism-necessity
-principles to the development workflow itself. It records the change as accepted net complexity growth rather
-than claiming neutrality. Issue and finding cross-checks remain dual-model but use different lenses, while
-formal PR review remains a separate, detailed step. Model identity is not the disagreement authority. The
-review loop uses only `PASS`, `REWORK_REQUIRED`, and `OWNER_DECISION_REQUIRED` as final outcomes.
+DEC-008 records the previous development workflow and its experimental procedures. The current coding-loop
+contract above replaces its mandatory upstream-document chain and fixed finding-verification sequence.
+Its principles of justified complexity, evidence-based decisions, and retirement of redundant work remain
+relevant. Read the [Chinese decision history](../../../zh/docs/development_workflow/decisions.md) for exact
+supersession and rationale. This redesign does not change DEC-006 or DEC-007 behavior for Workflow Docs Sync.
 
-Owner choices remain visible in the Issue and are explained in readable prose rather than a fixed schema.
-The specific conditional issue-readback and Owner Decision procedures remain experimental. Under the
-2026-09-24 revision, each is reviewed using actual usage feedback: roughly three uses are a reminder, not a
-counting gate. Review may happen earlier when costs or gaps emerge, or after prolonged non-use; do not
-manufacture tasks to reach a count. Assess understanding and decision benefits, risk coverage, prevention of
-incorrect implementation or wasted waiting, and execution cost. Non-use, an unchanged next action, or the
-absence of a risk event alone does not justify retirement; a readback can improve informed judgment without
-changing the plan.
-
-Only extra steps, records, or redundant checks may be retired, not necessary authorization boundaries or
-substantive owner choices. The owner decides whether to retain, adjust, or retire a procedure based on
-available evidence; `PROMOTE`, `MODIFY`, and `RETIRE` remain optional labels. Record the conclusion and reasons
-in an existing relevant Issue or PR and update affected workflow guidance. Disclose insufficient evidence;
-experimental status is not proof of maturity. No separate counter, tracking file, or dedicated evaluation is
-required by this rule. Pre-coding readback complements rather than replaces post-merge implementation
-explanation, documentation review, FSD closure checking, and user-view acceptance.
-
-Key implementation files:
+Key implementation files for the unchanged documentation Skill:
 
 - `../../../zh/skills/workflow-docs-sync/SKILL.md`: orchestration contract.
 - `../../../zh/skills/workflow-docs-sync/agents/openai.yaml`: UI metadata.

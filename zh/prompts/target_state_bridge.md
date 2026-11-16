@@ -1,5 +1,10 @@
 # Target State Bridge Prompt
 
+> **按需／历史分析提示，已退出默认索引。** coding-loop v2 由同一工程负责人直接调查仓库并
+> 实施，不要求独立生成 Forecast 或 Bridge。真实需要的影响结论、迁移安排和目标行为归入
+> 当前 Issue 或被引用的共享约定；预测触点不成为固定写入名单。下文保留原分析模板，不能据此
+> 把额外文档或模型调用设为开发前置。当前入口见 [提示目录](README.md)。
+
 ## 用途
 
 用于根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`。

@@ -1,5 +1,10 @@
 # Issue Closure FSD Acceptance Prompt
 
+> **历史提示，已退出默认索引。** coding-loop v2 使用 [用户路径验收](user_acceptance.md)：
+> Issue 阶段定义验收，可运行候选在交付前实测，仅部署相关缺口留待补验。已有 FSD 可以作为
+> 适用规格的证据；普通内部实现变化不自动要求用户批准或改写需求。下文保存旧回路的收口模板，
+> 不能覆盖当前 [公共约定](coding_common.md) 或据此将验收推迟到合入主干后。
+
 ## 用途
 
 用于在 issue 关闭前，基于主干代码核对 FSD 是否全部实现到位。

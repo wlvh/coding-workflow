@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "workflowId": "coding-loop",
+  "workflowVersion": 2,
+  "executionContract": "coding-loop-v2",
+  "language": "zh",
+  "entrypoint": "zh/docs/development_workflow/README.md",
+  "roles": {
+    "issue_author": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/issue_agent.md"
+      ]
+    },
+    "issue_review_completion": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/issue_review_completion.md",
+        "zh/prompts/review_exchange.md"
+      ]
+    },
+    "issue_review_minimality": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/issue_review_minimality.md",
+        "zh/prompts/review_exchange.md"
+      ]
+    },
+    "engineering_owner": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/engineering_owner.md"
+      ]
+    },
+    "pr_review_correctness": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/pr_review_system.md",
+        "zh/prompts/pr_review_correctness.md",
+        "zh/prompts/review_exchange.md"
+      ]
+    },
+    "pr_review_impact": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/pr_review_system.md",
+        "zh/prompts/pr_review_impact.md",
+        "zh/prompts/review_exchange.md"
+      ]
+    },
+    "integration_acceptance": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/integration_acceptance.md"
+      ]
+    },
+    "user_acceptance": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/user_acceptance.md"
+      ]
+    },
+    "delivery_explanation": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/delivery_explanation.md"
+      ]
+    }
+  }
+}
