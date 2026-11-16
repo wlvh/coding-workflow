@@ -17,37 +17,53 @@ behavior agreements, material impact findings, or a migration plan when they cha
 coordination, or release decisions. Keep one authoritative requirement instead of rewriting it in several
 parallel artifacts.
 
-Issue review and PR review each involve two different companies, independent contexts, and distinct
-review lenses. Provider choices are configurable. Two prompts, two sessions, or two models from one
-company do not satisfy the cross-company requirement. Actual provider and execution records establish
-participation; role names and intended dispatches do not.
+The default path is: form an Issue and a user-perspective acceptance plan; review the Issue with two LLM
+companies; investigate, implement, and test under one engineering responsibility; perform dual-company PR
+review; verify blocking findings and repair them in Codex; integrate and receive the result; accept the user
+outcome; and give a Tech Lead explanation after development.
 
-One engineering responsibility continues through investigation, implementation, tests, and repairs.
-Sessions may change when context or execution must be recovered. The host maintains the actual permission,
-workspace, candidate, operation, and evidence boundaries. Existing adequate delegation does not create a
-new compulsory plan-approval step.
+Issue review and PR review each involve **two LLMs from two different LLM companies**, independent contexts,
+and distinct review lenses. Provider choices are configurable. Two prompts, two sessions, or two models from
+one company do not satisfy the cross-company requirement. Actual provider and execution records establish
+participation; role names and intended dispatches do not. If the second company is unavailable, report the
+review as incomplete rather than silently reducing the requirement.
+
+One engineering responsibility continues through investigation, implementation, and tests. Verified findings
+requiring repair are fixed in the Codex fact-verification session. Handovers preserve the accurate candidate,
+changes, evidence, and unresolved questions. The host maintains the actual permission, workspace, candidate,
+operation, and evidence boundaries. Existing adequate delegation does not create a new compulsory
+plan-approval step.
 
 These sections describe responsibilities, not a requirement for a separate agent, document, or model call
 at every heading. Investigation, implementation, and testing may alternate; stopping and recovery remain
 relevant throughout. Product-specific secretarial work, project coordination, dashboards, and upgrade
 entrypoints belong to the executing product, not this generic engineering workflow.
 
-## 1. Form an Issue and its acceptance conditions
+## 1. Form an Issue and document its initial acceptance plan
 
 The Issue author uses the user's original intent, existing decisions, relevant repository facts, and
 related work. Include the user goal and observable result, necessary boundaries, acceptance scenarios,
 shared agreements or dependencies that actually matter, and unresolved user choices. Do not demand a
 large fixed template for every task or re-create the three retired documents as compulsory sections.
 
-Define initial acceptance scenarios now: starting conditions, user actions, expected observations, and
-important failure or compatibility behavior. Commands, data, accounts, and environment details can be
-completed during engineering. A complex change may include an explanation of how the finished behavior
-will work; it is derived from the same requirement and is not another specification or approval gate.
+Store requirements, shared agreements, and acceptance plans in the target project's GitHub Issues or
+documentation in its GitHub repository. Put a task-specific requirement directly in its Issue. Store stable
+agreements shared across Issues in the target repository's existing documentation directories, with each relevant
+Issue referencing the specific version. The executing system retains the adopted source, version, and
+snapshot for execution and recovery.
 
-Multiple Issues can reference one shared behavior agreement or one outcome-level acceptance scenario.
-PR descriptions and conversations refer to those sources rather than maintaining competing requirements.
+**Document a user-perspective acceptance plan before development:** who starts from which real entrypoint,
+which inputs and actions they use, what results they should observe, and how to recognize and continue after
+important failures. Write the plan in the Issue's acceptance section or link an acceptance document in the
+target repository. Several Issues or PRs contributing to one outcome may share one plan.
 
-## 2. Review the Issue through two independent lenses
+The plan may be revised during development. Document the revision date, reason, changed items, and effects
+on existing results; preserve the original requirements and revision history. Changes to the goal or key
+criteria return to the Issue's decision process and the affected requirement review. Every acceptance
+result identifies the adopted plan version, code candidate, and environment. Run suitable scenarios as
+soon as a candidate is runnable, then complete target-environment-specific checks after deployment.
+
+## 2. Review the Issue with LLMs from two different LLM companies
 
 Both reviewers receive the original user request and decisions, the same Issue version, traceable shared
 repository facts, and relevant related Issues. They may verify decisive facts independently. Shared
@@ -74,23 +90,8 @@ required independent review.
 Bind the actual requirement snapshot, work version, initial code version H0, adopted workflow and prompt
 version, and valid delegation before execution. Begin with read-only investigation. If the resulting work
 remains within valid delegation, continue without a fixed per-file approval or a second preparation owner.
-
-### Explain the plan before coding
-
-For a complex or high-risk Issue, or whenever the user asks to understand the plan first, the engineering
-owner explains from established code facts:
-
-```text
-Coding has not started for this Issue. Give a detailed Tech Lead walkthrough that helps me understand how it will work, rather than restating the Issue.
-1. The goal and core value;
-2. Concrete cases after implementation: inputs, actions, results, how the modules interact, and important failure behavior;
-3. If development effort were reduced by about 50%, what is the smallest sufficient plan? What is retained, what is given up, and does it still meet the core goal?
-4. Any other decision-relevant dependencies, tradeoffs, or unresolved questions.
-```
-
-Distinguish code facts from assumptions that still need verification. The 50% question challenges necessity
-rather than setting a mandatory cut. If that reduction would lose the core goal, explain why and identify
-what can actually be removed. Record any adopted scope or behavior change in the same Issue.
+Use AGENTS.md and the actual task routing to read relevant instructions, source code, callers, and tests;
+do not require a complete reread of every document for every task.
 
 ### Trace requirements to implementation and evidence
 
@@ -147,37 +148,66 @@ steps and execute applicable real user paths on the PR candidate, integration ca
 merge where possible. Record what requires the deployment environment in advance and verify it there later.
 An internal PR proves its contribution; it need not independently demonstrate a whole multi-Issue outcome.
 
-## 5. Review every PR with two companies and exchange evidence
+## 5. Review PRs across LLM companies, verify findings within three rounds, and repair in Codex
 
-Before formal pass, two reviewers from different companies independently review the same accurate candidate,
-adopted Issue, repository rules, and real code and test evidence. Both can discover their own findings and
-investigate necessary callers; the second reviewer does not merely evaluate the first reviewer's summary.
+Two LLMs from two different LLM companies use `pr_review_correctness` and `pr_review_impact`, respectively.
+Both independently complete a full review of the same accurate candidate, adopted Issue, repository rules,
+and real code and test evidence using the detailed review standard. Both can discover their own findings
+and investigate necessary callers; the second reviewer does not merely evaluate the first reviewer's summary.
 
 The correctness lens emphasizes actual behavior, triggers, and evidence. The impact lens emphasizes callers,
 compatibility, shared agreements, related work, and implementation complexity. Both cover the complete
-required review scope; lenses are not a partition that leaves part of the candidate unreviewed.
+required review scope. Complete the initial reviews in independent contexts before exchanging evidence.
 
-After independent discovery, exchange concrete findings, counterevidence, and decision-relevant gaps. The
-original engineer repairs or refutes findings. Both reviewers confirm the changed candidate and the
-applicability of reused conclusions. Changes require review of their consequences, not necessarily a fresh
-full-repository read. No fixed extra fact-verifier or synthesis agent is required. Even when neither initial
-review finds a blocking problem, both reviewers must actually exchange conclusions and each briefly confirm
-the same candidate, coverage, and any omissions. Retain a record of that exchange; a clean review needs no
-manufactured debate or repeated full report.
+- Findings state specific triggering conditions, causal paths, actual impact, and supporting evidence.
+  Inspect callers and run authorized validation or reproductions when needed to establish important claims.
+- Exchange the initial findings and conclusions. Send P0/P1 and other blocking findings requiring action
+  into the verification process below as a batch; list nonblocking suggestions separately.
+- Reuse unchanged investigation that remains valid. Each new candidate needs both reviewers' conclusions
+  matching its actual contents and scope, without mechanically rereading the entire repository.
+- Even when neither initial review finds a blocker, both reviewers must actually exchange conclusions and
+  briefly confirm the same candidate, coverage, and any omissions. Retain that exchange without manufacturing
+  a debate. Resolve factual disputes through evidence, refer product choices to the user, and retain essential
+  unresolved evidence gaps.
+- Ordinary style suggestions need not reach consensus. Bound exchanges by the agreed resources; when there
+  is no new evidence or the limit is reached, state the gap and next action rather than repeating indefinitely.
+
+### Verify findings and exchange evidence
+
+Give the same candidate and batch of findings to two new independent verification contexts. OpenAI's Codex uses
+`finding_verification_fact` to check whether findings are real, their triggering paths, reproduction, and
+severity. An LLM from a different LLM company uses `finding_verification_impact` to check upstream and
+downstream effects, similar entrypoints, root causes, and the smallest sufficient repair. Both first produce
+independent verification results, then exchange evidence; Codex synthesizes the results.
+
+Allow **at most three exchange rounds**, as in the original process. Each round addresses specific
+disagreements and retains both reports. End early when the conclusions are sufficiently supported. If key
+evidence is still missing after three rounds, retain `REWORK_REQUIRED` and list the actions needed to obtain
+it. Refer product choices to the user once the relevant facts are clear. If counterevidence refutes the whole
+batch and the code remains unchanged, the formal reviewers check that counterevidence and close the findings.
+
+### Repair in the Codex verification session, then review independently
+
+Repair confirmed findings that require changes in the same Codex fact-verification session. The original
+writer hands over the actual candidate, existing changes, and evidence; the executor checks writing
+responsibility and authorization before enabling writes. That session updates code, necessary tests and
+documentation, the PR body, and the Review / Fix Record. If the session cannot be resumed, reconcile the
+original execution first. A successor Codex session verifies the relevant facts from the original records,
+then repairs in that session and records the continuation relationship.
+
+Two LLMs from two different LLM companies independently review the exact repaired candidate; the repairer
+cannot sign its own formal approval. Review the actual differences, their effects, and unresolved findings,
+reusing investigation that remains valid, to form both reviewers' complete conclusions for the current
+candidate. Newly discovered blockers enter verification, exchange, and repair again. Verification conclusions
+do not replace formal PR review.
 
 Final review outcomes remain:
 
-- `PASS`: no unresolved blocking issue or decision-relevant evidence gap in the reviewed scope;
+- `PASS`: all required reviews are complete, with no unresolved blocking issue or key evidence gap;
 - `REWORK_REQUIRED`: implementation, documentation, tests, or necessary evidence needs work;
 - `OWNER_DECISION_REQUIRED`: a substantive unresolved user choice blocks the affected work.
 
-Nonblocking style suggestions need not reach consensus. Resolve technical disputes through evidence;
-refer product choices to the user; retain essential unresolved gaps instead of voting them away. Specialist
-investigation is triggered by a concrete gap, not automatically by every finding. Reviews do not grant
-merge, deployment, resource, or spending permission.
-
-Cross-company review adds a second review to a clean PR that previously could pass after one reviewer.
-Reduced repetition in harder paths does not prove that every task will be cheaper or faster.
+A clean PR still requires both complete independent initial reviews and an actual exchange.
 
 ## 6. Integrate and receive the accurate result
 
@@ -191,9 +221,10 @@ dual-company requirement, with review focused on the composition and interaction
 remains applicable.
 
 If conflict repair, adaptation, configuration, dependency, activation, or connection changes materially alter
-reviewed content or the applicability of evidence, validate the differences and their effects. Both companies
-must provide matching review conclusions on those differences and effects for the new candidate, even if tests
-pass, no defect has yet been found, and no new PR is created. Reuse unaffected investigation and facts; do not
+reviewed content or the applicability of evidence, validate the differences and their effects. Both reviewing
+LLMs, from two different LLM companies, must provide matching conclusions on those differences and effects for
+the new candidate, even if tests pass, no defect has yet been found, and no new PR is created. Reuse unaffected
+investigation and facts; do not
 relabel old acceptance as acceptance of the new combination. The integrator cannot self-approve independent
 reception or review.
 
@@ -202,22 +233,37 @@ and scenario evidence, outstanding blockers, and delivery conditions. It does no
 complete code review. Refer a newly discovered gap to the existing review responsibility for focused work.
 Merge and release proceed only under the actual effective delegation and target checks.
 
-## 7. Accept the user outcome and explain the result
+## 7. Accept the user outcome and give a Tech Lead explanation after development
 
 Acceptance starts in the Issue, becomes executable during development, and runs on suitable candidates.
 After merge or deployment, verify only the parts that need that environment or whose evidence changed.
 One outcome can include several Issues and PRs; share the outcome scenarios instead of rebuilding the plan
 for every internal PR.
 
-An implementation gap returns to the engineering owner. A change of goal, scope, or important semantics
-returns to the requirement and decision process. An evidence or environment gap calls for the missing
-verification. User acceptance comes from the actual user or an explicitly authorized acceptance mechanism;
-passing tests, merging code, or a model's completion statement cannot fabricate it.
+Turn an implementation gap in the original goal into an evidenced finding and follow Section 5 for
+verification, repair, and independent review. A change of goal, scope, or important semantics returns to the
+Issue and decision process. An evidence or environment gap calls for the missing verification. Acceptance
+results reference the plan version actually used, and plan revisions remain documented. User acceptance
+comes from the actual user or an explicitly authorized acceptance mechanism; passing tests, merging code,
+or a model's completion statement cannot fabricate it.
 
-Ordinary delivery notes explain the observable change, use, actual verification, and remaining limits.
-Provide a deeper mechanism walkthrough or HTML when the change warrants it or the user requests it.
-Necessary documentation is maintained with implementation rather than first considered after merge.
-The former FSD completeness closure step is not restored as a default gate.
+After development, use `delivery_explanation` to explain the delivered functionality, actual mechanisms,
+and choices made during development in terms of user outcomes:
+
+```text
+Development is complete. From a Tech Lead's perspective, use the actual code, development records, and acceptance results to help me understand:
+1. The original goal, core value, and how much has actually been completed.
+2. How users work before and after the change, with concrete cases showing inputs, actions, results, and important failures.
+3. How the key mechanisms work and how the modules cooperate, so I can manually walk through normal, failure, and recovery paths.
+4. Problems encountered during development, alternatives considered, and why the final approach was chosen; which complexity was removed or retained, with its costs and supporting evidence.
+5. Looking back, if development effort were reduced by about 50%, what would the smallest solution be? What would it retain or give up, and which judgments remain assumptions?
+6. Which version of the user-perspective acceptance plan was used, the results, why the plan changed, and remaining limits and necessary follow-up.
+```
+
+Give every outcome an explanation proportionate to its complexity. Use detailed HTML or diagrams for major
+changes, when needed for understanding, or when explicitly requested. Necessary documentation is maintained
+with implementation rather than first considered after merge. The former FSD completeness closure step is
+not restored as a default gate.
 
 ## Throughout: requirement changes and recovery
 
@@ -332,7 +378,7 @@ a clean target. This decision adds no parser, ledger, receipt, run state, instal
 ### Historical workflow decisions
 
 DEC-008 records the previous development workflow and its experimental procedures. The current coding-loop
-contract above replaces its mandatory upstream-document chain and fixed finding-verification sequence.
+contract above replaces its mandatory upstream-document chain.
 Its principles of justified complexity, evidence-based decisions, and retirement of redundant work remain
 relevant. Read the [Chinese decision history](../../../zh/docs/development_workflow/decisions.md) for exact
 supersession and rationale. This redesign does not change DEC-006 or DEC-007 behavior for Workflow Docs Sync.

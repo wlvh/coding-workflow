@@ -48,6 +48,20 @@
         "zh/prompts/review_exchange.md"
       ]
     },
+    "finding_verification_fact": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/finding_verification.md",
+        "zh/prompts/finding_verification_fact.md"
+      ]
+    },
+    "finding_verification_impact": {
+      "promptPaths": [
+        "zh/prompts/coding_common.md",
+        "zh/prompts/finding_verification.md",
+        "zh/prompts/finding_verification_impact.md"
+      ]
+    },
     "integration_acceptance": {
       "promptPaths": [
         "zh/prompts/coding_common.md",

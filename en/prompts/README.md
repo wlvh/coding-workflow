@@ -8,6 +8,12 @@ The [Chinese prompt catalog](../../zh/prompts/README.md) and
 [Chinese coding-loop source index](../../zh/prompts/coding_workflow.json) identify the canonical source.
 Their language is explicitly `zh`; an English UI or this English overview does not change that identity.
 
+The index includes separate `finding_verification_fact` and `finding_verification_impact` purposes.
+They load the common rules, the shared finding-verification procedure, and their own focus prompt, in
+that order. Codex verifies facts and an LLM from another LLM company verifies impact independently;
+they exchange evidence for up to three rounds. Confirmed problems are repaired in the Codex fact-verification
+session, then returned to independent formal PR review by LLMs from two different companies.
+
 Consumers load the complete referenced source files from one adopted commit. They do not use a locally
 translated, summarized, or rewritten substitute while claiming to run that source version. Adding a
 reviewed English bundle is a separate source change, not a silent runtime adaptation.

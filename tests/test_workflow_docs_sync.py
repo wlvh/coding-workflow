@@ -1655,6 +1655,8 @@ def test_scenario_6_coding_loop_source_contract() -> None:
         "engineering_owner": "engineering_owner.md",
         "pr_review_correctness": "pr_review_correctness.md",
         "pr_review_impact": "pr_review_impact.md",
+        "finding_verification_fact": "finding_verification_fact.md",
+        "finding_verification_impact": "finding_verification_impact.md",
         "integration_acceptance": "integration_acceptance.md",
         "user_acceptance": "user_acceptance.md",
         "delivery_explanation": "delivery_explanation.md",
@@ -1665,6 +1667,7 @@ def test_scenario_6_coding_loop_source_contract() -> None:
     common = "zh/prompts/coding_common.md"
     review_system = "zh/prompts/pr_review_system.md"
     exchange = "zh/prompts/review_exchange.md"
+    verification = "zh/prompts/finding_verification.md"
     review_roles = {
         "issue_review_completion",
         "issue_review_minimality",
@@ -1692,3 +1695,7 @@ def test_scenario_6_coding_loop_source_contract() -> None:
         if role in {"pr_review_correctness", "pr_review_impact"}:
             assert review_system in paths, role
             assert paths.index(review_system) < paths.index(role_source), role
+        if role in {"finding_verification_fact", "finding_verification_impact"}:
+            assert paths[1] == verification, role
+            assert paths[-1] == role_source, role
+            assert review_system not in paths, role

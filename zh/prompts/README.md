@@ -10,23 +10,27 @@
 每种用途先装入 [公共约定](coding_common.md)。同一工程负责人可以在不同阶段使用不同用途；
 文件数、用途数不等于模型调用数或必须新增的 agent 数。以下路径均相对当前目录，实际源索引
 使用相对 coding-workflow 仓库根的完整路径。
+Issue 和 PR 的两方正式审查均由来自两家不同 LLM 公司的 LLM 承担。
 
 | 用途键 | 公共约定之后按序装入 | 职责 |
 |---|---|---|
 | `issue_author` | [issue_agent.md](issue_agent.md) | 依据原始目标形成并统一维护同一 Issue |
 | `issue_review_completion` | [issue_review_completion.md](issue_review_completion.md)、[review_exchange.md](review_exchange.md) | 一家公司完整审查 Issue，侧重完整性与可验收性，再交流证据 |
 | `issue_review_minimality` | [issue_review_minimality.md](issue_review_minimality.md)、[review_exchange.md](review_exchange.md) | 另一家公司完整审查 Issue，侧重最小充分性，再交流证据 |
-| `engineering_owner` | [engineering_owner.md](engineering_owner.md) | 连续承担调查、实施、验证与审查后的修复 |
+| `engineering_owner` | [engineering_owner.md](engineering_owner.md) | 连续承担调查、实施、验证，并向核实修复责任交接实际候选 |
 | `pr_review_correctness` | [pr_review_system.md](pr_review_system.md)、[pr_review_correctness.md](pr_review_correctness.md)、[review_exchange.md](review_exchange.md) | 一家公司完整独立审查 PR，侧重正确性，再交流证据 |
 | `pr_review_impact` | [pr_review_system.md](pr_review_system.md)、[pr_review_impact.md](pr_review_impact.md)、[review_exchange.md](review_exchange.md) | 另一家公司完整独立审查 PR，侧重影响与必要性，再交流证据 |
+| `finding_verification_fact` | [finding_verification.md](finding_verification.md)、[finding_verification_fact.md](finding_verification_fact.md) | Codex 独立核实事实，最多三轮交流后综合，在同一核实会话修复成立问题 |
+| `finding_verification_impact` | [finding_verification.md](finding_verification.md)、[finding_verification_impact.md](finding_verification_impact.md) | 另一家 LLM 公司的 LLM 独立核实影响与最小修复范围，并回应交流 |
 | `integration_acceptance` | [integration_acceptance.md](integration_acceptance.md) | 复用有效双审证据，核对集成与交付条件 |
 | `user_acceptance` | [user_acceptance.md](user_acceptance.md) | 提前设计验收、运行候选用户场景、补验部署相关缺口 |
 | `delivery_explanation` | [delivery_explanation.md](delivery_explanation.md) | 按实际用户成果解释实现、使用方式和取舍 |
 
-两公司初审先独立完成，再执行交流片段。`review_exchange.md` 是两方共用的后续说明，不是
-第三名裁判或新的一组 finding 核实者。双方无阻断问题时也实际交换结论并简短确认；有分歧
-才针对具体命题补查。每份 PR 提示都包含完整的 `pr_review_system.md`，侧重不同不缩减
-任一方完整审查的责任。接收与集成不再做第三次全量代码审查。
+两公司初审先独立完成，再执行交流片段。双方无阻断问题时也实际交换结论并简短确认。
+需要处理的 PR 阻断问题成批进入事实／影响核实；双方独立核实后最多交流三轮，由 Codex
+综合，并在同一事实核实会话修复成立问题。正式复审与修复会话隔离，仍由两家不同 LLM
+公司的 LLM 对当前候选给出结论。每份正式 PR 审查提示包含完整的 `pr_review_system.md`；
+核实用途单独加载核实流程与本方重点，不混用正式审查者的只读职责和修复阶段。
 
 ## 装入与固定采用
 
