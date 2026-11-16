@@ -29,20 +29,50 @@ suggested features separately for the user to decide whether to adopt.
 ## 3. Implement, test, and submit a PR
 
 The same engineering owner (the coding agent) handles investigation, implementation, testing, and subsequent fixes.
-Read relevant source code, callers, and tests according to project conventions. Choose the smallest
-sufficient implementation and adjust the change scope as investigation progresses. Record decisions
-affecting goals, public interfaces, or compatibility agreements in the Issue.
+
+### Understand the approach before coding
+
+For complex or high-risk Issues, or when the user wants to understand the approach first, have the
+engineering owner explain it using the code facts already established:
+
+```text
+Coding has not started for this Issue. Explain it in detail from a Tech Lead's perspective so I understand how it will work, rather than restating the Issue.
+1. The goal and core value.
+2. Concrete cases after implementation: explain the inputs, actions, results, how the relevant modules work together, and important failure cases.
+3. If development effort were reduced by about 50%, what would the smallest solution be? What would it retain or leave out, and would it still meet the core goal?
+4. Other matters affecting the decision, including dependencies, important tradeoffs, and open questions.
+```
+
+Distinguish claims supported by existing code from assumptions that still need validation. Use the roughly
+50% reduction to challenge whether the proposed work is necessary. If halving the effort would lose the core
+goal, explain why and identify what can actually be removed. Record any scope or behavior changes adopted
+by the user in the same Issue.
+
+### Implement against the requirements
+
+Use the [engineering owner prompt](../../../zh/prompts/engineering_owner.md). This short prompt can start the work:
+
+```text
+Complete this development task according to the current Issue.
+1. Read AGENTS.md first, then follow its document relationships to read the applicable SOP.md, TESTING.md, PR_Checklist.md, and interact.md. Where present, check capability_contract.json and docs/business_user_guide.md for public commitments and usage instructions affected by this requirement.
+2. Extract individually verifiable requirements (Spec Units, or SUs) from the Issue, reuse existing identifiers, and maintain SU -> code changes -> tests -> documentation links in the task todo list. Update them as investigation progresses.
+3. Follow TESTING.md for the test strategy and how to record test evidence.
+4. In the todo list, identify which tests will be reused, extended with parameters, or added. For behavior spanning modules, name the specific scenario that demonstrates the combined path. One scenario may cover several SUs; do not mechanically add a separate test for every SU or finding.
+```
+
+Inspect relevant source code, callers, and tests to choose the smallest sufficient implementation, and
+adjust the change scope as investigation progresses. Record decisions affecting goals, public interfaces,
+or compatibility agreements in the Issue.
 
 Reuse existing code and tests, adding validation for new behavior, important failure paths, and interactions
 between modules. Run the Issue's user scenarios as soon as the code is runnable. Reuse valid test results
 when candidate contents, test definitions, and necessary environments match; investigate subsequent failures
 before relying on a conclusion.
 
-Complete self-review, update affected usage guides and project documentation, and create or update a Draft PR.
-Describe actual changes, test results, and unresolved problems, and link the Issue. When changing sessions,
-hand over the current code, verified results, open questions, and next steps.
-
-Use the [engineering owner prompt](../../../zh/prompts/engineering_owner.md).
+Complete self-review, update affected usage guides and project documentation, and create or update a Draft PR
+following PR_Checklist.md and the project's PR template. Describe actual changes, test results, and unresolved
+problems, and link the Issue. When changing sessions, hand over the current code, requirements checklist,
+verified results, open questions, and next steps.
 
 ## 4. Review the PR and address feedback
 
