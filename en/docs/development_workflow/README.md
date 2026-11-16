@@ -1,8 +1,8 @@
 # Development Workflow
 
 This is the English overview of the [Chinese semantic source](../../../zh/docs/development_workflow/README.md).
-It defines the coding loop supplied by coding-workflow and the behavior required of a consumer such as
-Tongxu. The current contract is **coding-loop v2**, adopted in
+It defines the generic coding loop supplied by coding-workflow and the engineering behavior required of
+an executing consumer. The current contract is **coding-loop v2**, adopted in
 [DEC-009](../../../zh/docs/development_workflow/decisions.md#dec-009issue-直接驱动的编程回路与固定版本采用).
 It does not assert that a consumer already implements every requirement. See the
 [version-adoption contract](version_adoption.md) for fixed versions, source ownership, upgrades, and
@@ -28,26 +28,11 @@ workspace, candidate, operation, and evidence boundaries. Existing adequate dele
 new compulsory plan-approval step.
 
 These sections describe responsibilities, not a requirement for a separate agent, document, or model call
-at every heading. Investigation, implementation, and testing may alternate; coordination and progress
-reporting continue throughout.
+at every heading. Investigation, implementation, and testing may alternate; stopping and recovery remain
+relevant throughout. Product-specific secretarial work, project coordination, dashboards, and upgrade
+entrypoints belong to the executing product, not this generic engineering workflow.
 
-## 1. Receive a requirement in the existing project
-
-Treat multiple Issues at different stages as the normal project context. The secretary first relates new
-input to existing goals and work: duplication, extension, upstream output, shared agreement, semantic
-conflict, resource conflict, or release-order constraint. Suspected conflicts require investigation before
-becoming blockers. New input can supplement existing work instead of automatically creating more Issues.
-
-Persist receipt independently of model dispatch so a busy secretary does not lose incoming requirements.
-Keep receipt, association, delivery to the responsible engineer, adoption into a work version, and actual
-implementation distinguishable. A delivered message does not prove that the running candidate covers it.
-
-The secretary discovers and routes relevant work. Engineering owners establish technical compatibility;
-the user decides substantive product or authority choices. Only affected work or stages wait. Cross-Issue
-coordination does not merge permissions or overwrite another owner's active workspace. Several active
-Issues do not require unlimited concurrent writers.
-
-## 2. Form an Issue and its acceptance conditions
+## 1. Form an Issue and its acceptance conditions
 
 The Issue author uses the user's original intent, existing decisions, relevant repository facts, and
 related work. Include the user goal and observable result, necessary boundaries, acceptance scenarios,
@@ -62,7 +47,7 @@ will work; it is derived from the same requirement and is not another specificat
 Multiple Issues can reference one shared behavior agreement or one outcome-level acceptance scenario.
 PR descriptions and conversations refer to those sources rather than maintaining competing requirements.
 
-## 3. Review the Issue through two independent lenses
+## 2. Review the Issue through two independent lenses
 
 Both reviewers receive the original user request and decisions, the same Issue version, traceable shared
 repository facts, and relevant related Issues. They may verify decisive facts independently. Shared
@@ -84,7 +69,7 @@ engineering evidence work; only substantive choices outside existing delegation 
 Still-applicable material may be reused; an author's declaration that a task is small does not bypass a
 required independent review.
 
-## 4. Investigate and implement under continuous responsibility
+## 3. Investigate and implement under continuous responsibility
 
 Bind the actual requirement snapshot, work version, initial code version H0, adopted workflow and prompt
 version, and valid delegation before execution. Begin with read-only investigation. If the resulting work
@@ -142,7 +127,7 @@ Create or update a draft PR under the project's valid publishing delegation. Rec
 verification, remaining limits, and references to the Issue. Implementation success, local result return,
 formal review, merge, deployment, and user acceptance remain different facts.
 
-## 5. Validate the candidate and exercise user paths early
+## 4. Validate the candidate and exercise user paths early
 
 Select evidence for the actual candidate, test definition, and relevant environment. Retain complete
 controller-produced execution records, including failures, stops, and unknown results. A model's PASS claim
@@ -162,7 +147,7 @@ steps and execute applicable real user paths on the PR candidate, integration ca
 merge where possible. Record what requires the deployment environment in advance and verify it there later.
 An internal PR proves its contribution; it need not independently demonstrate a whole multi-Issue outcome.
 
-## 6. Review every PR with two companies and exchange evidence
+## 5. Review every PR with two companies and exchange evidence
 
 Before formal pass, two reviewers from different companies independently review the same accurate candidate,
 adopted Issue, repository rules, and real code and test evidence. Both can discover their own findings and
@@ -194,10 +179,10 @@ merge, deployment, resource, or spending permission.
 Cross-company review adds a second review to a clean PR that previously could pass after one reviewer.
 Reduced repetition in harder paths does not prove that every task will be cheaper or faster.
 
-## 7. Integrate and receive the accurate result
+## 6. Integrate and receive the accurate result
 
-A valid task may continue from H0 while the default branch advances. Display the actual base and whether it
-is behind; integrate long-running work at a useful time. Continuing development, forming a candidate,
+A valid task may continue from H0 while the default branch advances. Report the actual base and whether it
+is behind at delivery; integrate long-running work at a useful time. Continuing development, forming a candidate,
 integrating with current main, and obtaining authority to publish are separate conditions.
 
 Combine already reviewed immutable members with real combination validation and an independent reception
@@ -217,7 +202,7 @@ and scenario evidence, outstanding blockers, and delivery conditions. It does no
 complete code review. Refer a newly discovered gap to the existing review responsibility for focused work.
 Merge and release proceed only under the actual effective delegation and target checks.
 
-## 8. Accept the user outcome and explain the result
+## 7. Accept the user outcome and explain the result
 
 Acceptance starts in the Issue, becomes executable during development, and runs on suitable candidates.
 After merge or deployment, verify only the parts that need that environment or whose evidence changed.
@@ -234,7 +219,7 @@ Provide a deeper mechanism walkthrough or HTML when the change warrants it or th
 Necessary documentation is maintained with implementation rather than first considered after merge.
 The former FSD completeness closure step is not restored as a default gate.
 
-## Throughout: adopted changes, progress, and recovery
+## Throughout: requirement changes and recovery
 
 Do not rewrite an active execution's target in place. Save incoming amendments separately, distinguish
 clarification, in-scope supplement, and scope change, then adopt them at a supported continuation point.
@@ -248,22 +233,10 @@ transferring an old PASS. Unknown effects are reconciled from the original opera
 or retry is started. Engineering responsibility can continue across sessions with accurate saved inputs,
 changes, candidates, evidence, unresolved work, and the next action.
 
-Show expected finished behavior separately from actual engineering progress. The project view should reveal
-what each item is for, what has actually been achieved, what is active or waiting, and the next useful action.
-Distinguish phase, activity, result, and user outcome; use observed timestamps and explicit unknown states.
-Do not invent progress percentages or treat model activity as verified advancement. The secretary and UI
-read the same underlying records rather than maintaining another authoritative progress ledger.
-
-## Adoption and coverage
-
-The programming instructions come from this repository's fixed canonical sources. Tongxu or another
-consumer supplies actual task data and enforces tools, permissions, isolation, and protocol checks. Loading
-this README alone does not implement those behaviors. See [version adoption](version_adoption.md).
-
-In-flight old work retains its original workflow, prompts, inputs, authority, and interpretation. New work
-uses the selected supported version. Old prepared material does not acquire new write permission, and
-unknown old execution cannot be silently migrated or retried. Preserve historical reading after retiring
-an old execution path once its remaining responsibilities are settled.
+The executing consumer supplies actual task data and enforces tools, permissions, isolation, and protocol
+checks. Existing-work compatibility, historical reading, and changes to the default workflow version follow
+the [version-adoption contract](version_adoption.md); product-specific coordination and progress views are
+outside this document.
 
 English prose here is derived from the Chinese source. The long prompt bundle remains **en-pending**;
 see the [English prompt catalog](../../prompts/README.md). Do not represent untranslated prompts as an
