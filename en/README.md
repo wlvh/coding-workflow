@@ -6,21 +6,15 @@ This directory provides English templates derived from the Chinese semantic sour
 language-, framework-, and project-neutral. The canonical `workflow-docs-sync` Skill remains under
 `zh/skills/workflow-docs-sync/` and reads English templates from the pinned upstream commit.
 
-## Issue-driven coding loop
+## Coding workflow
 
-The [development workflow](docs/development_workflow/README.md) defines the coding loop: an adopted Issue,
-independent Issue and PR reviews by two different companies, continuous engineering responsibility,
-candidate-bound validation, and acceptance of the actual user outcome. Shared behavior rules, impact
-findings, and migration plans are retained when needed; FSD, Forecast, and Bridge are no longer mandatory
-upstream documents.
+The [development workflow](docs/development_workflow/README.md) starts with an Issue and acceptance
+criteria. A coding agent investigates, implements, and tests. LLMs from two different LLM companies
+independently review both Issues and PRs, then exchange conclusions.
 
-The [version-adoption contract](docs/development_workflow/version_adoption.md) explains how a consumer such
-as Tongxu can run a fixed version and adopt an update at the user's request. This repository supplies the
-workflow and canonical programming prompts; it does not claim that publishing these documents upgrades
-Tongxu's controller. The [prompt catalog](prompts/README.md) states the current English coverage boundary.
-
-The document synchronization Skill below remains a separate operation. It does not install or upgrade a
-coding-loop runtime.
+[Prompt sources](../zh/prompts/README.md) · [Source index](../zh/prompts/coding_workflow.json) ·
+[Version adoption for automation](docs/development_workflow/version_adoption.md) ·
+[English prompt status](prompts/README.md)
 
 ## One-line start
 
@@ -164,16 +158,18 @@ the remaining path, including `.github/`.
 Chinese is the semantic source and English is derived. Bilingual content changed by a PR closes in that PR;
 translation status in unchanged historical decisions remains a historical record.
 
+Review bilingual content on the last working day of each month. After changes to Chinese core templates,
+`zh/README.md`, or the canonical Skill, complete this review before the next mainline PR is merged:
+
+- List paired Chinese and English files and their diffs from the last review point or specified base.
+- Compare workflow, capability boundaries, acceptance criteria, and operating rules; update English from the Chinese meaning.
+- Record the review date, base/HEAD, file pairs, and conclusions in the PR. Mark pending translations with
+  `en-pending`, their scope, and an owner.
+
 ## Related Work
 
-This repository maintains the coding-loop contract and project-document synchronization tools.
-[Tongxu](https://github.com/wlvh/tongxu) is a consumer responsible for controlled execution, project
-coordination, progress visibility, and real validation of the workflow version it adopts.
-
-[acceptance-agent](https://github.com/wlvh/acceptance-agent) covers the **acceptor** side: how an
-independent verifier decides `accept` / `reject` / `request_evidence` from the specification, the final
-artifact, and the test evidence — while being deliberately denied the builder's implementation
-conversation, so it cannot inherit the builder's framing. It is a related project, not a mandatory third
-complete code review after this coding loop's cross-company review.
+- [Tongxu](https://github.com/wlvh/tongxu): AI project management and execution.
+- [acceptance-agent](https://github.com/wlvh/acceptance-agent): independent acceptance from specifications,
+  final artifacts, and test evidence.
 
 Author: [github.com/wlvh](https://github.com/wlvh) · [huaweidata.com](https://huaweidata.com)

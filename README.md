@@ -18,19 +18,15 @@ This repository publishes bilingual downstream workflow-document templates, the 
 The templates provide task routing, change propagation, combined behavior and open questions, and
 user/interface navigation. Mature projects can keep a short guide that links to their existing documentation.
 
-## Issue-driven coding loop
+## Coding workflow
 
-The [coding-loop v2 specification](en/docs/development_workflow/README.md) defines Issue-first development,
-two-company Issue and PR review, continuous engineering responsibility, candidate-bound evidence, and
-outcome acceptance. The [Chinese prompt sources](zh/prompts/README.md) and their
-[source index](zh/prompts/coding_workflow.json) are canonical; executable English prompts remain
-[en-pending](en/prompts/README.md).
+The [development workflow](en/docs/development_workflow/README.md) starts with an Issue and acceptance
+criteria. A coding agent investigates, implements, and tests. LLMs from two different LLM companies
+independently review both Issues and PRs, then exchange conclusions.
 
-Tongxu and other consumers pin an exact upstream commit. A user-requested upgrade compares the workflow
-and prompts, adapts the execution controls, and validates them before enabling the version for new work.
-See [version adoption](en/docs/development_workflow/version_adoption.md). Publishing this specification
-does not claim the consumer's runtime capabilities are implemented. The documentation-sync Skill below
-keeps its existing independent scope and behavior.
+[Prompt sources](zh/prompts/README.md) · [Source index](zh/prompts/coding_workflow.json) ·
+[Version adoption for automation](en/docs/development_workflow/version_adoption.md) ·
+[English prompt status](en/prompts/README.md)
 
 Detailed behavior and optional repository installation are in the [中文指南](zh/README.md#一句话开始) and
 [English guide](en/README.md#one-line-start).
@@ -40,14 +36,8 @@ For source ownership, edit locations, and validation commands, use the
 
 ## Related work
 
-This repository maintains the coding-loop policy and project-document synchronization tools.
-[Tongxu](https://github.com/wlvh/tongxu) is a consumer responsible for controlled execution,
-coordination, progress, and the actual validation of its adopted workflow version.
-
-[acceptance-agent](https://github.com/wlvh/acceptance-agent) covers the **acceptor** side: how a
-separate verifier decides `accept` / `reject` / `request_evidence` from the spec, the final artifact,
-and the test evidence — while being deliberately denied the builder's implementation conversation,
-so it cannot inherit the builder's framing. It is a related project, not a mandatory third full review
-after the coding loop's two-company review.
+- [Tongxu](https://github.com/wlvh/tongxu): AI project management and execution.
+- [acceptance-agent](https://github.com/wlvh/acceptance-agent): independent acceptance from specifications,
+  final artifacts, and test evidence.
 
 Author: [github.com/wlvh](https://github.com/wlvh) · [huaweidata.com](https://huaweidata.com)

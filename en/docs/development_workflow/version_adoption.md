@@ -1,9 +1,8 @@
 # Fixed workflow versions and user-requested adoption
 
-This is the English explanation of the
-[Chinese adoption contract](../../../zh/docs/development_workflow/version_adoption.md).
-It describes the contract a consumer such as Tongxu must implement. Publishing the source files in this
-repository does not itself install an importer, change a controller, or certify a consumer's runtime.
+Automation tools load coding-loop v2 prompts from a fixed Git commit and switch versions when the user
+requests an update. This [adoption contract](../../../zh/docs/development_workflow/version_adoption.md)
+covers source loading, compatibility checks, and continuity between existing and new work.
 
 ## Source and execution responsibilities
 
@@ -13,7 +12,7 @@ and evidence exchange, integration reception, user acceptance, and delivery expl
 instructions ultimately sent in system messages, developer messages, phase inputs, retries, or repair
 requests; file extensions and transport fields do not create an exception.
 
-Tongxu owns actual tool interfaces, permissions, workspaces, isolation, process and network effects,
+The execution tool owns tool interfaces, permissions, workspaces, isolation, process and network effects,
 stopping and recovery, dispatch, output schemas, and result validation. It supplies structured facts such
 as the adopted Issue, user amendments, current candidate, available tools, actual scope, and test evidence.
 Project instructions and effective user decisions remain identified project inputs. They are not copied
@@ -22,10 +21,7 @@ into upstream prompt templates merely to perform a task.
 If an interface needs a natural-language programming instruction template, maintain that template in
 coding-workflow and fill in actual runtime values. A local role prompt, arbitrary appended task policy,
 hard-coded instruction, local translation, or summary must not silently change the adopted programming
-rules. Permissions remain enforced by the host regardless of what a prompt says.
-
-This source-ownership requirement covers the programming loop. It does not move every secretary, account,
-installation, or unrelated business-role prompt into coding-workflow.
+rules.
 
 ## Minimal source interface
 
@@ -61,12 +57,10 @@ The UI presents readable versions, source links, which new work they apply to, a
 users need not hand-write JSON or SHAs. Pinning workflow sources and recording a particular execution does
 not require a permanent admission allowlist of native-tool versions, paths, or binary hashes; apply the
 consumer's effective minimum requirements and actual capability checks for runtime compatibility.
-Verified snapshots can run offline. Missing files, modified bytes,
-unknown protocols, or unsupported execution capabilities fail explicitly rather than fetching a moving
-branch, substituting local prompts, or replacing the second company with another same-company model.
+Load a verified snapshot and check its source files, protocol, and execution capabilities. Missing files,
+hash mismatches, unknown protocols, or missing execution capabilities fail explicitly.
 
 The canonical bundle is currently Chinese. See the [English prompt status](../../prompts/README.md).
-An English product interface or this translated explanation does not turn it into an English bundle.
 
 ## User-facing update behavior
 
@@ -91,7 +85,7 @@ behavior that requires controller work. A wording change can alter review or acc
 without changing the role list. This judgment belongs in the bounded upgrade task; a runtime must not ask
 a model to improvise missing controller stages from a new README.
 
-For example, a new rule requiring two companies to review every PR needs real distinct-provider dispatch,
+For example, a rule requiring LLMs from two different LLM companies to review every PR needs distinct-provider dispatch,
 accurate candidate binding, independent results, evidence exchange, and closure. Copying a new prompt into
 the old single-review path does not implement that rule.
 
@@ -158,9 +152,8 @@ The consumer implementation must demonstrate all of the following through its re
 1. A check and an upgrade have different effects; an update pins one source commit for its entire run.
 2. The runtime loads complete sources from the adopted version without fetching a moving branch or using
    a locally rewritten programming policy as the canonical prompt.
-3. Actual role dispatch and candidate-bound results implement the selected execution contract; missing
-   behavior cannot be hidden behind successful source import. Both companies actually review the same
-   Issue or candidate independently and exchange evidence; one company or a role name is insufficient.
+3. Actual role dispatch and candidate-bound results implement the selected execution contract. LLMs from
+   two different LLM companies independently review the same Issue or candidate and exchange evidence.
 4. Prompt and controller activation is consistent, failure preserves the old default, and new work uses
    the version actually selected.
 5. Active, prepared, failed, stopped, unknown, and completed prior work retain their original meaning and
@@ -169,6 +162,3 @@ The consumer implementation must demonstrate all of the following through its re
    creates a controlled necessary file, and executes tests against the actual candidate and required inputs.
 7. An integration candidate obtains matching validation and independent conclusions; reception reuses
    applicable dual reviews instead of adding a third complete code review.
-
-These are consumer implementation requirements. The existing `workflow-docs-sync` Skill and installer
-remain responsible for their documented project-document operations; they are not coding-loop importers.
