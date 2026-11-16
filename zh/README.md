@@ -5,13 +5,14 @@
 本目录提供真正跨语言、跨框架、跨项目的中文核心模板、开发工作流和 canonical
 `workflow-docs-sync` Skill。
 
-## 编程工作流
+## Issue 直接驱动的编程回路
 
-[开发流程](docs/development_workflow/README.md)从 Issue 和验收要求开始，由编程 agent 调查、实现和测试。
-需求与 PR 均由来自两家不同 LLM 公司的 LLM 独立审查，再交流结论。
-
-[角色提示](prompts/README.md) · [源索引](prompts/coding_workflow.json) ·
-[自动化工具的版本采用](docs/development_workflow/version_adoption.md)
+[coding-loop v2](docs/development_workflow/README.md)定义 Issue 入口、跨公司需求与 PR 双审、
+同一工程责任调查实施、准确候选验证及用户成果验收。
+[角色提示](prompts/README.md)与[源索引](prompts/coding_workflow.json)在本仓库统一维护。
+Tongxu 固定采用准确提交，用户可发起更新；提示与控制流程一起验证和启用，旧工作保留原版本。
+详细规则见[固定版本采用](docs/development_workflow/version_adoption.md)。本仓库发布规范不代表
+Tongxu 运行能力已经实现；以下项目文档同步 Skill 保持独立用途。
 
 ## 一句话开始
 
@@ -170,15 +171,14 @@ fi
 中文是语义锚点，英文是派生层。本 PR 新增或修改的双语模板、README 和 development
 workflow 必须同一 PR 闭合；未触及历史决策的既有翻译状态不要求顺手改变。
 
-每月最后一个工作日核对双语内容；修改中文核心模板、`zh/README.md` 或 canonical Skill 后，在下一次主线 PR 合并前完成核对：
-
-- 以上次审核点或指定 base 为起点，列出中英配对文件及各自 diff。
-- 核对流程、能力边界、验收条件与操作规则，按中文语义修正英文。
-- 在 PR 中记录审核日期、base／HEAD、文件对和结论；待补翻译注明 `en-pending`、范围及负责人。
-
 ## 相关项目
 
-- [Tongxu](https://github.com/wlvh/tongxu)：AI 项目管理与执行。
-- [acceptance-agent](https://github.com/wlvh/acceptance-agent)：依据规格、最终产物和测试证据独立验收。
+本仓库维护编程回路规范与项目文档同步工具。[Tongxu](https://github.com/wlvh/tongxu)作为消费者，
+负责受控执行、项目协调、进度展示和所采用流程版本的实际验证。
+
+[acceptance-agent](https://github.com/wlvh/acceptance-agent) 负责**验收者侧**：一个独立验收方
+如何仅凭规格、最终产物和测试证据做出 `accept` / `reject` / `request_evidence` 判断——它被有意
+禁止读取 builder 的实现对话，因此无法继承 builder 的 framing。它是相关项目，不是本编程回路
+双公司审核之后的固定第三次完整代码审核。
 
 作者：[github.com/wlvh](https://github.com/wlvh) · [huaweidata.com](https://huaweidata.com)
