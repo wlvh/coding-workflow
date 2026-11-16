@@ -146,8 +146,10 @@ required review scope; lenses are not a partition that leaves part of the candid
 After independent discovery, exchange concrete findings, counterevidence, and decision-relevant gaps. The
 original engineer repairs or refutes findings. Both reviewers confirm the changed candidate and the
 applicability of reused conclusions. Changes require review of their consequences, not necessarily a fresh
-full-repository read. No fixed extra fact-verifier or synthesis agent is required. A clean review needs no
-manufactured debate.
+full-repository read. No fixed extra fact-verifier or synthesis agent is required. Even when neither initial
+review finds a blocking problem, both reviewers must actually exchange conclusions and each briefly confirm
+the same candidate, coverage, and any omissions. Retain a record of that exchange; a clean review needs no
+manufactured debate or repeated full report.
 
 Final review outcomes remain:
 
@@ -174,9 +176,12 @@ judgment. Member passes do not automatically establish that the combination work
 dual-company requirement, with review focused on the composition and interaction where prior evidence
 remains applicable.
 
-If conflict repair, adaptation, configuration, dependency, or connection changes alter reviewed behavior,
-obtain validation and independent conclusions for the new candidate. Reuse unaffected investigation and
-facts; do not relabel old acceptance as acceptance of the new combination.
+If conflict repair, adaptation, configuration, dependency, activation, or connection changes materially alter
+reviewed content or the applicability of evidence, validate the differences and their effects. Both companies
+must provide matching review conclusions on those differences and effects for the new candidate, even if tests
+pass, no defect has yet been found, and no new PR is created. Reuse unaffected investigation and facts; do not
+relabel old acceptance as acceptance of the new combination. The integrator cannot self-approve independent
+reception or review.
 
 Final reception checks the adopted scope, exact candidate, applicable dual reviews, actual composition
 and scenario evidence, outstanding blockers, and delivery conditions. It does not default to a third
