@@ -1,101 +1,76 @@
-# Development Workflow
+# Coding Workflow
 
-This is the English overview of the [Chinese semantic source](../../../zh/docs/development_workflow/README.md).
-It defines the generic coding loop supplied by coding-workflow and the engineering behavior required of
-an executing consumer. The current contract is **coding-loop v2**, adopted in
-[DEC-009](../../../zh/docs/development_workflow/decisions.md#dec-009issue-直接驱动的编程回路与固定版本采用).
-It does not assert that a consumer already implements every requirement. See the
-[version-adoption contract](version_adoption.md) for fixed versions, source ownership, upgrades, and
-existing-work compatibility. Decision history remains in the
-[Chinese decisions](../../../zh/docs/development_workflow/decisions.md).
+This workflow turns user requirements into an Issue, then delivers usable software through implementation,
+testing, and independent review. The current version is **coding-loop v2**; see
+[DEC-009](../../../zh/docs/development_workflow/decisions.md#dec-009issue-直接驱动的编程回路与固定版本采用)
+for the decisions. The [role prompts and source index](../../../zh/prompts/README.md) are the single
+maintenance entrypoint for model instructions. [Version adoption and updates](version_adoption.md)
+define how downstream consumers adopt the workflow.
 
-## Scope and defaults
+## Goals and default responsibilities
 
-The default unit of development is an adopted Issue with observable acceptance conditions. FSD Core
-Contract, Repo Impact Forecast, and Target State Bridge are no longer mandatory documents. Retain shared
-behavior agreements, material impact findings, or a migration plan when they change real implementation,
-coordination, or release decisions. Keep one authoritative requirement instead of rewriting it in several
-parallel artifacts.
+Issue and PR reviews both use **LLMs from two different LLM companies**. Each reviews independently before
+the two actually exchange reports and conclusions. The engineering owner continues through investigation,
+implementation, and testing. After verification, blocking review findings are repaired in the Codex
+fact-verification session; the new version then receives independent review. Once a demonstrable result
+has completed the necessary validation, provide a Tech Lead explanation and an entrypoint for user acceptance.
 
-The default path is: form an Issue and a user-perspective acceptance plan; review the Issue with two LLM
-companies; investigate, implement, and test under one engineering responsibility; perform dual-company PR
-review; verify blocking findings and repair them in Codex; integrate and receive the result; accept the user
-outcome; and give a Tech Lead explanation after development.
+## 1. Express the goal in an Issue and provide an initial acceptance plan
 
-Issue review and PR review each involve **two LLMs from two different LLM companies**, independent contexts,
-and distinct review lenses. Provider choices are configurable. Two prompts, two sessions, or two models from
-one company do not satisfy the cross-company requirement. Actual provider and execution records establish
-participation; role names and intended dispatches do not. If the second company is unavailable, report the
-review as incomplete rather than silently reducing the requirement.
+The [Issue author](../../../zh/prompts/issue_agent.md) uses the user's original request, effective decisions,
+and necessary repository facts to describe the user's problem, target behavior, necessary boundaries, and
+completion criteria. Include actual dependencies, compatibility requirements, and unresolved product choices.
 
-One engineering responsibility continues through investigation, implementation, and tests. Verified findings
-requiring repair are fixed in the Codex fact-verification session. Handovers preserve the accurate candidate,
-changes, evidence, and unresolved questions. The host maintains the actual permission, workspace, candidate,
-operation, and evidence boundaries. Existing adequate delegation does not create a new compulsory
-plan-approval step.
-
-These sections describe responsibilities, not a requirement for a separate agent, document, or model call
-at every heading. Investigation, implementation, and testing may alternate; stopping and recovery remain
-relevant throughout. Product-specific secretarial work, project coordination, dashboards, and upgrade
-entrypoints belong to the executing product, not this generic engineering workflow.
-
-## 1. Form an Issue and document its initial acceptance plan
-
-The Issue author uses the user's original intent, existing decisions, relevant repository facts, and
-related work. Include the user goal and observable result, necessary boundaries, acceptance scenarios,
-shared agreements or dependencies that actually matter, and unresolved user choices. Do not demand a
-large fixed template for every task or re-create the three retired documents as compulsory sections.
-
-Store requirements, shared agreements, and acceptance plans in the target project's GitHub Issues or
-documentation in its GitHub repository. Put a task-specific requirement directly in its Issue. Store stable
-agreements shared across Issues in the target repository's existing documentation directories, with each relevant
-Issue referencing the specific version. The executing system retains the adopted source, version, and
-snapshot for execution and recovery.
+Keep requirements, shared agreements, and acceptance plans in the target project's GitHub Issues or
+repository documentation. Put a task-specific requirement directly in its Issue. Store stable agreements
+shared across Issues, necessary impact conclusions, or migration plans in the target repository's existing
+documentation directories, with relevant Issues referencing specific versions.
 
 **Document a user-perspective acceptance plan before development:** who starts from which real entrypoint,
 which inputs and actions they use, what results they should observe, and how to recognize and continue after
-important failures. Write the plan in the Issue's acceptance section or link an acceptance document in the
-target repository. Several Issues or PRs contributing to one outcome may share one plan.
+important failures. Following the [user acceptance prompt](../../../zh/prompts/user_acceptance.md), the Issue
+author writes the acceptance section or references an acceptance document in the target repository. Several
+Issues or PRs contributing to one outcome may share one plan.
 
-The plan may be revised during development. Document the revision date, reason, changed items, and effects
-on existing results; preserve the original requirements and revision history. Changes to the goal or key
-criteria return to the Issue's decision process and the affected requirement review. Every acceptance
-result identifies the adopted plan version, code candidate, and environment. Run suitable scenarios as
-soon as a candidate is runnable, then complete target-environment-specific checks after deployment.
+During development, the engineering owner proposes revisions supported by evidence. The Issue author updates
+the document, recording the date, reason, changed items, and effects on existing results while preserving the
+original requirements and revision history. Changes to the goal or key criteria return to the Issue's decision
+process and the affected requirement review. Every acceptance result identifies the adopted plan version,
+code candidate, and environment. Run suitable scenarios as soon as a candidate is runnable, then complete
+target-environment-specific checks after deployment.
 
 ## 2. Review the Issue with LLMs from two different LLM companies
 
-Both reviewers receive the original user request and decisions, the same Issue version, traceable shared
-repository facts, and relevant related Issues. They may verify decisive facts independently. Shared
-material must not force them to trust the author's conclusions or inherit the author's conversation.
+Give the same Issue version to the two independent reviewers:
 
-- **Completion and acceptance:** identify omissions that prevent the original goal from being met and
-  acceptance conditions that cannot distinguish real success. Do not expand the task to every imaginable
-  edge case.
-- **Minimal sufficiency:** challenge unnecessary requirements, reuse existing capabilities, and propose
-  deletion or scope reduction where justified. Do not replace one excessive plan with another large design.
+- [Completeness and acceptance review](../../../zh/prompts/issue_review_completion.md): check fidelity to the
+  original goal, missing necessary behavior, and whether success and important failures can be judged.
+  Do not expand the requirement just because more cases are imaginable.
+- [Minimum sufficient scope review](../../../zh/prompts/issue_review_minimality.md): prioritize deletion,
+  reuse, consolidation, and reduction; check for mechanisms built to solve problems introduced by the proposal
+  itself. No fixed reduction percentage is required, and necessary functionality must remain.
 
-Each reviewer first investigates independently, then exchanges material findings. Neither owes a complete
-implementation design, file forecast, or separate test architecture. The Issue author edits the same Issue;
-reviewers recheck changed or disputed parts while reusing still-valid evidence.
+In independent contexts, both read the original request, the same Issue, traceable repository facts, and
+related work, checking decisive facts when needed. After their initial reviews, follow the
+[evidence exchange rules](../../../zh/prompts/review_exchange.md) to exchange original reports and respond
+to disagreements. Even when neither finds a blocker, briefly confirm the same version and review coverage.
 
-Separate blocking problems, nonblocking suggestions, and new ideas. Unadopted new ideas stay outside the
-current target. Agreement between models does not enlarge user authority. Technical uncertainty remains
-engineering evidence work; only substantive choices outside existing delegation go to the user.
-Still-applicable material may be reused; an author's declaration that a task is small does not bypass a
-required independent review.
+Separate blocking problems, nonblocking suggestions, and new ideas. New ideas enter the task only after
+adoption; agreement between the reviewers does not expand the user's requirements. The Issue author updates
+the body, and both reviewers recheck changes and unresolved blockers, giving conclusions for the final
+version before handing it to the engineering owner. They may reference unchanged material that remains valid.
 
-## 3. Investigate and implement under continuous responsibility
+## 3. Keep investigation and implementation with the same engineering owner
 
-Bind the actual requirement snapshot, work version, initial code version H0, adopted workflow and prompt
-version, and valid delegation before execution. Begin with read-only investigation. If the resulting work
-remains within valid delegation, continue without a fixed per-file approval or a second preparation owner.
-Use AGENTS.md and the actual task routing to read relevant instructions, source code, callers, and tests;
-do not require a complete reread of every document for every task.
+The [engineering owner](../../../zh/prompts/engineering_owner.md) receives the reviewed Issue, necessary
+shared agreements, and acceptance plan, and fixes the requirement version, starting code revision H0, and
+adopted workflow version. Begin with read-only investigation, then implement autonomously within the existing
+delegation. Make ordinary implementation choices directly; raise specific questions for the user when goals,
+key behavior, or actual permissions need to change.
 
 ### Trace requirements to implementation and evidence
 
-The short implementation prompt below is backed by the full `engineering_owner` prompt:
+Use this short prompt to start:
 
 ```text
 Implement the current Issue.
@@ -105,150 +80,115 @@ Implement the current Issue.
 4. Identify tests to reuse, parameterize, or add. For cross-module behavior, name the concrete scenario proving the combined path. One scenario may cover several SUs; do not mechanically add a test for every SU or finding.
 ```
 
-Predicted files are investigation hints. The host separately enforces:
+Update the expected file list as investigation progresses. Within the authorized scope, inspect additional
+callers and choose the files to create, modify, delete, or rename. Tests use the actual code version, necessary
+dependencies, and configuration to cover real execution paths. Ordinary project tests evolve with the
+implementation and receive review; changes to key business acceptance criteria follow Section 1.
 
-- **Read scope:** the authorized repository snapshot and the managed workspace's subsequent changes;
-  unrelated private paths, credential sources, and other repositories are not implicitly included.
-- **Write scope:** controlled modification, creation, deletion, and rename in the permitted workspace and
-  resources; check both rename endpoints and path protection, including path traversal or link escapes.
-- **Execution scope:** actual code, dependencies, configuration, processes, network, and external effects
-  available to tests or commands under the current execution profile.
+When changing sessions or continuing after interruption, preserve the adopted versions, actual changes,
+validation results, open questions, and next steps. Follow the [common rules](../../../zh/prompts/coding_common.md)
+to reconcile the original execution and writing responsibility before continuing.
 
-The engineer may inspect a previously unpredicted caller or create a necessary file within that boundary.
-Tests receive the actual candidate and required runtime inputs, not only files the model happened to read.
-Mechanical boundaries do not prove that an edit is semantically necessary; engineering and independent
-review remain responsible for that judgment.
+## 4. Test, self-review, and create a Draft PR
 
-Implement the smallest sufficient change, maintain project tests and necessary documentation, and self-review.
-Choose real tests from the repository and actual environment. Existing project tests may change when their
-premise changes; do not weaken the adopted business acceptance criteria to make an implementation pass.
-Only add independent assertions where existing coverage is insufficient.
+Reuse real project tests and scenarios, parameterizing them or adding assertions to fill coverage gaps.
+For changes spanning interfaces, persistence, or user paths, choose validation that demonstrates the combined
+behavior. Keep temporary probes as permanent tests only when they cover a real, continuing risk.
 
-Create or update a draft PR under the project's valid publishing delegation. Record actual changes,
-verification, remaining limits, and references to the Issue. Implementation success, local result return,
-formal review, merge, deployment, and user acceptance remain different facts.
+Test records identify the exact code version (candidate), validation definition, relevant environment, and
+original output. Reuse an effective validation result, but do not select a historical PASS while ignoring
+later unresolved failures or unknown results. When coverage gaps, test definitions, environments, or
+candidates change, identify affected areas and perform the necessary additional validation. Stability reruns,
+baseline experiments, and new combination tests serve different purposes and are not automatically redundant.
+Both success and failure recovery reference actual execution records and retain failures and unknown results.
 
-## 4. Validate the candidate and exercise user paths early
-
-Select evidence for the actual candidate, test definition, and relevant environment. Retain complete
-controller-produced execution records, including failures, stops, and unknown results. A model's PASS claim
-or a matching command name is not execution evidence.
-An implementer being unable to edit a registered script does not establish that another independent author
-designed it or that it proves business correctness. Promote temporary probes into permanent tests only
-when they cover a real, continuing risk.
-
-Reuse an already valid test execution instead of automatically rerunning it at another stage. Confirm that
-its inputs and relevant environment remain applicable and resolve later conflicting failures or unknown
-executions before relying on an earlier PASS. This requires consistent success selection, failure handling,
-and recovery; removing one final test call alone is insufficient. Repeated runs that actually establish
-stability, baseline behavior, or new integration behavior remain justified.
-
-Use the Issue-stage acceptance scenarios as the implementation becomes runnable. Complete their concrete
-steps and execute applicable real user paths on the PR candidate, integration candidate, or preview before
-merge where possible. Record what requires the deployment environment in advance and verify it there later.
-An internal PR proves its contribution; it need not independently demonstrate a whole multi-Issue outcome.
+After self-review, necessary documentation, and real validation, the implementer creates or updates a Draft PR
+within the effective delegation. Follow the target repository's commit policy and PR template. Keep temporary
+PR-body files outside the repository and out of commits. Describe actual changes, validation, and limitations,
+reference the Issue, and give the exact candidate and validation evidence to both independent reviewers.
 
 ## 5. Review PRs across LLM companies, verify findings within three rounds, and repair in Codex
 
-Two LLMs from two different LLM companies use `pr_review_correctness` and `pr_review_impact`, respectively.
-Both independently complete a full review of the same accurate candidate, adopted Issue, repository rules,
-and real code and test evidence using the detailed review standard. Both can discover their own findings
-and investigate necessary callers; the second reviewer does not merely evaluate the first reviewer's summary.
+The two reviewers use [correctness review](../../../zh/prompts/pr_review_correctness.md) and
+[impact and necessity review](../../../zh/prompts/pr_review_impact.md), respectively, together with the
+[complete PR review standard](../../../zh/prompts/pr_review_system.md). Each independently reviews the same
+exact candidate in full, then exchanges original reports under the
+[evidence exchange rules](../../../zh/prompts/review_exchange.md).
 
-The correctness lens emphasizes actual behavior, triggers, and evidence. The impact lens emphasizes callers,
-compatibility, shared agreements, related work, and implementation complexity. Both cover the complete
-required review scope. Complete the initial reviews in independent contexts before exchanging evidence.
-
-- Findings state specific triggering conditions, causal paths, actual impact, and supporting evidence.
-  Inspect callers and run authorized validation or reproductions when needed to establish important claims.
-- Exchange the initial findings and conclusions. Send P0/P1 and other blocking findings requiring action
-  into the verification process below as a batch; list nonblocking suggestions separately.
+- Findings state specific triggering conditions, causal paths, impact, and evidence. Inspect callers and run
+  authorized validation or reproductions when needed to establish important claims.
+- Exchange initial findings and conclusions. Send P0/P1 and other blocking findings requiring action into the
+  verification process below as a batch; list nonblocking suggestions separately.
 - Reuse unchanged investigation that remains valid. Each new candidate needs both reviewers' conclusions
   matching its actual contents and scope, without mechanically rereading the entire repository.
-- Even when neither initial review finds a blocker, both reviewers must actually exchange conclusions and
-  briefly confirm the same candidate, coverage, and any omissions. Retain that exchange without manufacturing
-  a debate. Resolve factual disputes through evidence, refer product choices to the user, and retain essential
-  unresolved evidence gaps.
+- Even when neither initial review finds a blocker, briefly exchange conclusions and confirm the same candidate
+  and coverage. Resolve factual disputes through evidence, refer product choices to the effective decision-maker,
+  and retain key unresolved evidence gaps.
 - Ordinary style suggestions need not reach consensus. Bound exchanges by the agreed resources; when there
   is no new evidence or the limit is reached, state the gap and next action rather than repeating indefinitely.
 
 ### Verify findings and exchange evidence
 
-Give the same candidate and batch of findings to two new independent verification contexts. OpenAI's Codex uses
-`finding_verification_fact` to check whether findings are real, their triggering paths, reproduction, and
-severity. An LLM from a different LLM company uses `finding_verification_impact` to check upstream and
-downstream effects, similar entrypoints, root causes, and the smallest sufficient repair. Both first produce
-independent verification results, then exchange evidence; Codex synthesizes the results.
+Give the same candidate and batch of findings to two new independent verification contexts. OpenAI's Codex uses the
+[fact verification prompt](../../../zh/prompts/finding_verification_fact.md) to check whether findings are real,
+their triggering paths, reproduction, and severity. An LLM from a different LLM company uses the
+[impact verification prompt](../../../zh/prompts/finding_verification_impact.md) to check upstream and downstream
+effects, similar entrypoints, root causes, and the smallest sufficient repair. Both first produce independent
+verification results, then exchange evidence; Codex synthesizes the results.
 
-Allow **at most three exchange rounds**, as in the original process. Each round addresses specific
-disagreements and retains both reports. End early when the conclusions are sufficiently supported. If key
-evidence is still missing after three rounds, retain `REWORK_REQUIRED` and list the actions needed to obtain
-it. Refer product choices to the user once the relevant facts are clear. If counterevidence refutes the whole
-batch and the code remains unchanged, the formal reviewers check that counterevidence and close the findings.
+After independent verification, allow **at most three exchange rounds** under the
+[verification process](../../../zh/prompts/finding_verification.md). Each round addresses specific disagreements
+and retains both reports. End early when the conclusions are sufficiently supported. If key evidence is still
+missing after three rounds, retain `REWORK_REQUIRED` and list the actions needed to obtain it. Refer product
+choices to the user once the relevant facts are clear. If counterevidence refutes the whole batch and the code
+remains unchanged, the formal reviewers check that counterevidence and close the findings.
 
 ### Repair in the Codex verification session, then review independently
 
 Repair confirmed findings that require changes in the same Codex fact-verification session. The original
 writer hands over the actual candidate, existing changes, and evidence; the executor checks writing
 responsibility and authorization before enabling writes. That session updates code, necessary tests and
-documentation, the PR body, and the Review / Fix Record. If the session cannot be resumed, reconcile the
-original execution first. A successor Codex session verifies the relevant facts from the original records,
-then repairs in that session and records the continuation relationship.
+documentation, the PR body, and the Review / Fix Record. If the session cannot be resumed, a successor Codex
+session verifies the relevant facts from the original records, then repairs in that session and records the
+continuation relationship.
 
-Two LLMs from two different LLM companies independently review the exact repaired candidate; the repairer
-cannot sign its own formal approval. Review the actual differences, their effects, and unresolved findings,
-reusing investigation that remains valid, to form both reviewers' complete conclusions for the current
-candidate. Newly discovered blockers enter verification, exchange, and repair again. Verification conclusions
-do not replace formal PR review.
+LLMs from two different LLM companies independently review the exact repaired candidate; the repairer cannot
+sign its own formal approval. Review actual differences, their effects, and unresolved findings, reusing
+investigation that remains valid, to form both reviewers' complete conclusions for the current candidate.
+Newly discovered blockers enter verification, exchange, and repair again. Verification conclusions do not
+replace formal PR review.
 
-Final review outcomes remain:
+Use `PASS`, `REWORK_REQUIRED`, and `OWNER_DECISION_REQUIRED`. PASS requires completion of all necessary reviews,
+with no unresolved blockers or key evidence gaps. A clean PR still requires both complete independent initial
+reviews and an actual exchange.
 
-- `PASS`: all required reviews are complete, with no unresolved blocking issue or key evidence gap;
-- `REWORK_REQUIRED`: implementation, documentation, tests, or necessary evidence needs work;
-- `OWNER_DECISION_REQUIRED`: a substantive unresolved user choice blocks the affected work.
+## 6. Handle base changes, integrate, and deliver under the effective delegation
 
-A clean PR still requires both complete independent initial reviews and an actual exchange.
+When the original goal and delegation remain valid, work may continue from H0 to form its candidate. Report
+the actual base and whether it is behind at delivery; integrate long-running work at an appropriate time.
+A moving main branch does not automatically require repeating all investigation, but being able to continue
+development does not establish that the result can be merged or released.
 
-## 6. Integrate and receive the accurate result
+The receiver uses the [integration acceptance prompt](../../../zh/prompts/integration_acceptance.md) to check
+the exact deliverable, valid conclusions from both LLM companies, combination validation, blockers, and
+delivery conditions, reusing valid code-review and validation evidence.
 
-A valid task may continue from H0 while the default branch advances. Report the actual base and whether it
-is behind at delivery; integrate long-running work at a useful time. Continuing development, forming a candidate,
-integrating with current main, and obtaining authority to publish are separate conditions.
+When combining already reviewed immutable members, reuse their valid conclusions and add combination
+validation and an independent acceptance judgment. Individual member passes do not establish that the
+combination passes. If integration changes code, configuration, dependencies, activation, or connections
+in ways that materially affect reviewed content or the applicability of evidence, validate the differences
+and effects and obtain matching conclusions from LLMs of both companies. A new integration PR still requires
+dual review, which can focus on the combination and new effects. The integrator cannot sign its own independent
+approval.
 
-Combine already reviewed immutable members with real combination validation and an independent reception
-judgment. Member passes do not automatically establish that the combination works. A new PR retains the
-dual-company requirement, with review focused on the composition and interaction where prior evidence
-remains applicable.
+Merge, enable, or deploy under the effective delegation, checking the actual delivered candidate and recording
+the result. Complete already authorized actions autonomously.
 
-If conflict repair, adaptation, configuration, dependency, activation, or connection changes materially alter
-reviewed content or the applicability of evidence, validate the differences and their effects. Both reviewing
-LLMs, from two different LLM companies, must provide matching conclusions on those differences and effects for
-the new candidate, even if tests pass, no defect has yet been found, and no new PR is created. Reuse unaffected
-investigation and facts; do not
-relabel old acceptance as acceptance of the new combination. The integrator cannot self-approve independent
-reception or review.
+## 7. Give a Tech Lead explanation after development and accept the user outcome
 
-Final reception checks the adopted scope, exact candidate, applicable dual reviews, actual composition
-and scenario evidence, outstanding blockers, and delivery conditions. It does not default to a third
-complete code review. Refer a newly discovered gap to the existing review responsibility for focused work.
-Merge and release proceed only under the actual effective delegation and target checks.
-
-## 7. Accept the user outcome and give a Tech Lead explanation after development
-
-Acceptance starts in the Issue, becomes executable during development, and runs on suitable candidates.
-After merge or deployment, verify only the parts that need that environment or whose evidence changed.
-One outcome can include several Issues and PRs; share the outcome scenarios instead of rebuilding the plan
-for every internal PR.
-
-Turn an implementation gap in the original goal into an evidenced finding and follow Section 5 for
-verification, repair, and independent review. A change of goal, scope, or important semantics returns to the
-Issue and decision process. An evidence or environment gap calls for the missing verification. Acceptance
-results reference the plan version actually used, and plan revisions remain documented. User acceptance
-comes from the actual user or an explicitly authorized acceptance mechanism; passing tests, merging code,
-or a model's completion statement cannot fabricate it.
-
-After development, use `delivery_explanation` to explain the delivered functionality, actual mechanisms,
-and choices made during development in terms of user outcomes:
+Once a candidate is ready to demonstrate and has completed the necessary validation, the engineering owner uses the
+[post-development explanation prompt](../../../zh/prompts/delivery_explanation.md) to explain actual functionality,
+mechanisms, development choices, and acceptance results, helping the user understand and try the outcome:
 
 ```text
 Development is complete. From a Tech Lead's perspective, use the actual code, development records, and acceptance results to help me understand:
@@ -261,48 +201,37 @@ Development is complete. From a Tech Lead's perspective, use the actual code, de
 ```
 
 Give every outcome an explanation proportionate to its complexity. Use detailed HTML or diagrams for major
-changes, when needed for understanding, or when explicitly requested. Necessary documentation is maintained
-with implementation rather than first considered after merge. The former FSD completeness closure step is
-not restored as a default gate.
+changes, when needed for understanding, or when explicitly requested. State whether the current candidate
+has been tested, reviewed, merged, or enabled, and which parts still await the user's experience and confirmation.
+
+Follow the [user acceptance prompt](../../../zh/prompts/user_acceptance.md) to execute the plan's real scenarios.
+Verify runnable candidates early, complete checks specific to the target environment after deployment, and
+update the delivery explanation. The user can consult the plan for actions, expected results, and execution
+evidence before deciding whether to accept. For an outcome spanning several Issues or PRs, validate the
+complete user path.
+
+Implementation gaps in the original goal follow Section 5 for verification, repair, and independent review.
+Changes to the goal, scope, or key semantics return to the Issue's decision process. Acceptance results
+reference the actual plan version, and plan revisions remain recorded. User acceptance corresponds to an
+actual user decision or explicit delegation.
 
 ## Throughout: requirement changes and recovery
 
-Do not rewrite an active execution's target in place. Save incoming amendments separately, distinguish
-clarification, in-scope supplement, and scope change, then adopt them at a supported continuation point.
-Record the requirement version and work version that consume them, and which candidate implements them.
-An adopted goal still requires implementation and verification evidence. Stop or withdrawal requests use
-the actual stop mechanism instead of waiting in an ordinary amendment queue.
+Record new requirements as revisions. The engineering owner determines whether each is a clarification,
+an in-scope supplement, or a scope change. The current execution completes or stops under its original input;
+at a supported continuation point, record the adopted revision and the work responsible for carrying it
+forward. Stop and withdrawal requests go directly through stop controls.
 
-Old records keep their original bindings. A clarification or scope reduction may allow reuse of unchanged
-code and evidence; establish their applicability to the new requirement without rewriting old records or
-transferring an old PASS. Unknown effects are reconciled from the original operation before another writer
-or retry is started. Engineering responsibility can continue across sessions with accurate saved inputs,
-changes, candidates, evidence, unresolved work, and the next action.
-
-The executing consumer supplies actual task data and enforces tools, permissions, isolation, and protocol
-checks. Existing-work compatibility, historical reading, and changes to the default workflow version follow
-the [version-adoption contract](version_adoption.md); product-specific coordination and progress views are
-outside this document.
-
-English prose here is derived from the Chinese source. The long prompt bundle remains **en-pending**;
-see the [English prompt catalog](../../prompts/README.md). Do not represent untranslated prompts as an
-English-ready bundle. This coding-loop change leaves the document synchronization Skill's runtime and
-publishing boundary below unchanged.
+Old candidates and validation results retain their original scope. Explicitly reference facts that can be
+reused under the new requirement and continue any necessary changes or validation. Handle old and new work
+and workflow upgrades under the [version-adoption rules](version_adoption.md).
 
 ## Necessary artifacts and optional material
 
-Ordinary work uses the adopted Issue, necessary shared agreements, actual code candidates and validation,
-independent review findings, delivery, and outcome-acceptance records. The host reuses existing work and
-execution records for accurate relationships; models need not maintain another ledger describing them.
-
-Historical FSD, Bridge, and FSD-closure prompts remain available as optional or historical Chinese material
-through the [prompt catalog](../../prompts/README.md). They are excluded from the default v2 source index
-and cannot reappear as compulsory prerequisites for every Issue.
-
-Assess complexity using actual benefits and existing work records: preserve necessary independent
-challenge while removing repeated transcription, handoffs, and unconditional reruns. No dedicated new
-evaluation platform is required to justify simplification. Lack of a trigger alone does not prove that a
-mechanism has no value.
+Ordinary work uses the adopted Issue, necessary shared agreements, code candidates and actual validation,
+independent review findings, delivery records, and outcome-acceptance records. Cross-reference these records
+and use the project's existing storage locations. For a shared specification or migration plan, use the
+[optional material](../../../zh/prompts/README.md#保留的按需历史材料) and state its scope.
 
 ## Core project documents
 
