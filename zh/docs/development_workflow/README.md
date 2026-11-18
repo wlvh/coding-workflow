@@ -58,13 +58,6 @@
 
    同一工程负责人连续完成调查、实施和测试，使用[工程负责人提示](../../prompts/engineering_owner.md)。预计文件清单随调查更新，在已有委托内按需补读、新增、删除、修改或重命名文件。
 
-   ```text
-   按照当前 Issue 完成本次开发。
-   1. 读取 AGENTS.md / SOP.md / TESTING.md / PR_Checklist.md / interact.md；如果项目存在 capability_contract.json / docs/business_user_guide.md，也必须按 AGENTS.md 的文档关系检查。
-   2. 从 Issue 提取 Spec Unit，生成 SU -> 代码改动 -> 测试 -> 文档 的 todo list。
-   3. 测试策略与测试证据记录方式以 TESTING.md 为准。
-   4. 在 todo list 中说明哪些测试复用、哪些参数化扩展，以及哪一条 scenario 证明跨模块组合路径；不得机械地为每个 SU 或 finding 新增独立测试。
-   ```
 
 6. **Coding Agent 自审并提交 Draft PR**
 
