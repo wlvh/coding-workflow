@@ -2,13 +2,12 @@
 
 This is the English explanation of the
 [Chinese adoption contract](../../../zh/docs/development_workflow/version_adoption.md).
-It describes the contract a consumer such as Tongxu must implement. Publishing the source files in this
-repository does not itself install an importer, change a controller, or certify a consumer's runtime.
+It describes the contract a consumer such as Tongxu must implement.
 
 ## Source and execution responsibilities
 
-coding-workflow owns the programming loop's natural-language behavior templates: common engineering
-rules, Issue authorship and review, investigation and implementation, self-review and repair, PR review
+coding-workflow owns the programming loop's natural-language behavior templates: Issue authorship
+and review, investigation and implementation, self-review and repair, PR review
 and evidence exchange, integration reception, user acceptance, and delivery explanation. This includes
 instructions ultimately sent in system messages, developer messages, phase inputs, retries, or repair
 requests; file extensions and transport fields do not create an exception.
@@ -22,7 +21,7 @@ into upstream prompt templates merely to perform a task.
 If an interface needs a natural-language programming instruction template, maintain that template in
 coding-workflow and fill in actual runtime values. A local role prompt, arbitrary appended task policy,
 hard-coded instruction, local translation, or summary must not silently change the adopted programming
-rules. Permissions remain enforced by the host regardless of what a prompt says.
+rules.
 
 This source-ownership requirement covers the programming loop. It does not move every secretary, account,
 installation, or unrelated business-role prompt into coding-workflow.
@@ -39,11 +38,10 @@ The canonical source is the
 | `executionContract` | Explicit controller contract, currently `coding-loop-v2` |
 | `language` | Actual prompt source language, currently `zh` |
 | `entrypoint` | Human-readable workflow in the same source commit |
-| `roles` | Purpose to ordered `promptPaths`; each selection includes the common rules |
+| `roles` | Purpose to ordered `promptPaths` |
 
-The index selects source files; it is not a language for arbitrary steps, loops, plugins, or permissions. A role entry does
-not require an additional model invocation when its responsibility can be fulfilled within an existing
-authorized engineering or review turn.
+The index selects source files; it is not a language for arbitrary steps, loops, plugins, or permissions.
+The same engineering owner can use different purposes at different stages.
 
 Consumers read the index, README, and referenced files from one exact Git commit. Keep complete source
 bytes and verify their content when loading them. Use only the source files applicable to the role instead
@@ -88,12 +86,10 @@ README or only long prompts: either can change independently.
 
 Establish whether a change alters explanation, prompt behavior within supported interfaces, or execution
 behavior that requires controller work. A wording change can alter review or acceptance semantics even
-without changing the role list. This judgment belongs in the bounded upgrade task; a runtime must not ask
-a model to improvise missing controller stages from a new README.
+without changing the role list. Record required controller work in the upgrade task.
 
 For example, a new rule requiring two companies to review every PR needs real distinct-provider dispatch,
-accurate candidate binding, independent results, evidence exchange, and closure. Copying a new prompt into
-the old single-review path does not implement that rule.
+accurate candidate binding, independent results, evidence exchange, and closure.
 
 ### 3. Prepare an inactive candidate version
 
@@ -109,7 +105,7 @@ explicit test identities; they do not silently replace the rules judging the upg
 ### 4. Verify the changes that matter
 
 Validate complete source loading, source provenance of actual sent instructions, and the behavior changed
-by the update. A source checksum proves bytes, not correct execution. Examples include real cross-company
+by the update. Examples include real cross-company
 review, feedback and repair on a new candidate, continued repository investigation, and a controlled new
 file that appears in the actual test environment.
 

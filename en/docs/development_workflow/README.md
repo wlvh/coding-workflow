@@ -14,10 +14,7 @@ and [fixed-version adoption and updates](version_adoption.md).
 
 1. Define the requirement.
 
-2. Turn the original user requirement, accepted decisions, and necessary repository facts into one executable issue contract. Owner decisions must remain explicit.
-   The Issue is the single implementation entry so the Coding Agent does not receive several drifting upstream
-   instruction sets in parallel. Owner choices also stay in the Issue; PR bodies, review comments, and chats
-   refer back to the Issue instead of creating a second version.
+2. Have the Issue Agent write the Issue.
 
    Shared agreements belong in the target project's GitHub repository documentation; related Issues reference
    the specific version. Before development, write a user-view acceptance plan in the Issue or its referenced
@@ -28,8 +25,7 @@ and [fixed-version adoption and updates](version_adoption.md).
 
 3. Have LLMs from two different LLM companies review the issue through two orthogonal lenses before implementation: requirement and acceptance closure,
    and engineering volume and minimal sufficiency. The Issue Agent from step 2 owns the final edit; the lenses
-   advise rather than editing the issue in parallel. The two lenses protect against under-delivery and
-   over-engineering rather than duplicating a vote.
+   advise rather than editing the issue in parallel.
 
    Each first performs a complete review of the same Issue in an independent context, then they exchange their reports and conclusions.
    Even when neither finds a blocker, they actually exchange conclusions and confirm the same object and scope.
@@ -40,12 +36,10 @@ and [fixed-version adoption and updates](version_adoption.md).
    and state which tests are reused, parameterized, or used as the real cross-module scenario.
    The same engineering owner continues through investigation, implementation, and testing. Expected file lists
    evolve with investigation; within the existing delegation, read, add, delete, modify, or rename files as needed.
-   Implementation remains constrained by repository facts and the Issue rather than a generic coding template.
 
 5. Self-review the patch and deliver a draft PR using the repository's commit policy and tracked PR template.
    The PR body remains outside the target worktree and records actual scope, evidence, review/fix history, open
-   decisions, and limits. It is an important formal-review input even though it is not committed to the target
-   repository.
+   decisions, and limits. Keep the temporary PR body out of commits.
 
 6. Have LLMs from two different LLM companies each perform the complete formal PR review with the full review system and task prompt. Each checks Issue
    compliance, bugs, unnecessary architecture or duplicated repair, the external PR body, repository guidance,
@@ -127,8 +121,7 @@ and [fixed-version adoption and updates](version_adoption.md).
     target-environment checks after merge or deployment. For an outcome spanning several Issues or PRs, validate
     the complete user path. Archive results in the PR conversation with the plan version, candidate, and
     environment. Implementation gaps return to step 7 for verification, repair, and review; changes to goals,
-    scope, or key semantics return to Issue decisions and recorded plan revisions. This acceptance may create
-    follow-up development work.
+    scope, or key semantics return to Issue decisions and recorded plan revisions.
 
 ## Core Artifacts
 

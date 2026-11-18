@@ -7,12 +7,10 @@
 
 ## Issue 直接驱动的编程回路
 
-[coding-loop v2](docs/development_workflow/README.md)定义 Issue 入口、跨公司需求与 PR 双审、
+[coding-loop v2](docs/development_workflow/README.md)定义 Issue 入口、来自不同 LLM 公司的 LLM 需求与 PR 双审、
 同一工程责任调查实施、准确候选验证及用户成果验收。
 [角色提示](prompts/README.md)与[源索引](prompts/coding_workflow.json)在本仓库统一维护。
-Tongxu 固定采用准确提交，用户可发起更新；提示与控制流程一起验证和启用，旧工作保留原版本。
-详细规则见[固定版本采用](docs/development_workflow/version_adoption.md)。本仓库发布规范不代表
-Tongxu 运行能力已经实现；以下项目文档同步 Skill 保持独立用途。
+Tongxu 等执行系统的固定版本采用与更新要求，见[固定版本采用](docs/development_workflow/version_adoption.md)。
 
 ## 一句话开始
 
@@ -178,7 +176,6 @@ workflow 必须同一 PR 闭合；未触及历史决策的既有翻译状态不�
 
 [acceptance-agent](https://github.com/wlvh/acceptance-agent) 负责**验收者侧**：一个独立验收方
 如何仅凭规格、最终产物和测试证据做出 `accept` / `reject` / `request_evidence` 判断——它被有意
-禁止读取 builder 的实现对话，因此无法继承 builder 的 framing。它是相关项目，不是本编程回路
-双公司审核之后的固定第三次完整代码审核。
+禁止读取 builder 的实现对话，因此无法继承 builder 的 framing。
 
 作者：[github.com/wlvh](https://github.com/wlvh) · [huaweidata.com](https://huaweidata.com)

@@ -8,19 +8,13 @@ language-, framework-, and project-neutral. The canonical `workflow-docs-sync` S
 
 ## Issue-driven coding loop
 
-The [development workflow](docs/development_workflow/README.md) defines the coding loop: an adopted Issue,
-independent Issue and PR reviews by two different companies, continuous engineering responsibility,
-candidate-bound validation, and acceptance of the actual user outcome. Shared behavior rules, impact
-findings, and migration plans are retained when needed; FSD, Forecast, and Bridge are no longer mandatory
-upstream documents.
-
-The [version-adoption contract](docs/development_workflow/version_adoption.md) explains how a consumer such
-as Tongxu can run a fixed version and adopt an update at the user's request. This repository supplies the
-workflow and canonical programming prompts; it does not claim that publishing these documents upgrades
-Tongxu's controller. The [prompt catalog](prompts/README.md) states the current English coverage boundary.
-
-The document synchronization Skill below remains a separate operation. It does not install or upgrade a
-coding-loop runtime.
+The [development workflow](docs/development_workflow/README.md) defines the coding loop: Issue entry,
+Issue and PR reviews by LLMs from different LLM companies, continuous engineering responsibility,
+candidate-bound validation, and acceptance of the actual user outcome.
+The [prompt catalog](prompts/README.md) and [Chinese source index](../zh/prompts/coding_workflow.json)
+identify the maintained prompt sources and their current English coverage.
+Requirements for consumers such as Tongxu to pin a version and adopt updates are in the
+[version-adoption contract](docs/development_workflow/version_adoption.md).
 
 ## One-line start
 
@@ -173,7 +167,6 @@ coordination, progress visibility, and real validation of the workflow version i
 [acceptance-agent](https://github.com/wlvh/acceptance-agent) covers the **acceptor** side: how an
 independent verifier decides `accept` / `reject` / `request_evidence` from the specification, the final
 artifact, and the test evidence — while being deliberately denied the builder's implementation
-conversation, so it cannot inherit the builder's framing. It is a related project, not a mandatory third
-complete code review after this coding loop's cross-company review.
+conversation, so it cannot inherit the builder's framing.
 
 Author: [github.com/wlvh](https://github.com/wlvh) · [huaweidata.com](https://huaweidata.com)

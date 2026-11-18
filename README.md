@@ -21,16 +21,13 @@ user/interface navigation. Mature projects can keep a short guide that links to 
 ## Issue-driven coding loop
 
 The [coding-loop v2 specification](en/docs/development_workflow/README.md) defines Issue-first development,
-two-company Issue and PR review, continuous engineering responsibility, candidate-bound evidence, and
+Issue and PR review by LLMs from different LLM companies, continuous engineering responsibility, candidate-bound evidence, and
 outcome acceptance. The [Chinese prompt sources](zh/prompts/README.md) and their
 [source index](zh/prompts/coding_workflow.json) are canonical; executable English prompts remain
 [en-pending](en/prompts/README.md).
 
-Tongxu and other consumers pin an exact upstream commit. A user-requested upgrade compares the workflow
-and prompts, adapts the execution controls, and validates them before enabling the version for new work.
-See [version adoption](en/docs/development_workflow/version_adoption.md). Publishing this specification
-does not claim the consumer's runtime capabilities are implemented. The documentation-sync Skill below
-keeps its existing independent scope and behavior.
+Requirements for consumers such as Tongxu to pin a version and adopt updates are in
+[version adoption](en/docs/development_workflow/version_adoption.md).
 
 Detailed behavior and optional repository installation are in the [中文指南](zh/README.md#一句话开始) and
 [English guide](en/README.md#one-line-start).
@@ -47,7 +44,6 @@ coordination, progress, and the actual validation of its adopted workflow versio
 [acceptance-agent](https://github.com/wlvh/acceptance-agent) covers the **acceptor** side: how a
 separate verifier decides `accept` / `reject` / `request_evidence` from the spec, the final artifact,
 and the test evidence — while being deliberately denied the builder's implementation conversation,
-so it cannot inherit the builder's framing. It is a related project, not a mandatory third full review
-after the coding loop's two-company review.
+so it cannot inherit the builder's framing.
 
 Author: [github.com/wlvh](https://github.com/wlvh) · [huaweidata.com](https://huaweidata.com)
