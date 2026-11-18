@@ -19,26 +19,31 @@ and [fixed-version adoption and updates](version_adoption.md).
    Shared agreements belong in the target project's GitHub repository documentation; related Issues reference
    the specific version.
 
-3. Have LLMs from two different LLM companies review the issue through two orthogonal lenses before implementation: requirement and acceptance closure,
+3. Have another LLM conversation draft a user-view acceptance plan in the Issue or its referenced repository
+   document before the first review. Include it in the Issue submitted to both reviewers in step 4.
+   Specify the user's real entrypoint, inputs, actions, expected results, and important failure cases.
+   During development, the current engineering owner directly maintains factual corrections that do not change
+   goals, scope, or key criteria, recording the date, reason, changed items, and effects on existing results;
+   the original Issue author need not relay them. Substantive changes return to Issue decisions and review by
+   both parties. Execution results identify the plan
+   version, code candidate, and environment.
+
+4. Have LLMs from two different LLM companies review the issue through two orthogonal lenses before implementation: requirement and acceptance closure,
    and engineering volume and minimal sufficiency. The Issue Agent from step 2 owns the final edit; the lenses
    advise rather than editing the issue in parallel.
 
-   Each first performs a complete review of the same Issue in an independent context, then they exchange their reports and conclusions.
+   Each first performs a complete review of the same Issue, including the acceptance plan, in an independent context, then they exchange their reports and conclusions.
    Even when neither finds a blocker, they actually exchange conclusions and confirm the same object and scope.
-   After the author updates the Issue, both recheck changes and unresolved problems and conclude on the final version.
-
-4. Before development, have another LLM conversation draft a user-view acceptance plan in the Issue or its
-   referenced repository document. Both reviewers from step 3 review the Issue and plan before coding begins.
-   Specify the user's real entrypoint, inputs, actions, expected results, and important failure cases.
-   Development may revise the plan, recording the date, reason, changed items, and effects on existing results.
-   Changes to goals or key criteria return to Issue decisions and review. Execution results identify the plan
-   version, code candidate, and environment.
+   If nothing changes, finish after the exchange without inventing a new version or another review round.
+   When the author makes actual changes, both recheck those changes and unresolved problems and conclude on the final version.
 
 5. Implement the issue after reading `AGENTS.md`, `SOP.md`, `TESTING.md`, `PR_Checklist.md`, `interact.md`,
    and project capability or business-user documents. Map each Spec Unit to code, tests, and documentation,
    and state which tests are reused, parameterized, or used as the real cross-module scenario.
-   The same engineering owner continues through investigation, implementation, and testing. Expected file lists
-   evolve with investigation; within the existing delegation, read, add, delete, modify, or rename files as needed.
+   The same engineering owner continues through investigation, implementation, and testing. Reuse an existing
+   project-level development delegation when it covers the work. Isolate concurrent work in separate worktrees
+   and record each task's requirements and candidate. Expected file lists guide investigation; they do not
+   require renewed authorization per task or file.
 
 6. Self-review the patch and deliver a draft PR using the repository's commit policy and tracked PR template.
    The PR body remains outside the target worktree and records actual scope, evidence, review/fix history, open
@@ -102,7 +107,10 @@ and [fixed-version adoption and updates](version_adoption.md).
        leave areas with no clear benefit unchanged.
 
     When integrating reviewed members, reuse valid review and test evidence and validate the complete combined
-    path. If integration changes code, configuration, dependencies, or connections in a way that affects reviewed
+    path. Reuse an applicable independent reception judgment for the same candidate, plan version, evidence, and
+    coverage; do not call another model merely because the role is named acceptance rather than reception.
+    Uncovered combination risks still require an independent reception judgment. If integration changes code,
+    configuration, dependencies, or connections in a way that affects reviewed
     behavior or evidence applicability, validate the changes and have LLMs from both companies conclude on the
     differences and impacts for the new candidate, whether or not a new PR is created.
 
@@ -115,7 +123,7 @@ and [fixed-version adoption and updates](version_adoption.md).
     Distinguish implementation facts, design intent, and inference with versioned evidence. Store the walkthrough
     and follow-up in the PR conversation, adding new deployment results to the same explanation.
 
-10. Use the user-view acceptance plan prepared in step 4 and reviewed by both companies, and hand it to Codex
+10. Use the user-view acceptance plan prepared in step 3 and reviewed by both companies, and hand it to Codex
     for actual execution with tools such as Playwright when useful. Run candidate-ready scenarios early and add
     target-environment checks after merge or deployment. For an outcome spanning several Issues or PRs, validate
     the complete user path. Archive results in the PR conversation with the plan version, candidate, and
