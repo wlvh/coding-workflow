@@ -167,17 +167,11 @@
 
    存档在 PR 评论区。
 
-10. **Issue 关闭前，再从主干代码检查 FSD 是否真正开发完成**（这个环节暂时放弃，因为通过率 100%，而且第 10 步以用户角度验收能发现更精准的问题）
-
-   使用长 prompt：[prompts/issue_closure_fsd_acceptance.md](../../prompts/issue_closure_fsd_acceptance.md)
-
-   目的：从主干代码倒查 Issue 中的每个 `Spec Unit` 是否已实现，并强制输出 `Updates to FSD`（如有偏差）。
-
-11. **从用户视角验收这次 PR**
+10. **从用户视角验收这次 PR**
 
     使用第 2 步已制定并经双审的用户视角验收计划，把计划交给 Codex，必要时结合 Playwright 等交互工具，真的走一遍验收。候选可运行时尽早执行，合并或部署后补验目标环境特有部分；一个成果跨多个 Issue / PR 时，验收完整用户路径。
 
-    结果存档在 PR 评论区，注明计划版本、代码候选和环境。原目标的实现缺口进入第 7 步核实、修复与复审；目标、范围或关键语义变化补回 Issue 决定，并记录计划修订。
+    结果存档在 PR 评论区，注明计划版本、代码候选和环境。原目标的实现缺口进入核实、修复与复审；目标、范围或关键语义变化补回 Issue 决定，并记录计划修订。
 
 ## 实验机制重审
 
@@ -188,15 +182,10 @@ Owner Decision 的具体流程继续作为实验机制，按
 Issue 或 PR，不另建跟踪机制。
 
 ## 核心产物
-
-- `FSD Core Contract`（按需）：把需求翻译成可实现、可测试、可审核的契约。
-- `Repo Impact Forecast`（按需）：预测 FSD 与当前仓库的真实触点、风险、文档和测试影响。
-- `Target State Bridge`（按需）：定义开发完成后用户 / 调用方应该看到什么状态，以及如何验证。
 - `Issue`：把契约、范围、任务拆解、文档更新预测、测试更新预测、验收条件和需要 owner 判断的事项固化。
 - 用户视角验收计划：开发前制定，开发中修订留记录，按实际用户路径执行。
 - Tech Lead 解读：开发后帮助 owner 理解功能、运行机制和开发取舍。
 - 仓库外 PR body Markdown：由 `.github/pull_request_template.md` 派生，不进入目标工作树或 commit；是 review 和通用 GitHub 发布能力的输入。
-- `FSD 完备性验收报告`（暂停）：Issue 关闭前从主干代码倒查 Spec Unit 与 FSD 偏差的报告。
 - `Workflow Docs Sync`：用户一次调用完成全量事实重建、最小必要改写、真实测试、
   fresh-context independent review 或诚实 self-review，以及最终仓库检查。
 
