@@ -81,7 +81,7 @@
 
    临时 PR body 位于仓库外，不进入目标工作树或 commit。
 
-7. **来自两家不同 LLM 公司的 LLM 负责代码审核**
+7. **PR 双审由 OpenAI 的 LLM 与另一家不同公司的 LLM 承担；OpenAI 一方的原审核对话负责后续核实、综合和修复**
 
    正式审核系统 prompt：[prompts/pr_review_system.md](../../prompts/pr_review_system.md)
 
