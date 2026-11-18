@@ -18,6 +18,17 @@ This repository publishes bilingual downstream workflow-document templates, the 
 The templates provide task routing, change propagation, combined behavior and open questions, and
 user/interface navigation. Mature projects can keep a short guide that links to their existing documentation.
 
+## Issue-driven coding loop
+
+The [coding-loop v2 specification](en/docs/development_workflow/README.md) defines Issue-first development,
+Issue and PR review by LLMs from different LLM companies, continuous engineering responsibility, candidate-bound evidence, and
+outcome acceptance. The [Chinese prompt sources](zh/prompts/README.md) and their
+[source index](zh/prompts/coding_workflow.json) are canonical; executable English prompts remain
+[en-pending](en/prompts/README.md).
+
+Requirements for consumers such as Tongxu to pin a version and adopt updates are in
+[version adoption](en/docs/development_workflow/version_adoption.md).
+
 Detailed behavior and optional repository installation are in the [中文指南](zh/README.md#一句话开始) and
 [English guide](en/README.md#one-line-start).
 
@@ -26,8 +37,9 @@ For source ownership, edit locations, and validation commands, use the
 
 ## Related work
 
-This repository covers the **producer** side: how an agent reconstructs repository facts, keeps
-changes minimal, and delivers a reviewable draft PR from an isolated worktree.
+This repository maintains the coding-loop policy and project-document synchronization tools.
+[Tongxu](https://github.com/wlvh/tongxu) is a consumer responsible for controlled execution,
+coordination, progress, and the actual validation of its adopted workflow version.
 
 [acceptance-agent](https://github.com/wlvh/acceptance-agent) covers the **acceptor** side: how a
 separate verifier decides `accept` / `reject` / `request_evidence` from the spec, the final artifact,

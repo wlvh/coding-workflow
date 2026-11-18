@@ -6,6 +6,16 @@ This directory provides English templates derived from the Chinese semantic sour
 language-, framework-, and project-neutral. The canonical `workflow-docs-sync` Skill remains under
 `zh/skills/workflow-docs-sync/` and reads English templates from the pinned upstream commit.
 
+## Issue-driven coding loop
+
+The [development workflow](docs/development_workflow/README.md) defines the coding loop: Issue entry,
+Issue and PR reviews by LLMs from different LLM companies, continuous engineering responsibility,
+candidate-bound validation, and acceptance of the actual user outcome.
+The [prompt catalog](prompts/README.md) and [Chinese source index](../zh/prompts/coding_workflow.json)
+identify the maintained prompt sources and their current English coverage.
+Requirements for consumers such as Tongxu to pin a version and adopt updates are in the
+[version-adoption contract](docs/development_workflow/version_adoption.md).
+
 ## One-line start
 
 Copy this exact instruction into Codex while it is open in the target project:
@@ -111,6 +121,8 @@ Templates do not assume a programming language, framework, test runner, service,
   this file is derived from it.
 - Development workflow and decisions: `../zh/docs/development_workflow/`; the English overview is under
   `docs/development_workflow/README.md`.
+- Fixed-version adoption: `docs/development_workflow/version_adoption.md`; canonical programming-prompt
+  sources and their ordered role mapping are under `../zh/prompts/`.
 - Scenario tests: `../tests/test_workflow_docs_sync.py`; test code owns the detailed constraints.
 - GitHub paths: root `.github/` serves this repository, while `.github/` here and under `zh/` are downstream
   template sources.
@@ -133,6 +145,9 @@ only in the [Chinese maintainer map](../zh/README.md#维护者地图).
 - [SOP.md](SOP.md): stable standard-process entrypoints.
 - [.github/pull_request_template.md](.github/pull_request_template.md): long-term PR body structure.
 - [docs/development_workflow/README.md](docs/development_workflow/README.md): English workflow overview.
+- [docs/development_workflow/version_adoption.md](docs/development_workflow/version_adoption.md): fixed
+  versions, prompt ownership, user-requested upgrades, and existing-work compatibility.
+- [prompts/README.md](prompts/README.md): English prompt status and the canonical Chinese source.
 - [../zh/skills/workflow-docs-sync/](../zh/skills/workflow-docs-sync/): canonical Skill implementation.
 
 ## Install and Language Boundary
@@ -145,9 +160,9 @@ translation status in unchanged historical decisions remains a historical record
 
 ## Related Work
 
-This repository covers the **producer** side: how an agent reconstructs repository facts from committed
-code, config, tests, and artifacts, keeps changes to the minimum necessary, and delivers a reviewable
-draft PR from an isolated clean worktree.
+This repository maintains the coding-loop contract and project-document synchronization tools.
+[Tongxu](https://github.com/wlvh/tongxu) is a consumer responsible for controlled execution, project
+coordination, progress visibility, and real validation of the workflow version it adopts.
 
 [acceptance-agent](https://github.com/wlvh/acceptance-agent) covers the **acceptor** side: how an
 independent verifier decides `accept` / `reject` / `request_evidence` from the specification, the final

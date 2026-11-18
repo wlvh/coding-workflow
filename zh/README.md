@@ -5,6 +5,13 @@
 本目录提供真正跨语言、跨框架、跨项目的中文核心模板、开发工作流和 canonical
 `workflow-docs-sync` Skill。
 
+## Issue 直接驱动的编程回路
+
+[coding-loop v2](docs/development_workflow/README.md)定义 Issue 入口、来自不同 LLM 公司的 LLM 需求与 PR 双审、
+同一工程责任调查实施、准确候选验证及用户成果验收。
+[角色提示](prompts/README.md)与[源索引](prompts/coding_workflow.json)在本仓库统一维护。
+Tongxu 等执行系统的固定版本采用与更新要求，见[固定版本采用](docs/development_workflow/version_adoption.md)。
+
 ## 一句话开始
 
 在目标项目的 Codex 中复制这一句：
@@ -103,6 +110,8 @@ Markdown project-fill slot 使用 `<!-- project-fill: ... -->`，JSON 使用
 - 入口 README：根 README 做摘要，`zh/README.md` 是中文维护入口，`en/README.md` 从中文派生。
 - 开发工作流与决策：`zh/docs/development_workflow/README.md` 和 `decisions.md`；英文概览在
   `en/docs/development_workflow/README.md`。
+- 编程角色提示与源索引：`zh/prompts/README.md`、`zh/prompts/coding_workflow.json`；采用协议在
+  `zh/docs/development_workflow/version_adoption.md`。不在下游另外维护一套编程行为 prompt。
 - 场景测试：`tests/test_workflow_docs_sync.py`；具体测试约束以代码为准。
 - GitHub 路径：根 `.github/` 只服务本仓库 CI/GitHub；`zh/.github/` 与 `en/.github/` 是下游
   模板源。
@@ -147,6 +156,8 @@ fi
 - [.github/pull_request_template.md](.github/pull_request_template.md)：长期 PR body 结构。
 - [docs/development_workflow/README.md](docs/development_workflow/README.md)：完整开发工作流。
 - [docs/development_workflow/decisions.md](docs/development_workflow/decisions.md)：产品实现决策。
+- [docs/development_workflow/version_adoption.md](docs/development_workflow/version_adoption.md)：固定版本、用户发起更新及在途兼容。
+- [prompts/README.md](prompts/README.md)：编程回路的提示来源和按需材料。
 - [skills/workflow-docs-sync/](skills/workflow-docs-sync/)：canonical 单会话同步 Skill。
 - [scripts/install_skills.py](scripts/install_skills.py)：单 Skill 双平台薄复制器。
 
@@ -160,8 +171,8 @@ workflow 必须同一 PR 闭合；未触及历史决策的既有翻译状态不�
 
 ## 相关项目
 
-本仓库负责**生产者侧**：Agent 如何从 committed code、config、tests 和 artifacts 重建仓库事实，
-把改动限制在最小必要范围，并从隔离 clean worktree 交付可审核的 draft PR。
+本仓库维护编程回路规范与项目文档同步工具。[Tongxu](https://github.com/wlvh/tongxu)作为消费者，
+负责受控执行、项目协调、进度展示和所采用流程版本的实际验证。
 
 [acceptance-agent](https://github.com/wlvh/acceptance-agent) 负责**验收者侧**：一个独立验收方
 如何仅凭规格、最终产物和测试证据做出 `accept` / `reject` / `request_evidence` 判断——它被有意

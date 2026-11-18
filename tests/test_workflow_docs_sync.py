@@ -1,4 +1,4 @@
-"""通过公共 CLI 和完整分发路径验证 Workflow Docs Sync 的核心风险边界。"""
+"""通过公共 CLI、完整分发路径和提示源索引验证仓库的核心风险边界。"""
 
 from __future__ import annotations
 
@@ -1603,3 +1603,84 @@ def test_scenario_5_repository_distribution_contract() -> None:
     assert prepare_help.returncode == 0
     for option in ("--target-repo", "--upstream-dir", "--language {zh,en}"):
         assert option in prepare_help.stdout
+
+
+def test_scenario_6_coding_loop_source_contract() -> None:
+    """固定 coding-loop-v2 的消费接口，不冻结提示正文或完整路径数组。"""
+    index = json.loads(
+        s=(REPO_ROOT / "zh/prompts/coding_workflow.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    metadata = {
+        "schemaVersion": 1,
+        "workflowId": "coding-loop",
+        "workflowVersion": 2,
+        "executionContract": "coding-loop-v2",
+        "language": "zh",
+    }
+    assert isinstance(index, dict)
+    assert set(index) == set(metadata) | {"entrypoint", "roles"}
+    for key, expected in metadata.items():
+        assert type(index[key]) is type(expected), key
+        assert index[key] == expected, key
+
+    def assert_source(*, value: Any, directory: str) -> None:
+        """Git 源路径必须规范、在允许目录内，且指向非空 UTF-8 普通文件。"""
+        assert isinstance(value, str), value
+        relative = Path(value)
+        assert not relative.is_absolute() and "\\" not in value, value
+        assert ".." not in relative.parts and relative.as_posix() == value, value
+        assert relative.is_relative_to(Path(directory)), value
+        # Git 快照只应读取实际源文件，不允许文件或父目录以 symlink 换源。
+        assert all(
+            not (REPO_ROOT / part).is_symlink()
+            for part in (relative, *relative.parents)
+        ), value
+        source = REPO_ROOT / relative
+        assert source.is_file(), value
+        assert source.resolve().is_relative_to(
+            (REPO_ROOT / directory).resolve()
+        ), value
+        assert source.read_text(encoding="utf-8").strip(), value
+
+    assert_source(
+        value=index["entrypoint"], directory="zh/docs/development_workflow"
+    )
+    # 每个用途要保有自己的行为源；其余共享片段不用逐项复制成 golden 数组。
+    role_sources = {
+        "issue_author": "issue_agent.md",
+        "issue_review_completion": "issue_review_completion.md",
+        "issue_review_minimality": "issue_review_minimality.md",
+        "engineering_owner": "engineering_owner.md",
+        "pr_review_correctness": "pr_review_correctness.md",
+        "pr_review_impact": "pr_review_impact.md",
+        "finding_verification_fact": "finding_verification_fact.md",
+        "finding_verification_impact": "finding_verification_impact.md",
+        "integration_acceptance": "integration_acceptance.md",
+        "delivery_explanation": "delivery_explanation.md",
+    }
+    roles = index["roles"]
+    assert isinstance(roles, dict)
+    assert set(roles) == set(role_sources)
+    review_system = "zh/prompts/pr_review_system.md"
+    legacy_sources = {
+        "zh/prompts/fsd_core_contract.md",
+        "zh/prompts/target_state_bridge.md",
+    }
+    for role, spec in roles.items():
+        assert isinstance(spec, dict) and set(spec) == {"promptPaths"}, role
+        paths = spec["promptPaths"]
+        assert isinstance(paths, list) and paths, role
+        for path in paths:
+            assert_source(value=path, directory="zh/prompts")
+        assert len(paths) == len(set(paths)), role
+        role_source = f"zh/prompts/{role_sources[role]}"
+        assert role_source in paths, role
+        assert not legacy_sources.intersection(paths), role
+        if role in {"pr_review_correctness", "pr_review_impact"}:
+            assert review_system in paths, role
+            assert paths.index(review_system) < paths.index(role_source), role
+        if role in {"finding_verification_fact", "finding_verification_impact"}:
+            assert paths[-1] == role_source, role
+            assert review_system not in paths, role

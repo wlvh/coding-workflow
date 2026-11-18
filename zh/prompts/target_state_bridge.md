@@ -1,5 +1,7 @@
 # Target State Bridge Prompt
 
+> 按需用于影响分析或迁移安排，结论写入当前 Issue 或其引用的共享文档。预测文件随调查更新。
+
 ## 用途
 
 用于根据 `FSD + 当前仓库代码 + 仓库权威文档` 产出 `Repo Impact Forecast` 和 `Target State Bridge`。
