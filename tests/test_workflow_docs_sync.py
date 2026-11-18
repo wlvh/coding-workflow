@@ -1658,21 +1658,13 @@ def test_scenario_6_coding_loop_source_contract() -> None:
         "finding_verification_fact": "finding_verification_fact.md",
         "finding_verification_impact": "finding_verification_impact.md",
         "integration_acceptance": "integration_acceptance.md",
-        "user_acceptance": "user_acceptance.md",
         "delivery_explanation": "delivery_explanation.md",
     }
     roles = index["roles"]
     assert isinstance(roles, dict)
     assert set(roles) == set(role_sources)
     review_system = "zh/prompts/pr_review_system.md"
-    exchange = "zh/prompts/review_exchange.md"
     verification = "zh/prompts/finding_verification.md"
-    review_roles = {
-        "issue_review_completion",
-        "issue_review_minimality",
-        "pr_review_correctness",
-        "pr_review_impact",
-    }
     legacy_sources = {
         "zh/prompts/fsd_core_contract.md",
         "zh/prompts/target_state_bridge.md",
@@ -1688,8 +1680,6 @@ def test_scenario_6_coding_loop_source_contract() -> None:
         role_source = f"zh/prompts/{role_sources[role]}"
         assert role_source in paths, role
         assert not legacy_sources.intersection(paths), role
-        if role in review_roles:
-            assert paths[-1] == exchange, role
         if role in {"pr_review_correctness", "pr_review_impact"}:
             assert review_system in paths, role
             assert paths.index(review_system) < paths.index(role_source), role

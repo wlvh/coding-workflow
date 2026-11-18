@@ -1,6 +1,6 @@
 # Issue Closure FSD Acceptance Prompt
 
-> 历史模板，当前暂停使用。现行验收见[用户路径验收](user_acceptance.md)。
+> 历史模板，当前暂停使用。现行验收见[编程工作流](../docs/development_workflow/README.md)。
 
 ## 用途
 
