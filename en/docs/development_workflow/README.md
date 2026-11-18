@@ -17,11 +17,7 @@ and [fixed-version adoption and updates](version_adoption.md).
 2. Have the Issue Agent write the Issue.
 
    Shared agreements belong in the target project's GitHub repository documentation; related Issues reference
-   the specific version. Before development, write a user-view acceptance plan in the Issue or its referenced
-   repository document, for review with the Issue in the next step. Specify the user's real entrypoint, inputs,
-   actions, expected results, and important failure cases. Development may revise the plan, recording the date,
-   reason, changed items, and effects on existing results. Changes to goals or key criteria return to Issue
-   decisions and review. Execution results identify the plan version, code candidate, and environment.
+   the specific version.
 
 3. Have LLMs from two different LLM companies review the issue through two orthogonal lenses before implementation: requirement and acceptance closure,
    and engineering volume and minimal sufficiency. The Issue Agent from step 2 owns the final edit; the lenses
@@ -31,17 +27,24 @@ and [fixed-version adoption and updates](version_adoption.md).
    Even when neither finds a blocker, they actually exchange conclusions and confirm the same object and scope.
    After the author updates the Issue, both recheck changes and unresolved problems and conclude on the final version.
 
-4. Implement the issue after reading `AGENTS.md`, `SOP.md`, `TESTING.md`, `PR_Checklist.md`, `interact.md`,
+4. Before development, have another LLM conversation draft a user-view acceptance plan in the Issue or its
+   referenced repository document. Both reviewers from step 3 review the Issue and plan before coding begins.
+   Specify the user's real entrypoint, inputs, actions, expected results, and important failure cases.
+   Development may revise the plan, recording the date, reason, changed items, and effects on existing results.
+   Changes to goals or key criteria return to Issue decisions and review. Execution results identify the plan
+   version, code candidate, and environment.
+
+5. Implement the issue after reading `AGENTS.md`, `SOP.md`, `TESTING.md`, `PR_Checklist.md`, `interact.md`,
    and project capability or business-user documents. Map each Spec Unit to code, tests, and documentation,
    and state which tests are reused, parameterized, or used as the real cross-module scenario.
    The same engineering owner continues through investigation, implementation, and testing. Expected file lists
    evolve with investigation; within the existing delegation, read, add, delete, modify, or rename files as needed.
 
-5. Self-review the patch and deliver a draft PR using the repository's commit policy and tracked PR template.
+6. Self-review the patch and deliver a draft PR using the repository's commit policy and tracked PR template.
    The PR body remains outside the target worktree and records actual scope, evidence, review/fix history, open
    decisions, and limits. Keep the temporary PR body out of commits.
 
-6. Have LLMs from two different LLM companies each perform the complete formal PR review with the full review system and task prompt. Each checks Issue
+7. Have LLMs from two different LLM companies each perform the complete formal PR review with the full review system and task prompt. Each checks Issue
    compliance, bugs, unnecessary architecture or duplicated repair, the external PR body, repository guidance,
    and the realism of test evidence; important claims must be investigated through code execution or a close
    reproduction path. This step discovers problems across the whole PR; the next step only verifies findings
@@ -53,7 +56,7 @@ and [fixed-version adoption and updates](version_adoption.md).
    - `REWORK_REQUIRED`: code, documentation, testing, or evidence still needs correction;
    - `OWNER_DECISION_REQUIRED`: the Issue contains an unresolved owner choice that blocks the current delivery.
 
-7. When review finds a problem, verify it before changing code. Codex focuses on whether the problem is real,
+8. When review finds a problem, verify it before changing code. Codex focuses on whether the problem is real,
     its trigger path, reproduction, and severity; Claude Code focuses on impact, adjacent entrypoints, whether
     the finding is one instance of a broader problem, and the smallest sufficient fix. Evidence and owner
     decisions resolve disagreement. Codex and Claude Code are the example pairing here; the LLMs actually used
@@ -70,40 +73,40 @@ and [fixed-version adoption and updates](version_adoption.md).
     1. The Coding Agent completes implementation and self-review, updates the external PR body, and creates or
        updates the draft PR.
     2. Start independent review conversations with LLMs from two different LLM companies and run the full
-       step-6 review against the same latest exact head, then exchange conclusions; builder self-review does
+       step-7 review against the same latest exact head, then exchange conclusions; builder self-review does
        not replace this review.
-    3. When both conclude `PASS`, proceed to steps 8–10 and merge or deliver under the existing delegation.
-    4. On `REWORK_REQUIRED`, send all P0/P1 and other blocking findings as one batch to one fresh
-       Codex verification conversation and one fresh Claude Code verification conversation. Each verifies
-       independently before reading the other's report.
+    3. When both conclude `PASS`, proceed to steps 9–10 and merge or deliver under the existing delegation.
+    4. On `REWORK_REQUIRED`, exchange the reports so each original review conversation verifies the other's
+       findings against the same candidate. Each first performs its own checks before exchanging verification results.
        Codex verifies truth, trigger path, reproduction, and severity; Claude Code verifies impact, adjacent
        entrypoints, root cause, and the smallest sufficient fix.
     5. After independent verification, exchange code, tests, reproducible evidence, and the Issue contract for
-       at most three rounds, with Codex synthesizing and both parties' actual replies retained. End early when
+       at most three rounds, with the original GPT/Codex review conversation synthesizing and both parties' actual replies retained. End early when
        conclusions are sufficiently supported. If evidence remains insufficient after three rounds, remain
        `REWORK_REQUIRED` and state the evidence work; model identity never decides correctness. If all findings
-       are refuted and code is unchanged, return the evidence to formal reviewers for closure.
+       are refuted and code is unchanged, both current review conversations update their conclusions from the evidence.
     6. When a problem is confirmed and needs repair, receive the original writer's existing changes and
-       verification records in that same Codex verification conversation, then instruct it to implement the
-       synthesis. Reuse the step-5 PR submission prompt to update code, tests, documentation, review/fix history,
+       verification records in that same original GPT/Codex review conversation, then instruct it to implement the
+       synthesis. Reuse the step-6 PR submission prompt to update code, tests, documentation, review/fix history,
        PR body, and the head commit.
     7. After every repair, start independent review conversations with LLMs from two different LLM companies,
-       rerun the step-6 review on the new exact head, and exchange conclusions. Reuse still-valid investigation
+       rerun the step-7 review on the new exact head, and exchange conclusions. Reuse still-valid investigation
        and check differences and impacts. Repeat until both conclude `PASS`; P2 findings may remain but must
        be recorded. The repair conversation cannot sign its own formal approval.
     8. On `OWNER_DECISION_REQUIRED`, add the owner choice to the Issue in readable prose and state which work it
        affects. Pause the affected work while other work continues. After the owner decides, add the conclusion
-       and rationale to the same Issue, resume the work, update the PR, and run a fresh step-6 review.
+       and rationale to the same Issue, resume the work, update the PR, and run a fresh step-7 review.
 
-    9. After more than three repairs, reassess whether the implementation can be simplified without losing the
-       goal or necessary correctness; leave areas with no clear benefit unchanged.
+    9. After more than three rework cycles for the same Issue, start a new conversation to examine the Issue,
+       PR, and commits and reassess simplifications without losing the goal or necessary correctness;
+       leave areas with no clear benefit unchanged.
 
     When integrating reviewed members, reuse valid review and test evidence and validate the complete combined
     path. If integration changes code, configuration, dependencies, or connections in a way that affects reviewed
     behavior or evidence applicability, validate the changes and have LLMs from both companies conclude on the
     differences and impacts for the new candidate, whether or not a new PR is created.
 
-8. After development and necessary validation of a demonstrable candidate, use the full Tech Lead walkthrough to explain the delivered implementation from actual code
+9. After development and necessary validation of a demonstrable candidate, use the full Tech Lead walkthrough to explain the delivered implementation from actual code
     evidence, then assess user-visible changes, how users employ the result, and whether `AGENTS.md` and linked
     documents provide sufficient guidance. Explain actual development difficulties, alternatives, and tradeoffs,
     and retrospectively assess a roughly half-size solution: what value would remain and what would be lost.
@@ -112,28 +115,20 @@ and [fixed-version adoption and updates](version_adoption.md).
     Distinguish implementation facts, design intent, and inference with versioned evidence. Store the walkthrough
     and follow-up in the PR conversation, adding new deployment results to the same explanation.
 
-9. Keep the pre-close FSD acceptance step: inspect main-branch code against every Issue Spec Unit and produce
-    `Updates to FSD` for deviations. This step is currently paused because its observed pass rate was
-    100% and user-view acceptance found more precise issues, but the step and prompt remain documented.
-
-10. Use the user-view acceptance plan prepared in step 2 and reviewed by both companies, and hand it to Codex
+10. Use the user-view acceptance plan prepared in step 4 and reviewed by both companies, and hand it to Codex
     for actual execution with tools such as Playwright when useful. Run candidate-ready scenarios early and add
     target-environment checks after merge or deployment. For an outcome spanning several Issues or PRs, validate
     the complete user path. Archive results in the PR conversation with the plan version, candidate, and
-    environment. Implementation gaps return to step 7 for verification, repair, and review; changes to goals,
+    environment. Implementation gaps return to step 8 for verification, repair, and review; changes to goals,
     scope, or key semantics return to Issue decisions and recorded plan revisions.
 
 ## Core Artifacts
 
-- `FSD Core Contract` (on demand): a requirement contract that can be implemented, tested, and reviewed.
-- `Repo Impact Forecast` (on demand): predicted repository touchpoints, risks, documentation, and test impact.
-- `Target State Bridge` (on demand): target user- or caller-visible state and its validation method.
-- `Issue`: the single executable development contract, including owner choices that must remain visible.
+- `Issue`: the contract, scope, task breakdown, expected document and test updates, acceptance criteria, and owner choices.
 - User-view acceptance plan: prepared before development, revised with records, and executed through real user paths.
 - Tech Lead walkthrough: post-development understanding of functionality, mechanisms, and development tradeoffs.
 - External PR body Markdown: temporary review and publishing input derived from the tracked PR template; it
   never enters the target worktree or commit.
-- `FSD Completeness Acceptance Report` (paused): the pre-close main-branch check of Spec Units and FSD deviations.
 - `Workflow Docs Sync`: one invocation for full fact reconstruction, minimal necessary document changes,
   real tests, fresh-context independent review or honest self-review, and deterministic final checks.
 

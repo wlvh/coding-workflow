@@ -40,13 +40,11 @@
     },
     "finding_verification_fact": {
       "promptPaths": [
-        "zh/prompts/finding_verification.md",
         "zh/prompts/finding_verification_fact.md"
       ]
     },
     "finding_verification_impact": {
       "promptPaths": [
-        "zh/prompts/finding_verification.md",
         "zh/prompts/finding_verification_impact.md"
       ]
     },

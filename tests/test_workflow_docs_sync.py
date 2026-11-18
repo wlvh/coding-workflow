@@ -1664,11 +1664,9 @@ def test_scenario_6_coding_loop_source_contract() -> None:
     assert isinstance(roles, dict)
     assert set(roles) == set(role_sources)
     review_system = "zh/prompts/pr_review_system.md"
-    verification = "zh/prompts/finding_verification.md"
     legacy_sources = {
         "zh/prompts/fsd_core_contract.md",
         "zh/prompts/target_state_bridge.md",
-        "zh/prompts/issue_closure_fsd_acceptance.md",
     }
     for role, spec in roles.items():
         assert isinstance(spec, dict) and set(spec) == {"promptPaths"}, role
@@ -1684,7 +1682,5 @@ def test_scenario_6_coding_loop_source_contract() -> None:
             assert review_system in paths, role
             assert paths.index(review_system) < paths.index(role_source), role
         if role in {"finding_verification_fact", "finding_verification_impact"}:
-            assert verification in paths, role
-            assert paths.index(verification) < paths.index(role_source), role
             assert paths[-1] == role_source, role
             assert review_system not in paths, role
